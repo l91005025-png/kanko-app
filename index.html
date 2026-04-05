@@ -9,133 +9,169 @@
 <meta name="apple-mobile-web-app-title" content="完工金集計">
 <meta name="mobile-web-app-capable" content="yes">
 <title>完工金集計</title>
-
 <script>
-// PWA Manifest（アイコン：円マーク・青系）
-const _iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a6ef5"/><stop offset="1" stop-color="#0a3fa8"/></linearGradient></defs><rect width="512" height="512" rx="100" fill="url(#bg)"/><circle cx="256" cy="230" r="130" fill="none" stroke="white" stroke-width="28"/><text x="256" y="285" font-family="sans-serif" font-size="160" font-weight="900" fill="white" text-anchor="middle">¥</text><rect x="100" y="390" width="312" height="28" rx="14" fill="white" opacity="0.8"/><rect x="150" y="438" width="212" height="20" rx="10" fill="white" opacity="0.5"/></svg>`;
-const _iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(_iconSvg)));
-const _manifest = {name:"完工金集計",short_name:"完工金",start_url:"./",display:"standalone",background_color:"#1a6ef5",theme_color:"#0f1117",orientation:"portrait",icons:[{src:_iconUrl,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
-const _mBlob = new Blob([JSON.stringify(_manifest)],{type:'application/json'});
-const _mLink = document.createElement('link');
-_mLink.rel='manifest'; _mLink.href=URL.createObjectURL(_mBlob);
-document.currentScript.after(_mLink);
-const _aLink = document.createElement('link');
-_aLink.rel='apple-touch-icon'; _aLink.href=_iconUrl;
-document.currentScript.after(_aLink);
+const _sv=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a6ef5"/><stop offset="1" stop-color="#0a3fa8"/></linearGradient></defs><rect width="512" height="512" rx="100" fill="url(#bg)"/><circle cx="256" cy="230" r="130" fill="none" stroke="white" stroke-width="28"/><text x="256" y="285" font-family="sans-serif" font-size="160" font-weight="900" fill="white" text-anchor="middle">¥</text><rect x="100" y="390" width="312" height="28" rx="14" fill="white" opacity="0.8"/></svg>`;
+const _iu='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(_sv)));
+const _mf={name:"完工金集計",short_name:"完工金",start_url:"./",display:"standalone",background_color:"#1a6ef5",theme_color:"#0f1117",orientation:"portrait",icons:[{src:_iu,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+const _mb=new Blob([JSON.stringify(_mf)],{type:'application/json'});
+const _ml=document.createElement('link'); _ml.rel='manifest'; _ml.href=URL.createObjectURL(_mb); document.currentScript.after(_ml);
+const _al=document.createElement('link'); _al.rel='apple-touch-icon'; _al.href=_iu; document.currentScript.after(_al);
 </script>
-
 <style>
-  :root {
-    --bg: #0f1117;
-    --surface: #1a1d2e;
-    --border: #2a2d3e;
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --accent: #4f9cf9;
-    --purple: #a855f7;
-    --danger-bg: #2d1a1a;
-    --danger: #f87171;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Noto Sans JP', 'Yu Gothic', sans-serif; overscroll-behavior: none; }
-  body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
-  input, select, button { font-family: inherit; }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
-  input::placeholder { color: #4a5568; }
+:root{--bg:#0f1117;--surface:#1a1d2e;--border:#2a2d3e;--text:#e8eaf0;--muted:#6b7280;--accent:#4f9cf9;--purple:#a855f7;--green:#22c55e;--amber:#f59e0b;--danger-bg:#2d1a1a;--danger:#f87171;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Noto Sans JP','Yu Gothic',sans-serif;overscroll-behavior:none;}
+body{padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
+input,select,button{font-family:inherit;}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);}
+input::placeholder{color:#4a5568;}
 
-  .header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(15,17,23,0.92);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 16px 12px;
-  }
-  .header-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
-  .header-bar { width: 6px; height: 26px; background: linear-gradient(180deg, var(--accent), var(--purple)); border-radius: 3px; flex-shrink: 0; }
-  .header h1 { font-size: 19px; font-weight: 800; letter-spacing: 0.04em; color: #fff; }
-  .header .count { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .sync-badge { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
-  .sync-badge.online { background: #1a2e1a; color: #4ade80; }
-  .sync-badge.offline { background: #2d1a1a; color: #f87171; }
-  .sync-badge.syncing { background: #1a1d2e; color: var(--accent); }
+/* Header */
+.header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 16px 12px;}
+.header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
+.header-bar{width:6px;height:26px;background:linear-gradient(180deg,var(--accent),var(--purple));border-radius:3px;flex-shrink:0;}
+.header h1{font-size:19px;font-weight:800;letter-spacing:.04em;color:#fff;}
+.header .count{font-size:12px;color:var(--muted);margin-top:2px;}
+.sync-badge{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;flex-shrink:0;}
+.sync-badge.online{background:#1a2e1a;color:#4ade80;}
+.sync-badge.offline{background:#2d1a1a;color:#f87171;}
+.sync-badge.syncing{background:#1a1d2e;color:var(--accent);}
 
-  .main { max-width: 640px; margin: 0 auto; padding: 0 12px 100px; }
+.main{max-width:640px;margin:0 auto;padding:0 12px 100px;}
 
-  .card { background: var(--surface); border-radius: 16px; padding: 16px; margin-top: 14px; border: 1px solid var(--border); }
-  .card-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+/* サマリーカード */
+.summary-card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
+.summary-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.summary-top-label{font-size:13px;color:var(--muted);font-weight:700;}
+.summary-top select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-size:13px;outline:none;-webkit-appearance:none;}
+.total-row{text-align:center;margin-bottom:16px;}
+.total-label{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:4px;}
+.total-amount{font-size:30px;font-weight:900;color:#fff;}
 
-  .field { margin-bottom: 10px; }
-  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.05em; }
-  .field input, .field select {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 10px; padding: 11px 12px; color: var(--text); font-size: 16px;
-    outline: none; transition: border-color 0.2s; -webkit-appearance: none;
-  }
-  .field input:focus, .field select:focus { border-color: var(--accent); }
-  .btn-primary {
-    width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent), var(--purple));
-    border: none; border-radius: 10px; color: #fff; font-weight: 800;
-    font-size: 16px; cursor: pointer; margin-top: 12px; letter-spacing: 0.04em;
-  }
-  .btn-primary:disabled { opacity: 0.5; }
-  .btn-secondary {
-    padding: 13px 16px; background: var(--border); border: none;
-    border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 12px; margin-left: 8px;
-  }
-  .form-actions { display: flex; }
-  .form-actions .btn-primary { flex: 1; }
+/* 課カード */
+.dept-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.dept-card{border-radius:12px;padding:14px;}
+.dept-card.koji{background:rgba(79,156,249,.1);border:1px solid rgba(79,156,249,.25);}
+.dept-card.kanri{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);}
+.dept-card-name{font-size:12px;font-weight:700;margin-bottom:8px;}
+.dept-card.koji .dept-card-name{color:var(--accent);}
+.dept-card.kanri .dept-card-name{color:var(--purple);}
+.dept-card-amount{font-size:17px;font-weight:900;}
+.dept-card.koji .dept-card-amount{color:var(--accent);}
+.dept-card.kanri .dept-card-amount{color:var(--purple);}
+.dept-card-count{font-size:11px;color:var(--muted);margin-top:2px;}
 
-  .tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-top: 14px; }
-  .tab {
-    flex: 1; padding: 9px 0; border-radius: 9px; border: none;
-    background: transparent; color: var(--muted); font-weight: 700; font-size: 13px;
-    cursor: pointer; transition: all 0.2s;
-  }
-  .tab.active { background: linear-gradient(135deg, var(--accent), var(--purple)); color: #fff; }
+/* 目標プログレス */
+.goal-bar-wrap{margin-top:8px;}
+.goal-meta{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
+.goal-pct{font-weight:700;}
+.goal-remain{color:var(--muted);}
+.goal-bar-bg{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;}
+.goal-bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.goal-bar-fill.koji{background:linear-gradient(90deg,var(--accent),#60c0ff);}
+.goal-bar-fill.kanri{background:linear-gradient(90deg,var(--purple),#d08aff);}
+.goal-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
+.goal-not-set{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;}
 
-  .year-bar { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
-  .year-bar label { font-size: 12px; color: var(--muted); }
-  .year-bar select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 10px; font-size: 14px; outline: none; -webkit-appearance: none; }
-  .year-total { margin-left: auto; font-size: 13px; color: var(--muted); }
-  .year-total strong { color: var(--accent); font-size: 15px; }
+/* 目標設定ボタン */
+.goal-setting-btn{width:100%;margin-top:12px;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;font-weight:600;}
+.goal-setting-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-  .record { background: var(--surface); border-radius: 14px; padding: 14px; margin-top: 10px; border: 1px solid var(--border); }
-  .record-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
-  .record-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-  .record-amount { font-size: 20px; font-weight: 900; color: var(--accent); }
-  .record-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: 10px; }
-  .btn-edit { background: var(--border); border: none; border-radius: 8px; color: var(--muted); padding: 7px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
-  .btn-del { background: var(--danger-bg); border: none; border-radius: 8px; color: var(--danger); padding: 7px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
+/* 目標設定モーダル */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));width:100%;max-width:640px;border-top:1px solid var(--border);}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:16px;color:#fff;}
+.modal-section{margin-bottom:16px;}
+.modal-section-title{font-size:12px;font-weight:700;margin-bottom:10px;padding:4px 10px;border-radius:6px;display:inline-block;}
+.modal-section-title.koji{color:var(--accent);background:rgba(79,156,249,.12);}
+.modal-section-title.kanri{color:var(--purple);background:rgba(168,85,247,.12);}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.modal-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.modal-field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;}
+.modal-field input:focus{border-color:var(--accent);}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+.modal-save{flex:1;padding:13px;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;border-radius:10px;color:#fff;font-weight:800;font-size:15px;cursor:pointer;}
+.modal-cancel{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;}
 
-  .agg-row { background: var(--surface); border-radius: 12px; padding: 12px 14px; margin-top: 8px; border: 1px solid var(--border); }
-  .agg-row.empty { opacity: 0.4; }
-  .agg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .agg-label { font-weight: 600; font-size: 14px; color: var(--muted); }
-  .agg-label.person { color: var(--text); font-size: 15px; font-weight: 800; }
-  .agg-right { text-align: right; }
-  .agg-amount { font-weight: 900; font-size: 16px; color: var(--accent); }
-  .agg-amount.person { color: var(--purple); }
-  .agg-count { font-size: 11px; color: var(--muted); margin-left: 6px; }
-  .bar-bg { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-  .bar-fill.blue { background: linear-gradient(90deg, var(--accent), var(--purple)); }
-  .bar-fill.purple { background: linear-gradient(90deg, var(--purple), var(--accent)); }
-  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-  .chip { font-size: 11px; background: var(--bg); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+/* フォーム */
+.card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
+.card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:.05em;}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);font-size:16px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.dept-select{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dept-btn{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-weight:700;font-size:15px;cursor:pointer;transition:all .2s;}
+.dept-btn.active-koji{background:rgba(79,156,249,.15);border-color:var(--accent);color:var(--accent);}
+.dept-btn.active-kanri{background:rgba(168,85,247,.15);border-color:var(--purple);color:var(--purple);}
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;border-radius:10px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;margin-top:12px;}
+.btn-primary:disabled{opacity:.5;}
+.btn-secondary{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;margin-top:12px;margin-left:8px;}
+.form-actions{display:flex;}
+.form-actions .btn-primary{flex:1;}
 
-  .empty-state { text-align: center; color: #4a5568; padding: 48px 0; font-size: 14px; }
-  .loading-state { text-align: center; color: var(--muted); padding: 48px 0; font-size: 14px; }
+/* タブ */
+.tabs{display:flex;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin-top:14px;}
+.tab{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;}
 
-  .toast {
-    position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 20px; font-size: 14px; color: var(--text);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.5); white-space: nowrap; z-index: 999;
-    animation: fadeUp 0.25s ease;
-  }
-  @keyframes fadeUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+/* 課フィルター */
+.dept-filter{display:flex;gap:6px;margin-top:12px;}
+.dft-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
+.dft-btn.a-all,.dft-btn.a-koji{border-color:var(--accent);color:var(--accent);background:rgba(79,156,249,.1);}
+.dft-btn.a-kanri{border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,.1);}
+
+.year-bar{display:flex;align-items:center;gap:10px;margin-top:12px;}
+.year-bar label{font-size:12px;color:var(--muted);}
+.year-bar select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 10px;font-size:14px;outline:none;-webkit-appearance:none;}
+.year-total{margin-left:auto;font-size:13px;color:var(--muted);}
+.year-total strong{color:var(--accent);font-size:15px;}
+
+/* バッジ */
+.dept-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;margin-right:4px;vertical-align:middle;}
+.dept-badge.koji{background:rgba(79,156,249,.15);color:var(--accent);}
+.dept-badge.kanri{background:rgba(168,85,247,.15);color:var(--purple);}
+
+/* セクションヘッダー */
+.section-header{display:flex;align-items:center;gap:8px;margin:14px 0 6px;}
+.section-line{flex:1;height:1px;background:var(--border);}
+.section-title{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.section-title.koji{color:var(--accent);background:rgba(79,156,249,.12);}
+.section-title.kanri{color:var(--purple);background:rgba(168,85,247,.12);}
+.section-subtotal{font-size:12px;font-weight:700;white-space:nowrap;}
+.section-subtotal.koji{color:var(--accent);}
+.section-subtotal.kanri{color:var(--purple);}
+
+/* レコード */
+.record{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
+.record-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.record-meta{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.record-amount{font-size:20px;font-weight:900;color:var(--accent);}
+.record-actions{display:flex;gap:6px;flex-shrink:0;margin-left:10px;}
+.btn-edit{background:var(--border);border:none;border-radius:8px;color:var(--muted);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
+.btn-del{background:var(--danger-bg);border:none;border-radius:8px;color:var(--danger);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
+
+/* 集計行 */
+.agg-row{background:var(--surface);border-radius:12px;padding:12px 14px;margin-top:8px;border:1px solid var(--border);}
+.agg-row.empty{opacity:.35;}
+.agg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.agg-label{font-weight:600;font-size:14px;color:var(--muted);}
+.agg-label.person{color:var(--text);font-size:15px;font-weight:800;}
+.agg-right{text-align:right;}
+.agg-amount{font-weight:900;font-size:16px;color:var(--accent);}
+.agg-amount.p{color:var(--purple);}
+.agg-count{font-size:11px;color:var(--muted);margin-left:6px;}
+.bar-bg{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.bar-fill{height:100%;border-radius:3px;}
+.bar-fill.blue{background:linear-gradient(90deg,var(--accent),var(--purple));}
+.bar-fill.purple{background:linear-gradient(90deg,var(--purple),var(--accent));}
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{font-size:11px;background:var(--bg);border-radius:6px;padding:2px 8px;color:var(--muted);}
+
+.empty-state{text-align:center;color:#4a5568;padding:48px 0;font-size:14px;}
+.loading-state{text-align:center;color:var(--muted);padding:48px 0;font-size:14px;}
+.toast{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 20px;font-size:14px;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;z-index:999;animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 </style>
 </head>
 <body>
@@ -152,12 +188,67 @@ document.currentScript.after(_aLink);
 </div>
 
 <div class="main">
+
+  <!-- 年間サマリー -->
+  <div class="summary-card">
+    <div class="summary-top">
+      <span class="summary-top-label">📊 年間集計</span>
+      <select id="summaryYear" onchange="render()"></select>
+    </div>
+    <div class="dept-grid">
+      <!-- 工事課 -->
+      <div class="dept-card koji">
+        <div class="dept-card-name">🔨 工事課</div>
+        <div class="dept-card-amount" id="kojiYearAmt">¥0</div>
+        <div class="dept-card-count" id="kojiYearCnt">0件</div>
+        <div class="goal-bar-wrap" id="kojiYearGoalWrap"></div>
+      </div>
+      <!-- 管理課 -->
+      <div class="dept-card kanri">
+        <div class="dept-card-name">📋 管理課</div>
+        <div class="dept-card-amount" id="kanriYearAmt">¥0</div>
+        <div class="dept-card-count" id="kanriYearCnt">0件</div>
+        <div class="goal-bar-wrap" id="kanriYearGoalWrap"></div>
+      </div>
+    </div>
+    <!-- 月間サマリー -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="summary-top" style="margin-bottom:10px;">
+        <span class="summary-top-label">📅 月間集計</span>
+        <select id="summaryMonth" onchange="render()"></select>
+      </div>
+      <div class="dept-grid">
+        <div class="dept-card koji">
+          <div class="dept-card-name">🔨 工事課</div>
+          <div class="dept-card-amount" id="kojiMonthAmt">¥0</div>
+          <div class="dept-card-count" id="kojiMonthCnt">0件</div>
+          <div class="goal-bar-wrap" id="kojiMonthGoalWrap"></div>
+        </div>
+        <div class="dept-card kanri">
+          <div class="dept-card-name">📋 管理課</div>
+          <div class="dept-card-amount" id="kanriMonthAmt">¥0</div>
+          <div class="dept-card-count" id="kanriMonthCnt">0件</div>
+          <div class="goal-bar-wrap" id="kanriMonthGoalWrap"></div>
+        </div>
+      </div>
+    </div>
+    <button class="goal-setting-btn" onclick="openGoalModal()">⚙️ 目標金額を設定する</button>
+  </div>
+
+  <!-- 入力フォーム -->
   <div class="card">
     <div class="card-title" id="formTitle">＋ 新規登録</div>
     <div class="field"><label>案件名・工事名 *</label><input type="text" id="fName" placeholder="例：〇〇邸 外壁塗装工事"></div>
     <div class="field"><label>顧客名</label><input type="text" id="fClient" placeholder="例：山田 太郎 様"></div>
     <div class="field"><label>完工日 *</label><input type="date" id="fDate"></div>
     <div class="field"><label>担当者名</label><input type="text" id="fAssignee" placeholder="例：鈴木 一郎"></div>
+    <div class="field">
+      <label>課 *</label>
+      <div class="dept-select">
+        <button class="dept-btn" id="btnKoji" onclick="selectDept('工事課')">🔨 工事課</button>
+        <button class="dept-btn" id="btnKanri" onclick="selectDept('管理課')">📋 管理課</button>
+      </div>
+    </div>
     <div class="field"><label>完工金額（円）*</label><input type="number" id="fAmount" placeholder="例：1500000" inputmode="numeric"></div>
     <div class="form-actions">
       <button class="btn-primary" id="submitBtn" onclick="handleSubmit()">登録する</button>
@@ -165,10 +256,17 @@ document.currentScript.after(_aLink);
     </div>
   </div>
 
+  <!-- タブ -->
   <div class="tabs">
     <button class="tab active" id="tab-list" onclick="switchTab('list')">一覧</button>
     <button class="tab" id="tab-monthly" onclick="switchTab('monthly')">月別</button>
     <button class="tab" id="tab-assignee" onclick="switchTab('assignee')">担当者別</button>
+  </div>
+
+  <div class="dept-filter">
+    <button class="dft-btn a-all" id="df-all" onclick="setDF('all')">すべて</button>
+    <button class="dft-btn" id="df-koji" onclick="setDF('工事課')">🔨 工事課</button>
+    <button class="dft-btn" id="df-kanri" onclick="setDF('管理課')">📋 管理課</button>
   </div>
 
   <div class="year-bar" id="yearBar" style="display:none">
@@ -180,17 +278,49 @@ document.currentScript.after(_aLink);
   <div id="content"><div class="loading-state">🔄 データを読み込んでいます...</div></div>
 </div>
 
+<!-- 目標設定モーダル -->
+<div class="modal-overlay" id="goalModal" style="display:none" onclick="closeGoalModal(event)">
+  <div class="modal">
+    <div class="modal-title">⚙️ 目標金額の設定</div>
+    <div class="modal-section">
+      <span class="modal-section-title koji">🔨 工事課</span>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>月間目標（円）</label>
+          <input type="number" id="gKojiMonth" placeholder="例：3000000" inputmode="numeric">
+        </div>
+        <div class="modal-field">
+          <label>年間目標（円）</label>
+          <input type="number" id="gKojiYear" placeholder="例：36000000" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <span class="modal-section-title kanri">📋 管理課</span>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>月間目標（円）</label>
+          <input type="number" id="gKanriMonth" placeholder="例：2000000" inputmode="numeric">
+        </div>
+        <div class="modal-field">
+          <label>年間目標（円）</label>
+          <input type="number" id="gKanriYear" placeholder="例：24000000" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeGoalModal()">キャンセル</button>
+      <button class="modal-save" onclick="saveGoals()">保存する</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" style="display:none"></div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, addDoc, updateDoc, deleteDoc,
-  doc, onSnapshot, serverTimestamp, query, orderBy
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ── Firebase 設定 ──────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
   authDomain: "kanko-app-96378.firebaseapp.com",
@@ -204,228 +334,180 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const colRef = collection(db, "records");
 
-// ── State ──────────────────────────────────────────────
-let records = [];
-let editId = null;
-let currentTab = 'list';
-let toastTimer = null;
-let isLoading = true;
+let records=[], editId=null, currentTab='list', deptFilter='all', selDept='', toastTimer=null, isLoading=true;
 
-// ── リアルタイム同期 ────────────────────────────────────
-const q = query(colRef, orderBy("createdAt", "desc"));
-onSnapshot(q,
-  (snapshot) => {
-    records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    isLoading = false;
-    document.getElementById('syncBadge').textContent = '🟢 同期中';
-    document.getElementById('syncBadge').className = 'sync-badge online';
-    render();
-  },
-  (err) => {
-    console.error(err);
-    document.getElementById('syncBadge').textContent = '🔴 オフライン';
-    document.getElementById('syncBadge').className = 'sync-badge offline';
-  }
+// 目標金額（localStorage保存）
+let goals = JSON.parse(localStorage.getItem('kanko_goals')||'{"kojiMonth":0,"kojiYear":0,"kanriMonth":0,"kanriYear":0}');
+
+onSnapshot(query(colRef, orderBy("createdAt","desc")),
+  snap=>{records=snap.docs.map(d=>({id:d.id,...d.data()}));isLoading=false;document.getElementById('syncBadge').textContent='🟢 同期中';document.getElementById('syncBadge').className='sync-badge online';render();},
+  err=>{console.error(err);document.getElementById('syncBadge').textContent='🔴 オフライン';document.getElementById('syncBadge').className='sync-badge offline';}
 );
 
-// ── Helpers ────────────────────────────────────────────
-function fmt(n) { return Number(n || 0).toLocaleString('ja-JP'); }
-function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const fmt=n=>Number(n||0).toLocaleString('ja-JP');
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const dc=dept=>dept==='工事課'?'koji':dept==='管理課'?'kanri':'';
 
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.style.display = 'block';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.style.display = 'none', 2500);
-}
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2500);}
 
-// ── Form ───────────────────────────────────────────────
-function getForm() {
-  return {
-    name: document.getElementById('fName').value.trim(),
-    client: document.getElementById('fClient').value.trim(),
-    date: document.getElementById('fDate').value,
-    assignee: document.getElementById('fAssignee').value.trim(),
-    amount: document.getElementById('fAmount').value,
-  };
-}
-function setForm(r) {
-  document.getElementById('fName').value = r.name || '';
-  document.getElementById('fClient').value = r.client || '';
-  document.getElementById('fDate').value = r.date || '';
-  document.getElementById('fAssignee').value = r.assignee || '';
-  document.getElementById('fAmount').value = r.amount || '';
-}
-function clearForm() { setForm({}); }
-
-window.handleSubmit = async () => {
-  const f = getForm();
-  if (!f.name || !f.date || !f.amount) { showToast('⚠️ 案件名・完工日・金額は必須です'); return; }
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  try {
-    if (editId) {
-      await updateDoc(doc(db, "records", editId), { ...f, updatedAt: serverTimestamp() });
-      showToast('✅ 更新しました');
-      editId = null;
-      document.getElementById('formTitle').textContent = '＋ 新規登録';
-      document.getElementById('submitBtn').textContent = '登録する';
-      document.getElementById('cancelBtn').style.display = 'none';
-    } else {
-      await addDoc(colRef, { ...f, createdAt: serverTimestamp() });
-      showToast('✅ 追加しました');
-    }
-    clearForm();
-  } catch(e) {
-    showToast('❌ エラーが発生しました'); console.error(e);
-  }
-  btn.disabled = false;
+// 目標モーダル
+window.openGoalModal=()=>{
+  document.getElementById('gKojiMonth').value=goals.kojiMonth||'';
+  document.getElementById('gKojiYear').value=goals.kojiYear||'';
+  document.getElementById('gKanriMonth').value=goals.kanriMonth||'';
+  document.getElementById('gKanriYear').value=goals.kanriYear||'';
+  document.getElementById('goalModal').style.display='flex';
 };
-
-window.handleCancel = () => {
-  editId = null; clearForm();
-  document.getElementById('formTitle').textContent = '＋ 新規登録';
-  document.getElementById('submitBtn').textContent = '登録する';
-  document.getElementById('cancelBtn').style.display = 'none';
-};
-
-window.handleEdit = (id) => {
-  const r = records.find(x => x.id === id); if (!r) return;
-  editId = id; setForm(r);
-  document.getElementById('formTitle').textContent = '✏️ 編集中';
-  document.getElementById('submitBtn').textContent = '更新する';
-  document.getElementById('cancelBtn').style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-window.handleDelete = async (id) => {
-  if (!confirm('この案件を削除しますか？')) return;
-  try {
-    await deleteDoc(doc(db, "records", id));
-    if (editId === id) window.handleCancel();
-    showToast('🗑️ 削除しました');
-  } catch(e) {
-    showToast('❌ 削除に失敗しました'); console.error(e);
-  }
-};
-
-// ── Tabs ───────────────────────────────────────────────
-window.switchTab = (tab) => {
-  currentTab = tab;
-  ['list','monthly','assignee'].forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-  });
-  document.getElementById('yearBar').style.display = tab === 'list' ? 'none' : 'flex';
+window.closeGoalModal=(e)=>{if(!e||e.target===document.getElementById('goalModal'))document.getElementById('goalModal').style.display='none';};
+window.saveGoals=()=>{
+  goals={kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,kojiYear:Number(document.getElementById('gKojiYear').value)||0,kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,kanriYear:Number(document.getElementById('gKanriYear').value)||0};
+  localStorage.setItem('kanko_goals',JSON.stringify(goals));
+  document.getElementById('goalModal').style.display='none';
+  showToast('✅ 目標金額を保存しました');
   render();
 };
 
-// ── Year ───────────────────────────────────────────────
-function getYears() {
-  const ys = new Set(records.map(r => r.date ? new Date(r.date).getFullYear() : null).filter(Boolean));
-  ys.add(new Date().getFullYear());
-  return [...ys].sort((a,b) => b - a);
+// 目標バーHTML生成
+function goalBarHTML(actual, goal, cls) {
+  if (!goal) return `<div class="goal-not-set">目標未設定</div>`;
+  const pct = Math.min(Math.round(actual/goal*100),100);
+  const over = actual >= goal;
+  const remain = goal - actual;
+  return `<div class="goal-bar-wrap">
+    <div class="goal-meta">
+      <span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${Math.round(actual/goal*100)}%達成</span>
+      <span class="goal-remain">${over?'✅ 達成！':'残 ¥'+fmt(remain)}</span>
+    </div>
+    <div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${pct}%"></div></div>
+  </div>`;
 }
-function buildYearSelect() {
-  const sel = document.getElementById('yearSelect');
-  const cur = sel.value || String(new Date().getFullYear());
-  const years = getYears();
-  sel.innerHTML = years.map(y => `<option value="${y}" ${String(y)===cur?'selected':''}>${y}年</option>`).join('');
+
+window.selectDept=dept=>{selDept=dept;document.getElementById('btnKoji').className='dept-btn'+(dept==='工事課'?' active-koji':'');document.getElementById('btnKanri').className='dept-btn'+(dept==='管理課'?' active-kanri':'');};
+
+const getForm=()=>({name:document.getElementById('fName').value.trim(),client:document.getElementById('fClient').value.trim(),date:document.getElementById('fDate').value,assignee:document.getElementById('fAssignee').value.trim(),dept:selDept,amount:document.getElementById('fAmount').value});
+function setForm(r){document.getElementById('fName').value=r.name||'';document.getElementById('fClient').value=r.client||'';document.getElementById('fDate').value=r.date||'';document.getElementById('fAssignee').value=r.assignee||'';document.getElementById('fAmount').value=r.amount||'';window.selectDept(r.dept||'');}
+function clearForm(){setForm({});selDept='';document.getElementById('btnKoji').className='dept-btn';document.getElementById('btnKanri').className='dept-btn';}
+
+window.handleSubmit=async()=>{
+  const f=getForm();
+  if(!f.name||!f.date||!f.amount){showToast('⚠️ 案件名・完工日・金額は必須です');return;}
+  if(!f.dept){showToast('⚠️ 課を選択してください');return;}
+  const btn=document.getElementById('submitBtn'); btn.disabled=true;
+  try{
+    if(editId){await updateDoc(doc(db,"records",editId),{...f,updatedAt:serverTimestamp()});showToast('✅ 更新しました');editId=null;document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';}
+    else{await addDoc(colRef,{...f,createdAt:serverTimestamp()});showToast('✅ 追加しました');}
+    clearForm();
+  }catch(e){showToast('❌ エラーが発生しました');console.error(e);}
+  btn.disabled=false;
+};
+
+window.handleCancel=()=>{editId=null;clearForm();document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';};
+
+window.handleEdit=id=>{const r=records.find(x=>x.id===id);if(!r)return;editId=id;setForm(r);document.getElementById('formTitle').textContent='✏️ 編集中';document.getElementById('submitBtn').textContent='更新する';document.getElementById('cancelBtn').style.display='';window.scrollTo({top:0,behavior:'smooth'});};
+
+window.handleDelete=async id=>{if(!confirm('この案件を削除しますか？'))return;try{await deleteDoc(doc(db,"records",id));if(editId===id)window.handleCancel();showToast('🗑️ 削除しました');}catch(e){showToast('❌ 削除に失敗しました');console.error(e);}};
+
+window.switchTab=tab=>{currentTab=tab;['list','monthly','assignee'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('active',t===tab));document.getElementById('yearBar').style.display=tab==='list'?'none':'flex';render();};
+
+window.setDF=dept=>{deptFilter=dept;document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');document.getElementById('df-koji').className='dft-btn'+(dept==='工事課'?' a-koji':'');document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');render();};
+
+function getYears(){const ys=new Set(records.map(r=>r.date?new Date(r.date).getFullYear():null).filter(Boolean));ys.add(new Date().getFullYear());return[...ys].sort((a,b)=>b-a);}
+function buildYearSelects(){
+  const years=getYears();
+  ['summaryYear','yearSelect'].forEach(id=>{const sel=document.getElementById(id);const cur=sel.value||String(new Date().getFullYear());sel.innerHTML=years.map(y=>`<option value="${y}"${String(y)===cur?' selected':''}>${y}年</option>`).join('');});
+  // 月セレクト
+  const msel=document.getElementById('summaryMonth');
+  const now=new Date();
+  const curM=msel.value||(String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  let opts='';
+  years.forEach(y=>MONTHS.forEach((ml,mi)=>{const val=y+'-'+String(mi+1).padStart(2,'0');opts+=`<option value="${val}"${val===curM?' selected':''}>${y}年 ${ml}</option>`;}));
+  msel.innerHTML=opts;
 }
-function getFilterYear() { return Number(document.getElementById('yearSelect').value) || new Date().getFullYear(); }
+const getSY=()=>Number(document.getElementById('summaryYear').value)||new Date().getFullYear();
+const getSM=()=>document.getElementById('summaryMonth').value||(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+const getFY=()=>Number(document.getElementById('yearSelect').value)||new Date().getFullYear();
 
-// ── Render ─────────────────────────────────────────────
-const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-window.render = () => {
-  if (isLoading) return;
-  document.getElementById('headerCount').textContent = records.length + ' 件 登録中';
-  buildYearSelect();
-  const fy = getFilterYear();
-  const filtered = records.filter(r => r.date && new Date(r.date).getFullYear() === fy);
-  const yearTotal = filtered.reduce((s,r) => s + Number(r.amount||0), 0);
-  document.getElementById('yearTotal').textContent = '¥' + fmt(yearTotal);
+function recordHTML(r){return`<div class="record"><div style="display:flex;align-items:flex-start"><div style="flex:1;min-width:0"><div class="record-name"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)}</div><div class="record-meta">${r.client?esc(r.client)+'　':''}${r.date||''}${r.assignee?'　担当：'+esc(r.assignee):''}</div><div class="record-amount">¥${fmt(r.amount)}</div></div><div class="record-actions"><button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button><button class="btn-del" onclick="handleDelete('${r.id}')">削除</button></div></div></div>`;}
 
-  const el = document.getElementById('content');
+window.render=()=>{
+  if(isLoading)return;
+  document.getElementById('headerCount').textContent=records.length+' 件 登録中';
+  buildYearSelects();
 
-  if (currentTab === 'list') {
-    if (records.length === 0) {
-      el.innerHTML = '<div class="empty-state">まだ登録がありません</div>'; return;
-    }
-    el.innerHTML = records.map(r => `
-      <div class="record">
-        <div style="display:flex;align-items:flex-start">
-          <div style="flex:1;min-width:0">
-            <div class="record-name">${esc(r.name)}</div>
-            <div class="record-meta">${r.client ? esc(r.client) + '　' : ''}${r.date || ''}${r.assignee ? '　担当：' + esc(r.assignee) : ''}</div>
-            <div class="record-amount">¥${fmt(r.amount)}</div>
-          </div>
-          <div class="record-actions">
-            <button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button>
-            <button class="btn-del" onclick="handleDelete('${r.id}')">削除</button>
-          </div>
-        </div>
-      </div>`).join('');
+  // 年間サマリー
+  const sy=getSY();
+  const syR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===sy);
+  const kYR=syR.filter(r=>r.dept==='工事課'), knYR=syR.filter(r=>r.dept==='管理課');
+  const kYAmt=kYR.reduce((s,r)=>s+Number(r.amount||0),0);
+  const knYAmt=knYR.reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('kojiYearAmt').textContent='¥'+fmt(kYAmt);
+  document.getElementById('kojiYearCnt').textContent=kYR.length+'件';
+  document.getElementById('kanriYearAmt').textContent='¥'+fmt(knYAmt);
+  document.getElementById('kanriYearCnt').textContent=knYR.length+'件';
+  document.getElementById('kojiYearGoalWrap').innerHTML=goalBarHTML(kYAmt,goals.kojiYear,'koji');
+  document.getElementById('kanriYearGoalWrap').innerHTML=goalBarHTML(knYAmt,goals.kanriYear,'kanri');
+
+  // 月間サマリー
+  const sm=getSM();
+  const [smY,smM]=sm.split('-').map(Number);
+  const smR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===smY&&new Date(r.date).getMonth()+1===smM);
+  const kMR=smR.filter(r=>r.dept==='工事課'), knMR=smR.filter(r=>r.dept==='管理課');
+  const kMAmt=kMR.reduce((s,r)=>s+Number(r.amount||0),0);
+  const knMAmt=knMR.reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('kojiMonthAmt').textContent='¥'+fmt(kMAmt);
+  document.getElementById('kojiMonthCnt').textContent=kMR.length+'件';
+  document.getElementById('kanriMonthAmt').textContent='¥'+fmt(knMAmt);
+  document.getElementById('kanriMonthCnt').textContent=knMR.length+'件';
+  document.getElementById('kojiMonthGoalWrap').innerHTML=goalBarHTML(kMAmt,goals.kojiMonth,'koji');
+  document.getElementById('kanriMonthGoalWrap').innerHTML=goalBarHTML(knMAmt,goals.kanriMonth,'kanri');
+
+  // 一覧タブ用
+  const fy=getFY();
+  const fyR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===fy);
+  const dfR=deptFilter==='all'?fyR:fyR.filter(r=>r.dept===deptFilter);
+  document.getElementById('yearTotal').textContent='¥'+fmt(dfR.reduce((s,r)=>s+Number(r.amount||0),0));
+
+  const el=document.getElementById('content');
+
+  if(currentTab==='list'){
+    const listR=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);
+    if(listR.length===0){el.innerHTML='<div class="empty-state">まだ登録がありません</div>';return;}
+    if(deptFilter==='all'){
+      const kR=listR.filter(r=>r.dept==='工事課'),knR=listR.filter(r=>r.dept==='管理課'),otR=listR.filter(r=>r.dept!=='工事課'&&r.dept!=='管理課');
+      let html='';
+      if(kR.length>0){const t=kR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title koji">🔨 工事課</span><span class="section-subtotal koji">¥${fmt(t)} / ${kR.length}件</span><div class="section-line"></div></div>`+kR.map(recordHTML).join('');}
+      if(knR.length>0){const t=knR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title kanri">📋 管理課</span><span class="section-subtotal kanri">¥${fmt(t)} / ${knR.length}件</span><div class="section-line"></div></div>`+knR.map(recordHTML).join('');}
+      if(otR.length>0)html+=otR.map(recordHTML).join('');
+      el.innerHTML=html;
+    }else{el.innerHTML=listR.map(recordHTML).join('');}
     return;
   }
 
-  if (currentTab === 'monthly') {
-    const maxVal = Math.max(...MONTHS.map((_,i) => {
-      const m = i + 1;
-      return filtered.filter(r => new Date(r.date).getMonth()+1 === m).reduce((s,r) => s+Number(r.amount||0),0);
-    }), 1);
-    el.innerHTML = MONTHS.map((label, i) => {
-      const m = i + 1;
-      const items = filtered.filter(r => new Date(r.date).getMonth()+1 === m);
-      const total = items.reduce((s,r) => s+Number(r.amount||0),0);
-      const pct = (total / maxVal * 100).toFixed(1);
-      const chips = items.map(r => `<span class="chip">${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');
-      return `<div class="agg-row${items.length===0?' empty':''}">
-        <div class="agg-header">
-          <span class="agg-label">${fy}年 ${label}</span>
-          <div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div>
-        </div>
-        ${items.length > 0 ? `<div class="bar-bg"><div class="bar-fill blue" style="width:${pct}%"></div></div><div class="chips">${chips}</div>` : ''}
-      </div>`;
+  if(currentTab==='monthly'){
+    const maxV=Math.max(...MONTHS.map((_,i)=>dfR.filter(r=>new Date(r.date).getMonth()+1===i+1).reduce((s,r)=>s+Number(r.amount||0),0)),1);
+    el.innerHTML=MONTHS.map((label,i)=>{
+      const items=dfR.filter(r=>new Date(r.date).getMonth()+1===i+1);
+      const total=items.reduce((s,r)=>s+Number(r.amount||0),0);
+      const chips=items.map(r=>`<span class="chip"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');
+      return`<div class="agg-row${items.length===0?' empty':''}"><div class="agg-header"><span class="agg-label">${fy}年 ${label}</span><div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div></div>${items.length>0?`<div class="bar-bg"><div class="bar-fill blue" style="width:${(total/maxV*100).toFixed(1)}%"></div></div><div class="chips">${chips}</div>`:''}</div>`;
     }).join('');
     return;
   }
 
-  if (currentTab === 'assignee') {
-    const map = {};
-    filtered.forEach(r => {
-      const k = r.assignee || '未設定';
-      if (!map[k]) map[k] = { total: 0, count: 0 };
-      map[k].total += Number(r.amount||0); map[k].count++;
-    });
-    const entries = Object.entries(map).sort((a,b) => b[1].total - a[1].total);
-    if (entries.length === 0) { el.innerHTML = '<div class="empty-state">データがありません</div>'; return; }
-    const maxVal = Math.max(...entries.map(e => e[1].total), 1);
-    el.innerHTML = entries.map(([name, d]) => {
-      const pct = (d.total / maxVal * 100).toFixed(1);
-      return `<div class="agg-row">
-        <div class="agg-header">
-          <span class="agg-label person">${esc(name)}</span>
-          <div class="agg-right"><span class="agg-amount person">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div>
-        </div>
-        <div class="bar-bg"><div class="bar-fill purple" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('');
+  if(currentTab==='assignee'){
+    const map={};
+    dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});
+    const entries=Object.values(map).sort((a,b)=>b.total-a.total);
+    if(entries.length===0){el.innerHTML='<div class="empty-state">データがありません</div>';return;}
+    const maxV=Math.max(...entries.map(e=>e.total),1);
+    el.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label person"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');
   }
 };
 
-// ── PWA Service Worker ─────────────────────────────────
-if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'kanko-v2';
-    self.addEventListener('install', e => { self.skipWaiting(); });
-    self.addEventListener('fetch', e => {
-      if (e.request.url.includes('firestore.googleapis.com')) return;
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-    });
-  `;
-  const swBlob = new Blob([swCode], { type: 'application/javascript' });
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
-}
+if('serviceWorker' in navigator){const sw=`const C='kanko-v5';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
 </script>
 </body>
 </html>
