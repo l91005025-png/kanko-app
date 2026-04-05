@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="完工金集計">
+<meta name="mobile-web-app-capable" content="yes">
+<title>完工金集計</title>
+
+<script>
+// PWA Manifest（アイコン：円マーク・青系）
+const _iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a6ef5"/><stop offset="1" stop-color="#0a3fa8"/></linearGradient></defs><rect width="512" height="512" rx="100" fill="url(#bg)"/><circle cx="256" cy="230" r="130" fill="none" stroke="white" stroke-width="28"/><text x="256" y="285" font-family="sans-serif" font-size="160" font-weight="900" fill="white" text-anchor="middle">¥</text><rect x="100" y="390" width="312" height="28" rx="14" fill="white" opacity="0.8"/><rect x="150" y="438" width="212" height="20" rx="10" fill="white" opacity="0.5"/></svg>`;
+const _iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(_iconSvg)));
+const _manifest = {name:"完工金集計",short_name:"完工金",start_url:"./",display:"standalone",background_color:"#1a6ef5",theme_color:"#0f1117",orientation:"portrait",icons:[{src:_iconUrl,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+const _mBlob = new Blob([JSON.stringify(_manifest)],{type:'application/json'});
+const _mLink = document.createElement('link');
+_mLink.rel='manifest'; _mLink.href=URL.createObjectURL(_mBlob);
+document.currentScript.after(_mLink);
+const _aLink = document.createElement('link');
+_aLink.rel='apple-touch-icon'; _aLink.href=_iconUrl;
+document.currentScript.after(_aLink);
+</script>
+
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --border: #2a2d3e;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #4f9cf9;
+    --purple: #a855f7;
+    --danger-bg: #2d1a1a;
+    --danger: #f87171;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Noto Sans JP', 'Yu Gothic', sans-serif; overscroll-behavior: none; }
+  body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
+  input, select, button { font-family: inherit; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+  input::placeholder { color: #4a5568; }
+
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.92);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+  }
+  .header-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+  .header-bar { width: 6px; height: 26px; background: linear-gradient(180deg, var(--accent), var(--purple)); border-radius: 3px; flex-shrink: 0; }
+  .header h1 { font-size: 19px; font-weight: 800; letter-spacing: 0.04em; color: #fff; }
+  .header .count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sync-badge { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+  .sync-badge.online { background: #1a2e1a; color: #4ade80; }
+  .sync-badge.offline { background: #2d1a1a; color: #f87171; }
+  .sync-badge.syncing { background: #1a1d2e; color: var(--accent); }
+
+  .main { max-width: 640px; margin: 0 auto; padding: 0 12px 100px; }
+
+  .card { background: var(--surface); border-radius: 16px; padding: 16px; margin-top: 14px; border: 1px solid var(--border); }
+  .card-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.05em; }
+  .field input, .field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 12px; color: var(--text); font-size: 16px;
+    outline: none; transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent), var(--purple));
+    border: none; border-radius: 10px; color: #fff; font-weight: 800;
+    font-size: 16px; cursor: pointer; margin-top: 12px; letter-spacing: 0.04em;
+  }
+  .btn-primary:disabled { opacity: 0.5; }
+  .btn-secondary {
+    padding: 13px 16px; background: var(--border); border: none;
+    border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 12px; margin-left: 8px;
+  }
+  .form-actions { display: flex; }
+  .form-actions .btn-primary { flex: 1; }
+
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-top: 14px; }
+  .tab {
+    flex: 1; padding: 9px 0; border-radius: 9px; border: none;
+    background: transparent; color: var(--muted); font-weight: 700; font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tab.active { background: linear-gradient(135deg, var(--accent), var(--purple)); color: #fff; }
+
+  .year-bar { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .year-bar label { font-size: 12px; color: var(--muted); }
+  .year-bar select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 10px; font-size: 14px; outline: none; -webkit-appearance: none; }
+  .year-total { margin-left: auto; font-size: 13px; color: var(--muted); }
+  .year-total strong { color: var(--accent); font-size: 15px; }
+
+  .record { background: var(--surface); border-radius: 14px; padding: 14px; margin-top: 10px; border: 1px solid var(--border); }
+  .record-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+  .record-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .record-amount { font-size: 20px; font-weight: 900; color: var(--accent); }
+  .record-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: 10px; }
+  .btn-edit { background: var(--border); border: none; border-radius: 8px; color: var(--muted); padding: 7px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn-del { background: var(--danger-bg); border: none; border-radius: 8px; color: var(--danger); padding: 7px 11px; font-size: 12px; cursor: pointer; font-weight: 600; }
+
+  .agg-row { background: var(--surface); border-radius: 12px; padding: 12px 14px; margin-top: 8px; border: 1px solid var(--border); }
+  .agg-row.empty { opacity: 0.4; }
+  .agg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .agg-label { font-weight: 600; font-size: 14px; color: var(--muted); }
+  .agg-label.person { color: var(--text); font-size: 15px; font-weight: 800; }
+  .agg-right { text-align: right; }
+  .agg-amount { font-weight: 900; font-size: 16px; color: var(--accent); }
+  .agg-amount.person { color: var(--purple); }
+  .agg-count { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .bar-bg { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .bar-fill.blue { background: linear-gradient(90deg, var(--accent), var(--purple)); }
+  .bar-fill.purple { background: linear-gradient(90deg, var(--purple), var(--accent)); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { font-size: 11px; background: var(--bg); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+
+  .empty-state { text-align: center; color: #4a5568; padding: 48px 0; font-size: 14px; }
+  .loading-state { text-align: center; color: var(--muted); padding: 48px 0; font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 20px; font-size: 14px; color: var(--text);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5); white-space: nowrap; z-index: 999;
+    animation: fadeUp 0.25s ease;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-bar"></div>
+    <div>
+      <h1>完工金 集計</h1>
+      <div class="count" id="headerCount">読み込み中...</div>
+    </div>
+    <span class="sync-badge syncing" id="syncBadge">接続中...</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="card">
+    <div class="card-title" id="formTitle">＋ 新規登録</div>
+    <div class="field"><label>案件名・工事名 *</label><input type="text" id="fName" placeholder="例：〇〇邸 外壁塗装工事"></div>
+    <div class="field"><label>顧客名</label><input type="text" id="fClient" placeholder="例：山田 太郎 様"></div>
+    <div class="field"><label>完工日 *</label><input type="date" id="fDate"></div>
+    <div class="field"><label>担当者名</label><input type="text" id="fAssignee" placeholder="例：鈴木 一郎"></div>
+    <div class="field"><label>完工金額（円）*</label><input type="number" id="fAmount" placeholder="例：1500000" inputmode="numeric"></div>
+    <div class="form-actions">
+      <button class="btn-primary" id="submitBtn" onclick="handleSubmit()">登録する</button>
+      <button class="btn-secondary" id="cancelBtn" onclick="handleCancel()" style="display:none">キャンセル</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-list" onclick="switchTab('list')">一覧</button>
+    <button class="tab" id="tab-monthly" onclick="switchTab('monthly')">月別</button>
+    <button class="tab" id="tab-assignee" onclick="switchTab('assignee')">担当者別</button>
+  </div>
+
+  <div class="year-bar" id="yearBar" style="display:none">
+    <label>年度：</label>
+    <select id="yearSelect" onchange="render()"></select>
+    <div class="year-total">合計：<strong id="yearTotal">¥0</strong></div>
+  </div>
+
+  <div id="content"><div class="loading-state">🔄 データを読み込んでいます...</div></div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, updateDoc, deleteDoc,
+  doc, onSnapshot, serverTimestamp, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase 設定 ──────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
+  authDomain: "kanko-app-96378.firebaseapp.com",
+  projectId: "kanko-app-96378",
+  storageBucket: "kanko-app-96378.firebasestorage.app",
+  messagingSenderId: "415170223801",
+  appId: "1:415170223801:web:1b10387e20cb2e4b678568"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db, "records");
+
+// ── State ──────────────────────────────────────────────
+let records = [];
+let editId = null;
+let currentTab = 'list';
+let toastTimer = null;
+let isLoading = true;
+
+// ── リアルタイム同期 ────────────────────────────────────
+const q = query(colRef, orderBy("createdAt", "desc"));
+onSnapshot(q,
+  (snapshot) => {
+    records = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    isLoading = false;
+    document.getElementById('syncBadge').textContent = '🟢 同期中';
+    document.getElementById('syncBadge').className = 'sync-badge online';
+    render();
+  },
+  (err) => {
+    console.error(err);
+    document.getElementById('syncBadge').textContent = '🔴 オフライン';
+    document.getElementById('syncBadge').className = 'sync-badge offline';
+  }
+);
+
+// ── Helpers ────────────────────────────────────────────
+function fmt(n) { return Number(n || 0).toLocaleString('ja-JP'); }
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = 'none', 2500);
+}
+
+// ── Form ───────────────────────────────────────────────
+function getForm() {
+  return {
+    name: document.getElementById('fName').value.trim(),
+    client: document.getElementById('fClient').value.trim(),
+    date: document.getElementById('fDate').value,
+    assignee: document.getElementById('fAssignee').value.trim(),
+    amount: document.getElementById('fAmount').value,
+  };
+}
+function setForm(r) {
+  document.getElementById('fName').value = r.name || '';
+  document.getElementById('fClient').value = r.client || '';
+  document.getElementById('fDate').value = r.date || '';
+  document.getElementById('fAssignee').value = r.assignee || '';
+  document.getElementById('fAmount').value = r.amount || '';
+}
+function clearForm() { setForm({}); }
+
+window.handleSubmit = async () => {
+  const f = getForm();
+  if (!f.name || !f.date || !f.amount) { showToast('⚠️ 案件名・完工日・金額は必須です'); return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  try {
+    if (editId) {
+      await updateDoc(doc(db, "records", editId), { ...f, updatedAt: serverTimestamp() });
+      showToast('✅ 更新しました');
+      editId = null;
+      document.getElementById('formTitle').textContent = '＋ 新規登録';
+      document.getElementById('submitBtn').textContent = '登録する';
+      document.getElementById('cancelBtn').style.display = 'none';
+    } else {
+      await addDoc(colRef, { ...f, createdAt: serverTimestamp() });
+      showToast('✅ 追加しました');
+    }
+    clearForm();
+  } catch(e) {
+    showToast('❌ エラーが発生しました'); console.error(e);
+  }
+  btn.disabled = false;
+};
+
+window.handleCancel = () => {
+  editId = null; clearForm();
+  document.getElementById('formTitle').textContent = '＋ 新規登録';
+  document.getElementById('submitBtn').textContent = '登録する';
+  document.getElementById('cancelBtn').style.display = 'none';
+};
+
+window.handleEdit = (id) => {
+  const r = records.find(x => x.id === id); if (!r) return;
+  editId = id; setForm(r);
+  document.getElementById('formTitle').textContent = '✏️ 編集中';
+  document.getElementById('submitBtn').textContent = '更新する';
+  document.getElementById('cancelBtn').style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.handleDelete = async (id) => {
+  if (!confirm('この案件を削除しますか？')) return;
+  try {
+    await deleteDoc(doc(db, "records", id));
+    if (editId === id) window.handleCancel();
+    showToast('🗑️ 削除しました');
+  } catch(e) {
+    showToast('❌ 削除に失敗しました'); console.error(e);
+  }
+};
+
+// ── Tabs ───────────────────────────────────────────────
+window.switchTab = (tab) => {
+  currentTab = tab;
+  ['list','monthly','assignee'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('yearBar').style.display = tab === 'list' ? 'none' : 'flex';
+  render();
+};
+
+// ── Year ───────────────────────────────────────────────
+function getYears() {
+  const ys = new Set(records.map(r => r.date ? new Date(r.date).getFullYear() : null).filter(Boolean));
+  ys.add(new Date().getFullYear());
+  return [...ys].sort((a,b) => b - a);
+}
+function buildYearSelect() {
+  const sel = document.getElementById('yearSelect');
+  const cur = sel.value || String(new Date().getFullYear());
+  const years = getYears();
+  sel.innerHTML = years.map(y => `<option value="${y}" ${String(y)===cur?'selected':''}>${y}年</option>`).join('');
+}
+function getFilterYear() { return Number(document.getElementById('yearSelect').value) || new Date().getFullYear(); }
+
+// ── Render ─────────────────────────────────────────────
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+window.render = () => {
+  if (isLoading) return;
+  document.getElementById('headerCount').textContent = records.length + ' 件 登録中';
+  buildYearSelect();
+  const fy = getFilterYear();
+  const filtered = records.filter(r => r.date && new Date(r.date).getFullYear() === fy);
+  const yearTotal = filtered.reduce((s,r) => s + Number(r.amount||0), 0);
+  document.getElementById('yearTotal').textContent = '¥' + fmt(yearTotal);
+
+  const el = document.getElementById('content');
+
+  if (currentTab === 'list') {
+    if (records.length === 0) {
+      el.innerHTML = '<div class="empty-state">まだ登録がありません</div>'; return;
+    }
+    el.innerHTML = records.map(r => `
+      <div class="record">
+        <div style="display:flex;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div class="record-name">${esc(r.name)}</div>
+            <div class="record-meta">${r.client ? esc(r.client) + '　' : ''}${r.date || ''}${r.assignee ? '　担当：' + esc(r.assignee) : ''}</div>
+            <div class="record-amount">¥${fmt(r.amount)}</div>
+          </div>
+          <div class="record-actions">
+            <button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button>
+            <button class="btn-del" onclick="handleDelete('${r.id}')">削除</button>
+          </div>
+        </div>
+      </div>`).join('');
+    return;
+  }
+
+  if (currentTab === 'monthly') {
+    const maxVal = Math.max(...MONTHS.map((_,i) => {
+      const m = i + 1;
+      return filtered.filter(r => new Date(r.date).getMonth()+1 === m).reduce((s,r) => s+Number(r.amount||0),0);
+    }), 1);
+    el.innerHTML = MONTHS.map((label, i) => {
+      const m = i + 1;
+      const items = filtered.filter(r => new Date(r.date).getMonth()+1 === m);
+      const total = items.reduce((s,r) => s+Number(r.amount||0),0);
+      const pct = (total / maxVal * 100).toFixed(1);
+      const chips = items.map(r => `<span class="chip">${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');
+      return `<div class="agg-row${items.length===0?' empty':''}">
+        <div class="agg-header">
+          <span class="agg-label">${fy}年 ${label}</span>
+          <div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div>
+        </div>
+        ${items.length > 0 ? `<div class="bar-bg"><div class="bar-fill blue" style="width:${pct}%"></div></div><div class="chips">${chips}</div>` : ''}
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  if (currentTab === 'assignee') {
+    const map = {};
+    filtered.forEach(r => {
+      const k = r.assignee || '未設定';
+      if (!map[k]) map[k] = { total: 0, count: 0 };
+      map[k].total += Number(r.amount||0); map[k].count++;
+    });
+    const entries = Object.entries(map).sort((a,b) => b[1].total - a[1].total);
+    if (entries.length === 0) { el.innerHTML = '<div class="empty-state">データがありません</div>'; return; }
+    const maxVal = Math.max(...entries.map(e => e[1].total), 1);
+    el.innerHTML = entries.map(([name, d]) => {
+      const pct = (d.total / maxVal * 100).toFixed(1);
+      return `<div class="agg-row">
+        <div class="agg-header">
+          <span class="agg-label person">${esc(name)}</span>
+          <div class="agg-right"><span class="agg-amount person">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div>
+        </div>
+        <div class="bar-bg"><div class="bar-fill purple" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+};
+
+// ── PWA Service Worker ─────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'kanko-v2';
+    self.addEventListener('install', e => { self.skipWaiting(); });
+    self.addEventListener('fetch', e => {
+      if (e.request.url.includes('firestore.googleapis.com')) return;
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const swBlob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+}
+</script>
+</body>
+</html>
