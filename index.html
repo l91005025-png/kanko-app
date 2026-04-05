@@ -14,11 +14,11 @@ const _sv=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><
 const _iu='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(_sv)));
 const _mf={name:"完工金集計",short_name:"完工金",start_url:"./",display:"standalone",background_color:"#1a6ef5",theme_color:"#0f1117",orientation:"portrait",icons:[{src:_iu,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
 const _mb=new Blob([JSON.stringify(_mf)],{type:'application/json'});
-const _ml=document.createElement('link'); _ml.rel='manifest'; _ml.href=URL.createObjectURL(_mb); document.currentScript.after(_ml);
-const _al=document.createElement('link'); _al.rel='apple-touch-icon'; _al.href=_iu; document.currentScript.after(_al);
+const _ml=document.createElement('link');_ml.rel='manifest';_ml.href=URL.createObjectURL(_mb);document.currentScript.after(_ml);
+const _al=document.createElement('link');_al.rel='apple-touch-icon';_al.href=_iu;document.currentScript.after(_al);
 </script>
 <style>
-:root{--bg:#0f1117;--surface:#1a1d2e;--border:#2a2d3e;--text:#e8eaf0;--muted:#6b7280;--accent:#4f9cf9;--purple:#a855f7;--green:#22c55e;--amber:#f59e0b;--danger-bg:#2d1a1a;--danger:#f87171;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+:root{--bg:#0f1117;--surface:#1a1d2e;--border:#2a2d3e;--text:#e8eaf0;--muted:#6b7280;--accent:#4f9cf9;--purple:#a855f7;--green:#22c55e;--danger-bg:#2d1a1a;--danger:#f87171;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Noto Sans JP','Yu Gothic',sans-serif;overscroll-behavior:none;}
 body{padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
@@ -26,7 +26,6 @@ input,select,button{font-family:inherit;}
 input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);}
 input::placeholder{color:#4a5568;}
 
-/* Header */
 .header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 16px 12px;}
 .header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
 .header-bar{width:6px;height:26px;background:linear-gradient(180deg,var(--accent),var(--purple));border-radius:3px;flex-shrink:0;}
@@ -44,11 +43,6 @@ input::placeholder{color:#4a5568;}
 .summary-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .summary-top-label{font-size:13px;color:var(--muted);font-weight:700;}
 .summary-top select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 10px;font-size:13px;outline:none;-webkit-appearance:none;}
-.total-row{text-align:center;margin-bottom:16px;}
-.total-label{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:4px;}
-.total-amount{font-size:30px;font-weight:900;color:#fff;}
-
-/* 課カード */
 .dept-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .dept-card{border-radius:12px;padding:14px;}
 .dept-card.koji{background:rgba(79,156,249,.1);border:1px solid rgba(79,156,249,.25);}
@@ -60,8 +54,6 @@ input::placeholder{color:#4a5568;}
 .dept-card.koji .dept-card-amount{color:var(--accent);}
 .dept-card.kanri .dept-card-amount{color:var(--purple);}
 .dept-card-count{font-size:11px;color:var(--muted);margin-top:2px;}
-
-/* 目標プログレス */
 .goal-bar-wrap{margin-top:8px;}
 .goal-meta{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
 .goal-pct{font-weight:700;}
@@ -70,21 +62,20 @@ input::placeholder{color:#4a5568;}
 .goal-bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
 .goal-bar-fill.koji{background:linear-gradient(90deg,var(--accent),#60c0ff);}
 .goal-bar-fill.kanri{background:linear-gradient(90deg,var(--purple),#d08aff);}
+.goal-bar-fill.person{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
 .goal-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
 .goal-not-set{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;}
-
-/* 目標設定ボタン */
 .goal-setting-btn{width:100%;margin-top:12px;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;font-weight:600;}
-.goal-setting-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-/* 目標設定モーダル */
+/* モーダル共通 */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
-.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));width:100%;max-width:640px;border-top:1px solid var(--border);}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));width:100%;max-width:640px;border-top:1px solid var(--border);max-height:85vh;overflow-y:auto;}
 .modal-title{font-size:16px;font-weight:800;margin-bottom:16px;color:#fff;}
 .modal-section{margin-bottom:16px;}
 .modal-section-title{font-size:12px;font-weight:700;margin-bottom:10px;padding:4px 10px;border-radius:6px;display:inline-block;}
 .modal-section-title.koji{color:var(--accent);background:rgba(79,156,249,.12);}
 .modal-section-title.kanri{color:var(--purple);background:rgba(168,85,247,.12);}
+.modal-section-title.person{color:#f59e0b;background:rgba(245,158,11,.12);}
 .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
 .modal-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
 .modal-field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;}
@@ -92,6 +83,13 @@ input::placeholder{color:#4a5568;}
 .modal-actions{display:flex;gap:8px;margin-top:16px;}
 .modal-save{flex:1;padding:13px;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;border-radius:10px;color:#fff;font-weight:800;font-size:15px;cursor:pointer;}
 .modal-cancel{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;}
+.person-goal-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.person-goal-name{font-size:13px;font-weight:700;color:var(--text);min-width:70px;}
+.person-goal-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;}
+.person-goal-inputs input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;width:100%;-webkit-appearance:none;}
+.person-goal-inputs input:focus{border-color:var(--accent);}
+.person-goal-labels{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;}
+.person-goal-labels span{font-size:10px;color:var(--muted);text-align:center;}
 
 /* フォーム */
 .card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
@@ -110,12 +108,10 @@ input::placeholder{color:#4a5568;}
 .form-actions{display:flex;}
 .form-actions .btn-primary{flex:1;}
 
-/* タブ */
 .tabs{display:flex;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin-top:14px;}
 .tab{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
 .tab.active{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;}
 
-/* 課フィルター */
 .dept-filter{display:flex;gap:6px;margin-top:12px;}
 .dft-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
 .dft-btn.a-all,.dft-btn.a-koji{border-color:var(--accent);color:var(--accent);background:rgba(79,156,249,.1);}
@@ -127,12 +123,10 @@ input::placeholder{color:#4a5568;}
 .year-total{margin-left:auto;font-size:13px;color:var(--muted);}
 .year-total strong{color:var(--accent);font-size:15px;}
 
-/* バッジ */
 .dept-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;margin-right:4px;vertical-align:middle;}
 .dept-badge.koji{background:rgba(79,156,249,.15);color:var(--accent);}
 .dept-badge.kanri{background:rgba(168,85,247,.15);color:var(--purple);}
 
-/* セクションヘッダー */
 .section-header{display:flex;align-items:center;gap:8px;margin:14px 0 6px;}
 .section-line{flex:1;height:1px;background:var(--border);}
 .section-title{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
@@ -142,7 +136,6 @@ input::placeholder{color:#4a5568;}
 .section-subtotal.koji{color:var(--accent);}
 .section-subtotal.kanri{color:var(--purple);}
 
-/* レコード */
 .record{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
 .record-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
 .record-meta{font-size:12px;color:var(--muted);margin-bottom:8px;}
@@ -151,12 +144,31 @@ input::placeholder{color:#4a5568;}
 .btn-edit{background:var(--border);border:none;border-radius:8px;color:var(--muted);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
 .btn-del{background:var(--danger-bg);border:none;border-radius:8px;color:var(--danger);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
 
-/* 集計行 */
+/* 担当者カード */
+.person-card{background:var(--surface);border-radius:14px;padding:14px;margin-top:10px;border:1px solid var(--border);}
+.person-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.person-card-name{font-size:15px;font-weight:800;color:var(--text);}
+.person-card-right{text-align:right;}
+.person-card-amount{font-size:18px;font-weight:900;color:var(--accent);}
+.person-card-amount.p{color:var(--purple);}
+.person-card-count{font-size:11px;color:var(--muted);}
+.person-goal-section{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.person-goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+.person-goal-item{background:var(--bg);border-radius:8px;padding:8px;}
+.person-goal-item-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.person-goal-item-pct{font-size:13px;font-weight:800;margin-bottom:4px;}
+.person-goal-item-pct.achieved{color:var(--green);}
+.person-goal-item-remain{font-size:10px;color:var(--muted);}
+.mini-bar-bg{height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:4px;}
+.mini-bar-fill{height:100%;border-radius:2px;}
+.mini-bar-fill.normal{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+.mini-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
+.person-goal-edit-btn{font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;margin-top:8px;}
+
 .agg-row{background:var(--surface);border-radius:12px;padding:12px 14px;margin-top:8px;border:1px solid var(--border);}
 .agg-row.empty{opacity:.35;}
 .agg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .agg-label{font-weight:600;font-size:14px;color:var(--muted);}
-.agg-label.person{color:var(--text);font-size:15px;font-weight:800;}
 .agg-right{text-align:right;}
 .agg-amount{font-weight:900;font-size:16px;color:var(--accent);}
 .agg-amount.p{color:var(--purple);}
@@ -196,22 +208,20 @@ input::placeholder{color:#4a5568;}
       <select id="summaryYear" onchange="render()"></select>
     </div>
     <div class="dept-grid">
-      <!-- 工事課 -->
       <div class="dept-card koji">
         <div class="dept-card-name">🔨 工事課</div>
         <div class="dept-card-amount" id="kojiYearAmt">¥0</div>
         <div class="dept-card-count" id="kojiYearCnt">0件</div>
-        <div class="goal-bar-wrap" id="kojiYearGoalWrap"></div>
+        <div id="kojiYearGoal"></div>
       </div>
-      <!-- 管理課 -->
       <div class="dept-card kanri">
         <div class="dept-card-name">📋 管理課</div>
         <div class="dept-card-amount" id="kanriYearAmt">¥0</div>
         <div class="dept-card-count" id="kanriYearCnt">0件</div>
-        <div class="goal-bar-wrap" id="kanriYearGoalWrap"></div>
+        <div id="kanriYearGoal"></div>
       </div>
     </div>
-    <!-- 月間サマリー -->
+    <!-- 月間 -->
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="summary-top" style="margin-bottom:10px;">
         <span class="summary-top-label">📅 月間集計</span>
@@ -222,17 +232,17 @@ input::placeholder{color:#4a5568;}
           <div class="dept-card-name">🔨 工事課</div>
           <div class="dept-card-amount" id="kojiMonthAmt">¥0</div>
           <div class="dept-card-count" id="kojiMonthCnt">0件</div>
-          <div class="goal-bar-wrap" id="kojiMonthGoalWrap"></div>
+          <div id="kojiMonthGoal"></div>
         </div>
         <div class="dept-card kanri">
           <div class="dept-card-name">📋 管理課</div>
           <div class="dept-card-amount" id="kanriMonthAmt">¥0</div>
           <div class="dept-card-count" id="kanriMonthCnt">0件</div>
-          <div class="goal-bar-wrap" id="kanriMonthGoalWrap"></div>
+          <div id="kanriMonthGoal"></div>
         </div>
       </div>
     </div>
-    <button class="goal-setting-btn" onclick="openGoalModal()">⚙️ 目標金額を設定する</button>
+    <button class="goal-setting-btn" onclick="openGoalModal()">⚙️ 課の目標金額を設定する</button>
   </div>
 
   <!-- 入力フォーム -->
@@ -278,39 +288,39 @@ input::placeholder{color:#4a5568;}
   <div id="content"><div class="loading-state">🔄 データを読み込んでいます...</div></div>
 </div>
 
-<!-- 目標設定モーダル -->
-<div class="modal-overlay" id="goalModal" style="display:none" onclick="closeGoalModal(event)">
+<!-- 課の目標設定モーダル -->
+<div class="modal-overlay" id="goalModal" style="display:none" onclick="if(event.target===this)closeGoalModal()">
   <div class="modal">
-    <div class="modal-title">⚙️ 目標金額の設定</div>
+    <div class="modal-title">⚙️ 課の目標金額設定</div>
     <div class="modal-section">
       <span class="modal-section-title koji">🔨 工事課</span>
       <div class="modal-row">
-        <div class="modal-field">
-          <label>月間目標（円）</label>
-          <input type="number" id="gKojiMonth" placeholder="例：3000000" inputmode="numeric">
-        </div>
-        <div class="modal-field">
-          <label>年間目標（円）</label>
-          <input type="number" id="gKojiYear" placeholder="例：36000000" inputmode="numeric">
-        </div>
+        <div class="modal-field"><label>月間目標（円）</label><input type="number" id="gKojiMonth" placeholder="例：3000000" inputmode="numeric"></div>
+        <div class="modal-field"><label>年間目標（円）</label><input type="number" id="gKojiYear" placeholder="例：36000000" inputmode="numeric"></div>
       </div>
     </div>
     <div class="modal-section">
       <span class="modal-section-title kanri">📋 管理課</span>
       <div class="modal-row">
-        <div class="modal-field">
-          <label>月間目標（円）</label>
-          <input type="number" id="gKanriMonth" placeholder="例：2000000" inputmode="numeric">
-        </div>
-        <div class="modal-field">
-          <label>年間目標（円）</label>
-          <input type="number" id="gKanriYear" placeholder="例：24000000" inputmode="numeric">
-        </div>
+        <div class="modal-field"><label>月間目標（円）</label><input type="number" id="gKanriMonth" placeholder="例：2000000" inputmode="numeric"></div>
+        <div class="modal-field"><label>年間目標（円）</label><input type="number" id="gKanriYear" placeholder="例：24000000" inputmode="numeric"></div>
       </div>
     </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeGoalModal()">キャンセル</button>
       <button class="modal-save" onclick="saveGoals()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 担当者目標設定モーダル -->
+<div class="modal-overlay" id="personGoalModal" style="display:none" onclick="if(event.target===this)closePersonGoalModal()">
+  <div class="modal">
+    <div class="modal-title">👤 担当者の目標金額設定</div>
+    <div id="personGoalContent"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closePersonGoalModal()">キャンセル</button>
+      <button class="modal-save" onclick="savePersonGoals()">保存する</button>
     </div>
   </div>
 </div>
@@ -335,9 +345,9 @@ const db = getFirestore(app);
 const colRef = collection(db, "records");
 
 let records=[], editId=null, currentTab='list', deptFilter='all', selDept='', toastTimer=null, isLoading=true;
-
-// 目標金額（localStorage保存）
 let goals = JSON.parse(localStorage.getItem('kanko_goals')||'{"kojiMonth":0,"kojiYear":0,"kanriMonth":0,"kanriYear":0}');
+let personGoals = JSON.parse(localStorage.getItem('kanko_person_goals')||'{}');
+// personGoals: { "担当者名": { month: 0, year: 0 } }
 
 onSnapshot(query(colRef, orderBy("createdAt","desc")),
   snap=>{records=snap.docs.map(d=>({id:d.id,...d.data()}));isLoading=false;document.getElementById('syncBadge').textContent='🟢 同期中';document.getElementById('syncBadge').className='sync-badge online';render();},
@@ -350,7 +360,35 @@ const dc=dept=>dept==='工事課'?'koji':dept==='管理課'?'kanri':'';
 
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2500);}
 
-// 目標モーダル
+// 目標バーHTML（課用）
+function goalBarHTML(actual, goal, cls) {
+  if (!goal) return `<div class="goal-not-set">目標未設定</div>`;
+  const pct = Math.round(actual/goal*100);
+  const over = actual >= goal;
+  const remain = goal - actual;
+  return `<div class="goal-bar-wrap">
+    <div class="goal-meta">
+      <span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${pct}%達成</span>
+      <span class="goal-remain">${over?'✅ 達成！':'残 ¥'+fmt(remain)}</span>
+    </div>
+    <div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${Math.min(pct,100)}%"></div></div>
+  </div>`;
+}
+
+// 担当者目標の達成率ミニブロック
+function personGoalItemHTML(label, actual, goal) {
+  if (!goal) return `<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-remain">未設定</div></div>`;
+  const pct = Math.round(actual/goal*100);
+  const over = actual >= goal;
+  return `<div class="person-goal-item">
+    <div class="person-goal-item-label">${label}</div>
+    <div class="person-goal-item-pct${over?' achieved':''}">${pct}% ${over?'✅':''}</div>
+    <div class="person-goal-item-remain">${over?'達成！':'残 ¥'+fmt(goal-actual)}</div>
+    <div class="mini-bar-bg"><div class="mini-bar-fill ${over?'over':'normal'}" style="width:${Math.min(pct,100)}%"></div></div>
+  </div>`;
+}
+
+// 課目標モーダル
 window.openGoalModal=()=>{
   document.getElementById('gKojiMonth').value=goals.kojiMonth||'';
   document.getElementById('gKojiYear').value=goals.kojiYear||'';
@@ -358,29 +396,46 @@ window.openGoalModal=()=>{
   document.getElementById('gKanriYear').value=goals.kanriYear||'';
   document.getElementById('goalModal').style.display='flex';
 };
-window.closeGoalModal=(e)=>{if(!e||e.target===document.getElementById('goalModal'))document.getElementById('goalModal').style.display='none';};
+window.closeGoalModal=()=>document.getElementById('goalModal').style.display='none';
 window.saveGoals=()=>{
   goals={kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,kojiYear:Number(document.getElementById('gKojiYear').value)||0,kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,kanriYear:Number(document.getElementById('gKanriYear').value)||0};
   localStorage.setItem('kanko_goals',JSON.stringify(goals));
-  document.getElementById('goalModal').style.display='none';
+  window.closeGoalModal();
   showToast('✅ 目標金額を保存しました');
   render();
 };
 
-// 目標バーHTML生成
-function goalBarHTML(actual, goal, cls) {
-  if (!goal) return `<div class="goal-not-set">目標未設定</div>`;
-  const pct = Math.min(Math.round(actual/goal*100),100);
-  const over = actual >= goal;
-  const remain = goal - actual;
-  return `<div class="goal-bar-wrap">
-    <div class="goal-meta">
-      <span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${Math.round(actual/goal*100)}%達成</span>
-      <span class="goal-remain">${over?'✅ 達成！':'残 ¥'+fmt(remain)}</span>
-    </div>
-    <div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${pct}%"></div></div>
-  </div>`;
-}
+// 担当者目標モーダル
+window.openPersonGoalModal=()=>{
+  const assignees=[...new Set(records.map(r=>r.assignee).filter(Boolean))].sort();
+  if(assignees.length===0){showToast('⚠️ 担当者が登録されていません');return;}
+  let html=`<div class="person-goal-labels"><span>月間目標（円）</span><span>年間目標（円）</span></div>`;
+  html+=assignees.map(name=>{
+    const g=personGoals[name]||{month:0,year:0};
+    return `<div class="person-goal-row">
+      <div class="person-goal-name">${esc(name)}</div>
+      <div class="person-goal-inputs">
+        <input type="number" id="pg_m_${esc(name)}" value="${g.month||''}" placeholder="月間目標" inputmode="numeric">
+        <input type="number" id="pg_y_${esc(name)}" value="${g.year||''}" placeholder="年間目標" inputmode="numeric">
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('personGoalContent').innerHTML=html;
+  document.getElementById('personGoalModal').style.display='flex';
+};
+window.closePersonGoalModal=()=>document.getElementById('personGoalModal').style.display='none';
+window.savePersonGoals=()=>{
+  const assignees=[...new Set(records.map(r=>r.assignee).filter(Boolean))].sort();
+  assignees.forEach(name=>{
+    const m=Number(document.getElementById('pg_m_'+name)?.value)||0;
+    const y=Number(document.getElementById('pg_y_'+name)?.value)||0;
+    personGoals[name]={month:m,year:y};
+  });
+  localStorage.setItem('kanko_person_goals',JSON.stringify(personGoals));
+  window.closePersonGoalModal();
+  showToast('✅ 担当者の目標を保存しました');
+  render();
+};
 
 window.selectDept=dept=>{selDept=dept;document.getElementById('btnKoji').className='dept-btn'+(dept==='工事課'?' active-koji':'');document.getElementById('btnKanri').className='dept-btn'+(dept==='管理課'?' active-kanri':'');};
 
@@ -392,7 +447,7 @@ window.handleSubmit=async()=>{
   const f=getForm();
   if(!f.name||!f.date||!f.amount){showToast('⚠️ 案件名・完工日・金額は必須です');return;}
   if(!f.dept){showToast('⚠️ 課を選択してください');return;}
-  const btn=document.getElementById('submitBtn'); btn.disabled=true;
+  const btn=document.getElementById('submitBtn');btn.disabled=true;
   try{
     if(editId){await updateDoc(doc(db,"records",editId),{...f,updatedAt:serverTimestamp()});showToast('✅ 更新しました');editId=null;document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';}
     else{await addDoc(colRef,{...f,createdAt:serverTimestamp()});showToast('✅ 追加しました');}
@@ -402,69 +457,58 @@ window.handleSubmit=async()=>{
 };
 
 window.handleCancel=()=>{editId=null;clearForm();document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';};
-
 window.handleEdit=id=>{const r=records.find(x=>x.id===id);if(!r)return;editId=id;setForm(r);document.getElementById('formTitle').textContent='✏️ 編集中';document.getElementById('submitBtn').textContent='更新する';document.getElementById('cancelBtn').style.display='';window.scrollTo({top:0,behavior:'smooth'});};
-
 window.handleDelete=async id=>{if(!confirm('この案件を削除しますか？'))return;try{await deleteDoc(doc(db,"records",id));if(editId===id)window.handleCancel();showToast('🗑️ 削除しました');}catch(e){showToast('❌ 削除に失敗しました');console.error(e);}};
 
 window.switchTab=tab=>{currentTab=tab;['list','monthly','assignee'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('active',t===tab));document.getElementById('yearBar').style.display=tab==='list'?'none':'flex';render();};
-
 window.setDF=dept=>{deptFilter=dept;document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');document.getElementById('df-koji').className='dft-btn'+(dept==='工事課'?' a-koji':'');document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');render();};
 
 function getYears(){const ys=new Set(records.map(r=>r.date?new Date(r.date).getFullYear():null).filter(Boolean));ys.add(new Date().getFullYear());return[...ys].sort((a,b)=>b-a);}
-function buildYearSelects(){
+function buildSelects(){
   const years=getYears();
   ['summaryYear','yearSelect'].forEach(id=>{const sel=document.getElementById(id);const cur=sel.value||String(new Date().getFullYear());sel.innerHTML=years.map(y=>`<option value="${y}"${String(y)===cur?' selected':''}>${y}年</option>`).join('');});
-  // 月セレクト
-  const msel=document.getElementById('summaryMonth');
-  const now=new Date();
-  const curM=msel.value||(String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0'));
-  const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  let opts='';
-  years.forEach(y=>MONTHS.forEach((ml,mi)=>{const val=y+'-'+String(mi+1).padStart(2,'0');opts+=`<option value="${val}"${val===curM?' selected':''}>${y}年 ${ml}</option>`;}));
-  msel.innerHTML=opts;
+  const ms=document.getElementById('summaryMonth');
+  const now=new Date();const curM=ms.value||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const MN=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  let opts='';years.forEach(y=>MN.forEach((ml,mi)=>{const v=y+'-'+String(mi+1).padStart(2,'0');opts+=`<option value="${v}"${v===curM?' selected':''}>${y}年 ${ml}</option>`;}));
+  ms.innerHTML=opts;
 }
 const getSY=()=>Number(document.getElementById('summaryYear').value)||new Date().getFullYear();
 const getSM=()=>document.getElementById('summaryMonth').value||(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
 const getFY=()=>Number(document.getElementById('yearSelect').value)||new Date().getFullYear();
 
 const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-
 function recordHTML(r){return`<div class="record"><div style="display:flex;align-items:flex-start"><div style="flex:1;min-width:0"><div class="record-name"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)}</div><div class="record-meta">${r.client?esc(r.client)+'　':''}${r.date||''}${r.assignee?'　担当：'+esc(r.assignee):''}</div><div class="record-amount">¥${fmt(r.amount)}</div></div><div class="record-actions"><button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button><button class="btn-del" onclick="handleDelete('${r.id}')">削除</button></div></div></div>`;}
 
 window.render=()=>{
   if(isLoading)return;
   document.getElementById('headerCount').textContent=records.length+' 件 登録中';
-  buildYearSelects();
+  buildSelects();
 
   // 年間サマリー
   const sy=getSY();
   const syR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===sy);
-  const kYR=syR.filter(r=>r.dept==='工事課'), knYR=syR.filter(r=>r.dept==='管理課');
-  const kYAmt=kYR.reduce((s,r)=>s+Number(r.amount||0),0);
-  const knYAmt=knYR.reduce((s,r)=>s+Number(r.amount||0),0);
-  document.getElementById('kojiYearAmt').textContent='¥'+fmt(kYAmt);
+  const kYR=syR.filter(r=>r.dept==='工事課'),knYR=syR.filter(r=>r.dept==='管理課');
+  const kYA=kYR.reduce((s,r)=>s+Number(r.amount||0),0),knYA=knYR.reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('kojiYearAmt').textContent='¥'+fmt(kYA);
   document.getElementById('kojiYearCnt').textContent=kYR.length+'件';
-  document.getElementById('kanriYearAmt').textContent='¥'+fmt(knYAmt);
+  document.getElementById('kanriYearAmt').textContent='¥'+fmt(knYA);
   document.getElementById('kanriYearCnt').textContent=knYR.length+'件';
-  document.getElementById('kojiYearGoalWrap').innerHTML=goalBarHTML(kYAmt,goals.kojiYear,'koji');
-  document.getElementById('kanriYearGoalWrap').innerHTML=goalBarHTML(knYAmt,goals.kanriYear,'kanri');
+  document.getElementById('kojiYearGoal').innerHTML=goalBarHTML(kYA,goals.kojiYear,'koji');
+  document.getElementById('kanriYearGoal').innerHTML=goalBarHTML(knYA,goals.kanriYear,'kanri');
 
   // 月間サマリー
-  const sm=getSM();
-  const [smY,smM]=sm.split('-').map(Number);
+  const sm=getSM();const[smY,smM]=sm.split('-').map(Number);
   const smR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===smY&&new Date(r.date).getMonth()+1===smM);
-  const kMR=smR.filter(r=>r.dept==='工事課'), knMR=smR.filter(r=>r.dept==='管理課');
-  const kMAmt=kMR.reduce((s,r)=>s+Number(r.amount||0),0);
-  const knMAmt=knMR.reduce((s,r)=>s+Number(r.amount||0),0);
-  document.getElementById('kojiMonthAmt').textContent='¥'+fmt(kMAmt);
+  const kMR=smR.filter(r=>r.dept==='工事課'),knMR=smR.filter(r=>r.dept==='管理課');
+  const kMA=kMR.reduce((s,r)=>s+Number(r.amount||0),0),knMA=knMR.reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('kojiMonthAmt').textContent='¥'+fmt(kMA);
   document.getElementById('kojiMonthCnt').textContent=kMR.length+'件';
-  document.getElementById('kanriMonthAmt').textContent='¥'+fmt(knMAmt);
+  document.getElementById('kanriMonthAmt').textContent='¥'+fmt(knMA);
   document.getElementById('kanriMonthCnt').textContent=knMR.length+'件';
-  document.getElementById('kojiMonthGoalWrap').innerHTML=goalBarHTML(kMAmt,goals.kojiMonth,'koji');
-  document.getElementById('kanriMonthGoalWrap').innerHTML=goalBarHTML(knMAmt,goals.kanriMonth,'kanri');
+  document.getElementById('kojiMonthGoal').innerHTML=goalBarHTML(kMA,goals.kojiMonth,'koji');
+  document.getElementById('kanriMonthGoal').innerHTML=goalBarHTML(knMA,goals.kanriMonth,'kanri');
 
-  // 一覧タブ用
   const fy=getFY();
   const fyR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===fy);
   const dfR=deptFilter==='all'?fyR:fyR.filter(r=>r.dept===deptFilter);
@@ -498,16 +542,45 @@ window.render=()=>{
   }
 
   if(currentTab==='assignee'){
-    const map={};
-    dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});
-    const entries=Object.values(map).sort((a,b)=>b.total-a.total);
-    if(entries.length===0){el.innerHTML='<div class="empty-state">データがありません</div>';return;}
-    const maxV=Math.max(...entries.map(e=>e.total),1);
-    el.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label person"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');
+    // 担当者ごとに年間・月間を集計
+    const assignees=[...new Set(dfR.map(r=>r.assignee).filter(Boolean))].sort();
+    if(assignees.length===0){el.innerHTML='<div class="empty-state">データがありません</div><button class="goal-setting-btn" style="margin-top:16px" onclick="openPersonGoalModal()">👤 担当者の目標を設定する</button>';return;}
+
+    // 月間用（サマリーと同じ月）
+    const [pgY,pgM]=(getSM()).split('-').map(Number);
+    const monthR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===pgY&&new Date(r.date).getMonth()+1===pgM);
+    const dfMonthR=deptFilter==='all'?monthR:monthR.filter(r=>r.dept===deptFilter);
+
+    let html=assignees.map(name=>{
+      const yearRecs=dfR.filter(r=>r.assignee===name);
+      const monthRecs=dfMonthR.filter(r=>r.assignee===name);
+      const yearAmt=yearRecs.reduce((s,r)=>s+Number(r.amount||0),0);
+      const monthAmt=monthRecs.reduce((s,r)=>s+Number(r.amount||0),0);
+      const g=personGoals[name]||{month:0,year:0};
+      const dept=yearRecs[0]?.dept||'';
+      return`<div class="person-card">
+        <div class="person-card-header">
+          <div><span class="dept-badge ${dc(dept)}">${esc(dept)}</span><span class="person-card-name">${esc(name)}</span></div>
+          <div class="person-card-right">
+            <div class="person-card-amount${dept==='管理課'?' p':''}">¥${fmt(yearAmt)}</div>
+            <div class="person-card-count">${fy}年 ${yearRecs.length}件</div>
+          </div>
+        </div>
+        <div class="person-goal-section">
+          <div class="person-goal-grid">
+            ${personGoalItemHTML('月間達成率', monthAmt, g.month)}
+            ${personGoalItemHTML('年間達成率', yearAmt, g.year)}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    html+=`<button class="goal-setting-btn" style="margin-top:14px" onclick="openPersonGoalModal()">👤 担当者の目標金額を設定する</button>`;
+    el.innerHTML=html;
   }
 };
 
-if('serviceWorker' in navigator){const sw=`const C='kanko-v5';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
+if('serviceWorker' in navigator){const sw=`const C='kanko-v6';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
 </script>
 </body>
 </html>
