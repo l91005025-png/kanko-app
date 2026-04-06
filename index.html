@@ -25,7 +25,7 @@ body{padding-top:var(--safe-top);}
 input,select,button{font-family:inherit;}
 input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);}
 input::placeholder{color:#4a5568;}
-
+ 
 /* ヘッダー */
 .header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 16px 12px;}
 .header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
@@ -36,11 +36,11 @@ input::placeholder{color:#4a5568;}
 .sync-badge.online{background:#1a2e1a;color:#4ade80;}
 .sync-badge.offline{background:#2d1a1a;color:#f87171;}
 .sync-badge.syncing{background:#1a1d2e;color:var(--accent);}
-
+ 
 /* ページコンテナ */
 .page{display:none;max-width:640px;margin:0 auto;padding:0 12px;padding-bottom:calc(var(--tab-h) + var(--safe-bottom) + 16px);}
 .page.active{display:block;}
-
+ 
 /* ボトムタブ */
 .bottom-tab{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,17,23,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:color .2s;gap:4px;}
@@ -51,7 +51,7 @@ input::placeholder{color:#4a5568;}
 .tab-center{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 0 4px;padding-bottom:calc(4px + var(--safe-bottom) * 0);}
 .tab-center-btn{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(79,156,249,.4);margin-top:-20px;}
 .tab-center-btn svg{width:26px;height:26px;stroke:white;stroke-width:2.5;}
-
+ 
 /* サマリー */
 .summary-card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
 .summary-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -68,7 +68,7 @@ input::placeholder{color:#4a5568;}
 .dept-card.koji .dept-card-amount{color:var(--accent);}
 .dept-card.kanri .dept-card-amount{color:var(--purple);}
 .dept-card-count{font-size:11px;color:var(--muted);margin-top:2px;}
-
+ 
 /* 目標バー */
 .goal-bar-wrap{margin-top:8px;}
 .goal-meta{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
@@ -81,7 +81,7 @@ input::placeholder{color:#4a5568;}
 .goal-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
 .goal-not-set{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;}
 .goal-setting-btn{width:100%;margin-top:12px;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;font-weight:600;}
-
+ 
 /* 担当者サマリーカード */
 .person-summary-card{background:var(--surface);border-radius:14px;padding:14px;margin-top:10px;border:1px solid var(--border);}
 .person-summary-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
@@ -100,7 +100,7 @@ input::placeholder{color:#4a5568;}
 .mini-bar-fill{height:100%;border-radius:2px;}
 .mini-bar-fill.normal{background:linear-gradient(90deg,var(--amber),#fbbf24);}
 .mini-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
-
+ 
 /* モーダル */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
 .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));width:100%;max-width:640px;border-top:1px solid var(--border);max-height:85vh;overflow-y:auto;}
@@ -123,7 +123,7 @@ input::placeholder{color:#4a5568;}
 .person-goal-inputs input:focus{border-color:var(--accent);}
 .person-goal-labels{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
 .person-goal-labels span{font-size:10px;color:var(--muted);text-align:center;}
-
+ 
 /* 登録フォーム */
 .card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
 .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
@@ -140,27 +140,27 @@ input::placeholder{color:#4a5568;}
 .btn-secondary{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;margin-top:12px;margin-left:8px;}
 .form-actions{display:flex;}
 .form-actions .btn-primary{flex:1;}
-
+ 
 /* 一覧タブ内セカンダリタブ */
 .sub-tabs{display:flex;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin-top:14px;}
 .sub-tab{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
 .sub-tab.active{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;}
-
+ 
 .dept-filter{display:flex;gap:6px;margin-top:12px;}
 .dft-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
 .dft-btn.a-all,.dft-btn.a-koji{border-color:var(--accent);color:var(--accent);background:rgba(79,156,249,.1);}
 .dft-btn.a-kanri{border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,.1);}
-
+ 
 .year-bar{display:flex;align-items:center;gap:10px;margin-top:12px;}
 .year-bar label{font-size:12px;color:var(--muted);}
 .year-bar select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 10px;font-size:14px;outline:none;-webkit-appearance:none;}
 .year-total{margin-left:auto;font-size:13px;color:var(--muted);}
 .year-total strong{color:var(--accent);font-size:15px;}
-
+ 
 .dept-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;margin-right:4px;vertical-align:middle;}
 .dept-badge.koji{background:rgba(79,156,249,.15);color:var(--accent);}
 .dept-badge.kanri{background:rgba(168,85,247,.15);color:var(--purple);}
-
+ 
 .section-header{display:flex;align-items:center;gap:8px;margin:14px 0 6px;}
 .section-line{flex:1;height:1px;background:var(--border);}
 .section-title{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
@@ -169,7 +169,7 @@ input::placeholder{color:#4a5568;}
 .section-subtotal{font-size:12px;font-weight:700;white-space:nowrap;}
 .section-subtotal.koji{color:var(--accent);}
 .section-subtotal.kanri{color:var(--purple);}
-
+ 
 .record{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
 .record-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
 .record-meta{font-size:12px;color:var(--muted);margin-bottom:8px;}
@@ -177,7 +177,7 @@ input::placeholder{color:#4a5568;}
 .record-actions{display:flex;gap:6px;flex-shrink:0;margin-left:10px;}
 .btn-edit{background:var(--border);border:none;border-radius:8px;color:var(--muted);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
 .btn-del{background:var(--danger-bg);border:none;border-radius:8px;color:var(--danger);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
-
+ 
 .agg-row{background:var(--surface);border-radius:12px;padding:12px 14px;margin-top:8px;border:1px solid var(--border);}
 .agg-row.empty{opacity:.35;}
 .agg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -192,12 +192,12 @@ input::placeholder{color:#4a5568;}
 .bar-fill.purple{background:linear-gradient(90deg,var(--purple),var(--accent));}
 .chips{display:flex;flex-wrap:wrap;gap:4px;}
 .chip{font-size:11px;background:var(--bg);border-radius:6px;padding:2px 8px;color:var(--muted);}
-
+ 
 .empty-state{text-align:center;color:#4a5568;padding:48px 0;font-size:14px;}
 .loading-state{text-align:center;color:var(--muted);padding:48px 0;font-size:14px;}
 .toast{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bottom) + 12px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 20px;font-size:14px;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;z-index:999;animation:fadeUp .25s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
-
+ 
 /* 登録完了アニメ */
 .reg-success{text-align:center;padding:40px 20px;}
 .reg-success-icon{font-size:56px;margin-bottom:16px;}
@@ -206,7 +206,7 @@ input::placeholder{color:#4a5568;}
 </style>
 </head>
 <body>
-
+ 
 <!-- ヘッダー -->
 <div class="header">
   <div class="header-inner">
@@ -218,7 +218,7 @@ input::placeholder{color:#4a5568;}
     <span class="sync-badge syncing" id="syncBadge">接続中...</span>
   </div>
 </div>
-
+ 
 <!-- ホームページ -->
 <div class="page active" id="page-home">
   <!-- 年間サマリー -->
@@ -267,14 +267,14 @@ input::placeholder{color:#4a5568;}
       <button class="goal-setting-btn" style="flex:1" onclick="openPersonGoalModal()">👤 担当者目標設定</button>
     </div>
   </div>
-
+ 
   <!-- 担当者別サマリー -->
   <div style="margin-top:16px;padding-top:4px;">
     <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:2px;">👤 担当者別</div>
     <div id="personSummaryList"><div class="loading-state" style="padding:24px 0">読み込み中...</div></div>
   </div>
 </div>
-
+ 
 <!-- 登録ページ -->
 <div class="page" id="page-reg">
   <div class="card" style="margin-top:14px;">
@@ -297,7 +297,7 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
-
+ 
 <!-- 一覧ページ -->
 <div class="page" id="page-list">
   <div class="sub-tabs">
@@ -317,7 +317,7 @@ input::placeholder{color:#4a5568;}
   </div>
   <div id="listContent"><div class="loading-state">🔄 読み込み中...</div></div>
 </div>
-
+ 
 <!-- ボトムタブ -->
 <div class="bottom-tab">
   <button class="tab-btn active" id="nav-home" onclick="switchPage('home')">
@@ -334,7 +334,7 @@ input::placeholder{color:#4a5568;}
     <span>一覧</span>
   </button>
 </div>
-
+ 
 <!-- 課目標モーダル -->
 <div class="modal-overlay" id="goalModal" style="display:none" onclick="if(event.target===this)closeGoalModal()">
   <div class="modal">
@@ -359,7 +359,7 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
-
+ 
 <!-- 担当者目標モーダル -->
 <div class="modal-overlay" id="personGoalModal" style="display:none" onclick="if(event.target===this)closePersonGoalModal()">
   <div class="modal">
@@ -371,13 +371,14 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
-
+ 
 <div id="toast" class="toast" style="display:none"></div>
-
+ 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+// ↓ setDoc を追加
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ 
 const firebaseConfig = {
   apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
   authDomain: "kanko-app-96378.firebaseapp.com",
@@ -389,22 +390,67 @@ const firebaseConfig = {
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 const colRef=collection(db,"records");
-
+ 
+// ── Firestore settings ドキュメント参照 ──
+const goalsDocRef=doc(db,"settings","goals");
+const personGoalsDocRef=doc(db,"settings","personGoals");
+ 
 let records=[],editId=null,currentPage='home',currentSub='list',deptFilter='all',selDept='',toastTimer=null,isLoading=true;
-let goals=JSON.parse(localStorage.getItem('kanko_goals')||'{"kojiMonth":0,"kojiYear":0,"kanriMonth":0,"kanriYear":0}');
-let personGoals=JSON.parse(localStorage.getItem('kanko_person_goals')||'{}');
-
+ 
+// ↓ localStorageの読み込みを削除し、デフォルト値のみにする（Firestoreから取得）
+let goals={kojiMonth:0,kojiYear:0,kanriMonth:0,kanriYear:0};
+let personGoals={};
+ 
+// ── records リスナー（既存） ──
 onSnapshot(query(colRef,orderBy("createdAt","desc")),
   snap=>{records=snap.docs.map(d=>({id:d.id,...d.data()}));isLoading=false;document.getElementById('syncBadge').textContent='🟢 同期中';document.getElementById('syncBadge').className='sync-badge online';render();},
   err=>{console.error(err);document.getElementById('syncBadge').textContent='🔴 オフライン';document.getElementById('syncBadge').className='sync-badge offline';}
 );
-
+ 
+// ── 課の目標 リアルタイムリスナー（Firestore同期） ──
+onSnapshot(goalsDocRef,
+  snap=>{
+    if(snap.exists()){
+      goals=snap.data();
+    } else {
+      // Firestoreにまだ保存されていない場合、localStorageから移行
+      const local=localStorage.getItem('kanko_goals');
+      if(local){
+        goals=JSON.parse(local);
+        setDoc(goalsDocRef,goals).catch(console.error);
+        localStorage.removeItem('kanko_goals');
+      }
+    }
+    render();
+  },
+  err=>console.error('goals sync error:',err)
+);
+ 
+// ── 担当者目標 リアルタイムリスナー（Firestore同期） ──
+onSnapshot(personGoalsDocRef,
+  snap=>{
+    if(snap.exists()){
+      personGoals=snap.data();
+    } else {
+      // Firestoreにまだ保存されていない場合、localStorageから移行
+      const local=localStorage.getItem('kanko_person_goals');
+      if(local){
+        personGoals=JSON.parse(local);
+        setDoc(personGoalsDocRef,personGoals).catch(console.error);
+        localStorage.removeItem('kanko_person_goals');
+      }
+    }
+    render();
+  },
+  err=>console.error('personGoals sync error:',err)
+);
+ 
 const fmt=n=>Number(n||0).toLocaleString('ja-JP');
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const dc=dept=>dept==='工事課'?'koji':dept==='管理課'?'kanri':'';
-
+ 
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2500);}
-
+ 
 // ページ切替
 const PAGE_TITLES={home:'完工金 集計',reg:'新規登録',list:'一覧'};
 window.switchPage=page=>{
@@ -417,14 +463,14 @@ window.switchPage=page=>{
   window.scrollTo({top:0});
   render();
 };
-
+ 
 window.switchSub=sub=>{
   currentSub=sub;
   ['list','monthly','assignee'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('active',s===sub));
   document.getElementById('yearBar').style.display=sub==='list'?'none':'flex';
   render();
 };
-
+ 
 window.setDF=dept=>{
   deptFilter=dept;
   document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');
@@ -432,20 +478,20 @@ window.setDF=dept=>{
   document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');
   render();
 };
-
+ 
 // 目標バー
 function goalBarHTML(actual,goal,cls){
   if(!goal)return`<div class="goal-not-set">目標未設定</div>`;
   const pct=Math.round(actual/goal*100),over=actual>=goal;
   return`<div class="goal-bar-wrap"><div class="goal-meta"><span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${pct}%達成</span><span style="color:var(--muted);font-size:10px">${over?'✅ 達成！':'残 ¥'+fmt(goal-actual)}</span></div><div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${Math.min(pct,100)}%"></div></div></div>`;
 }
-
+ 
 function personGoalItemHTML(label,actual,goal){
   if(!goal)return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-remain">未設定</div></div>`;
   const pct=Math.round(actual/goal*100),over=actual>=goal;
   return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-pct${over?' achieved':''}">${pct}%${over?' ✅':''}</div><div class="person-goal-item-remain">${over?'達成！':'残 ¥'+fmt(goal-actual)}</div><div class="mini-bar-bg"><div class="mini-bar-fill ${over?'over':'normal'}" style="width:${Math.min(pct,100)}%"></div></div></div>`;
 }
-
+ 
 // 課目標モーダル
 window.openGoalModal=()=>{
   document.getElementById('gKojiMonth').value=goals.kojiMonth||'';
@@ -455,12 +501,25 @@ window.openGoalModal=()=>{
   document.getElementById('goalModal').style.display='flex';
 };
 window.closeGoalModal=()=>document.getElementById('goalModal').style.display='none';
-window.saveGoals=()=>{
-  goals={kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,kojiYear:Number(document.getElementById('gKojiYear').value)||0,kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,kanriYear:Number(document.getElementById('gKanriYear').value)||0};
-  localStorage.setItem('kanko_goals',JSON.stringify(goals));
-  window.closeGoalModal();showToast('✅ 目標金額を保存しました');render();
+ 
+// ↓ localStorage → Firestore setDoc に変更
+window.saveGoals=async()=>{
+  const newGoals={
+    kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,
+    kojiYear:Number(document.getElementById('gKojiYear').value)||0,
+    kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,
+    kanriYear:Number(document.getElementById('gKanriYear').value)||0
+  };
+  try{
+    await setDoc(goalsDocRef,newGoals);
+    window.closeGoalModal();
+    showToast('✅ 目標金額を保存しました（全員に同期）');
+  }catch(e){
+    console.error(e);
+    showToast('❌ 保存に失敗しました');
+  }
 };
-
+ 
 // 担当者目標モーダル
 window.openPersonGoalModal=()=>{
   const assignees=[...new Set(records.map(r=>r.assignee).filter(Boolean))].sort();
@@ -471,20 +530,32 @@ window.openPersonGoalModal=()=>{
   document.getElementById('personGoalModal').style.display='flex';
 };
 window.closePersonGoalModal=()=>document.getElementById('personGoalModal').style.display='none';
-window.savePersonGoals=()=>{
+ 
+// ↓ localStorage → Firestore setDoc に変更
+window.savePersonGoals=async()=>{
+  const newPersonGoals={...personGoals};
   [...new Set(records.map(r=>r.assignee).filter(Boolean))].forEach(name=>{
-    personGoals[name]={month:Number(document.getElementById('pg_m_'+name)?.value)||0,year:Number(document.getElementById('pg_y_'+name)?.value)||0};
+    newPersonGoals[name]={
+      month:Number(document.getElementById('pg_m_'+name)?.value)||0,
+      year:Number(document.getElementById('pg_y_'+name)?.value)||0
+    };
   });
-  localStorage.setItem('kanko_person_goals',JSON.stringify(personGoals));
-  window.closePersonGoalModal();showToast('✅ 担当者の目標を保存しました');render();
+  try{
+    await setDoc(personGoalsDocRef,newPersonGoals);
+    window.closePersonGoalModal();
+    showToast('✅ 担当者の目標を保存しました（全員に同期）');
+  }catch(e){
+    console.error(e);
+    showToast('❌ 保存に失敗しました');
+  }
 };
-
+ 
 // フォーム
 window.selectDept=dept=>{selDept=dept;document.getElementById('btnKoji').className='dept-btn'+(dept==='工事課'?' active-koji':'');document.getElementById('btnKanri').className='dept-btn'+(dept==='管理課'?' active-kanri':'');};
 const getForm=()=>({name:document.getElementById('fName').value.trim(),client:document.getElementById('fClient').value.trim(),date:document.getElementById('fDate').value,assignee:document.getElementById('fAssignee').value.trim(),dept:selDept,amount:document.getElementById('fAmount').value});
 function setForm(r){document.getElementById('fName').value=r.name||'';document.getElementById('fClient').value=r.client||'';document.getElementById('fDate').value=r.date||'';document.getElementById('fAssignee').value=r.assignee||'';document.getElementById('fAmount').value=r.amount||'';window.selectDept(r.dept||'');}
 function clearForm(){setForm({});selDept='';document.getElementById('btnKoji').className='dept-btn';document.getElementById('btnKanri').className='dept-btn';}
-
+ 
 window.handleSubmit=async()=>{
   const f=getForm();
   if(!f.name||!f.date||!f.amount){showToast('⚠️ 案件名・完工日・金額は必須です');return;}
@@ -507,7 +578,7 @@ window.handleSubmit=async()=>{
   }catch(e){showToast('❌ エラーが発生しました');console.error(e);}
   btn.disabled=false;
 };
-
+ 
 window.handleCancel=()=>{editId=null;clearForm();document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';};
 window.handleEdit=id=>{
   const r=records.find(x=>x.id===id);if(!r)return;
@@ -518,7 +589,7 @@ window.handleEdit=id=>{
   window.switchPage('reg');
 };
 window.handleDelete=async id=>{if(!confirm('この案件を削除しますか？'))return;try{await deleteDoc(doc(db,"records",id));if(editId===id)window.handleCancel();showToast('🗑️ 削除しました');}catch(e){showToast('❌ 削除に失敗しました');}};
-
+ 
 function getYears(){const ys=new Set(records.map(r=>r.date?new Date(r.date).getFullYear():null).filter(Boolean));ys.add(new Date().getFullYear());return[...ys].sort((a,b)=>b-a);}
 function buildSelects(){
   const years=getYears();
@@ -533,14 +604,14 @@ const getSY=()=>Number(document.getElementById('summaryYear').value)||new Date()
 const getSM=()=>document.getElementById('summaryMonth').value||(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
 const getFY=()=>Number(document.getElementById('yearSelect').value)||new Date().getFullYear();
 const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-
+ 
 function recordHTML(r){return`<div class="record"><div style="display:flex;align-items:flex-start"><div style="flex:1;min-width:0"><div class="record-name"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)}</div><div class="record-meta">${r.client?esc(r.client)+'　':''}${r.date||''}${r.assignee?'　担当：'+esc(r.assignee):''}</div><div class="record-amount">¥${fmt(r.amount)}</div></div><div class="record-actions"><button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button><button class="btn-del" onclick="handleDelete('${r.id}')">削除</button></div></div></div>`;}
-
+ 
 window.render=()=>{
   if(isLoading)return;
   document.getElementById('headerCount').textContent=records.length+' 件 登録中';
   buildSelects();
-
+ 
   // ── ホーム ──
   const sy=getSY();
   const syR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===sy);
@@ -552,7 +623,7 @@ window.render=()=>{
   document.getElementById('kanriYearCnt').textContent=knYR.length+'件';
   document.getElementById('kojiYearGoal').innerHTML=goalBarHTML(kYA,goals.kojiYear,'koji');
   document.getElementById('kanriYearGoal').innerHTML=goalBarHTML(knYA,goals.kanriYear,'kanri');
-
+ 
   const sm=getSM();const[smY,smM]=sm.split('-').map(Number);
   const smR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===smY&&new Date(r.date).getMonth()+1===smM);
   const kMR=smR.filter(r=>r.dept==='工事課'),knMR=smR.filter(r=>r.dept==='管理課');
@@ -563,7 +634,7 @@ window.render=()=>{
   document.getElementById('kanriMonthCnt').textContent=knMR.length+'件';
   document.getElementById('kojiMonthGoal').innerHTML=goalBarHTML(kMA,goals.kojiMonth,'koji');
   document.getElementById('kanriMonthGoal').innerHTML=goalBarHTML(knMA,goals.kanriMonth,'kanri');
-
+ 
   // 担当者サマリー
   const assignees=[...new Set(syR.map(r=>r.assignee).filter(Boolean))].sort();
   const psl=document.getElementById('personSummaryList');
@@ -591,15 +662,15 @@ window.render=()=>{
       </div>`;
     }).join('');
   }
-
+ 
   // ── 一覧ページ ──
   const fy=getFY();
   const fyR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===fy);
   const dfR=deptFilter==='all'?fyR:fyR.filter(r=>r.dept===deptFilter);
   document.getElementById('yearTotal').textContent='¥'+fmt(dfR.reduce((s,r)=>s+Number(r.amount||0),0));
-
+ 
   const lc=document.getElementById('listContent');
-
+ 
   if(currentSub==='list'){
     const listR=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);
     if(!listR.length){lc.innerHTML='<div class="empty-state">まだ登録がありません</div>';return;}
@@ -613,7 +684,7 @@ window.render=()=>{
     }else{lc.innerHTML=listR.map(recordHTML).join('');}
     return;
   }
-
+ 
   if(currentSub==='monthly'){
     const maxV=Math.max(...MONTHS.map((_,i)=>dfR.filter(r=>new Date(r.date).getMonth()+1===i+1).reduce((s,r)=>s+Number(r.amount||0),0)),1);
     lc.innerHTML=MONTHS.map((label,i)=>{
@@ -624,7 +695,7 @@ window.render=()=>{
     }).join('');
     return;
   }
-
+ 
   if(currentSub==='assignee'){
     const map={};
     dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});
@@ -634,8 +705,9 @@ window.render=()=>{
     lc.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label person"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');
   }
 };
-
+ 
 if('serviceWorker' in navigator){const sw=`const C='kanko-v7';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
 </script>
 </body>
 </html>
+ 
