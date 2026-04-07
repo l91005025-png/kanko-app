@@ -18,41 +18,46 @@ const _ml=document.createElement('link');_ml.rel='manifest';_ml.href=URL.createO
 const _al=document.createElement('link');_al.rel='apple-touch-icon';_al.href=_iu;document.currentScript.after(_al);
 </script>
 <style>
-:root{--bg:#0f1117;--surface:#1a1d2e;--border:#2a2d3e;--text:#e8eaf0;--muted:#6b7280;--accent:#4f9cf9;--purple:#a855f7;--green:#22c55e;--amber:#f59e0b;--danger-bg:#2d1a1a;--danger:#f87171;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--tab-h:60px;}
+:root{
+  --bg:#0f1117;--surface:#1a1d2e;--border:#2a2d3e;--text:#e8eaf0;--muted:#6b7280;
+  --accent:#4f9cf9;--purple:#a855f7;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+  --danger-bg:#2d1a1a;--danger:#f87171;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--tab-h:60px;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Noto Sans JP','Yu Gothic',sans-serif;overscroll-behavior:none;}
 body{padding-top:var(--safe-top);}
 input,select,button{font-family:inherit;}
 input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5);}
 input::placeholder{color:#4a5568;}
- 
-/* ヘッダー */
+
 .header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 16px 12px;}
 .header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:10px;}
-.header-bar{width:6px;height:26px;background:linear-gradient(180deg,var(--accent),var(--purple));border-radius:3px;flex-shrink:0;}
+.header-bar{width:6px;height:26px;border-radius:3px;flex-shrink:0;transition:background .3s;}
+.header-bar.kanko{background:linear-gradient(180deg,var(--accent),var(--purple));}
+.header-bar.schedule{background:linear-gradient(180deg,var(--amber),var(--red));}
 .header h1{font-size:19px;font-weight:800;letter-spacing:.04em;color:#fff;}
 .header .count{font-size:12px;color:var(--muted);margin-top:2px;}
 .sync-badge{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;flex-shrink:0;}
 .sync-badge.online{background:#1a2e1a;color:#4ade80;}
 .sync-badge.offline{background:#2d1a1a;color:#f87171;}
 .sync-badge.syncing{background:#1a1d2e;color:var(--accent);}
- 
-/* ページコンテナ */
+
 .page{display:none;max-width:640px;margin:0 auto;padding:0 12px;padding-bottom:calc(var(--tab-h) + var(--safe-bottom) + 16px);}
 .page.active{display:block;}
- 
-/* ボトムタブ */
+
 .bottom-tab{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,17,23,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:color .2s;gap:4px;}
 .tab-btn.active{color:var(--accent);}
+.tab-btn.active-sched{color:var(--amber);}
 .tab-btn svg{width:22px;height:22px;stroke-width:2;}
 .tab-btn span{font-size:11px;font-weight:600;}
-.tab-btn.active-reg{color:var(--purple);}
-.tab-center{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 0 4px;padding-bottom:calc(4px + var(--safe-bottom) * 0);}
-.tab-center-btn{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(79,156,249,.4);margin-top:-20px;}
+.tab-center{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 0 4px;}
+.tab-center-btn{width:52px;height:52px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:-20px;transition:background .3s,box-shadow .3s;}
+.tab-center-btn.kanko{background:linear-gradient(135deg,var(--accent),var(--purple));box-shadow:0 4px 16px rgba(79,156,249,.4);}
+.tab-center-btn.schedule{background:linear-gradient(135deg,var(--amber),var(--red));box-shadow:0 4px 16px rgba(245,158,11,.4);}
 .tab-center-btn svg{width:26px;height:26px;stroke:white;stroke-width:2.5;}
- 
-/* サマリー */
+
 .summary-card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
 .summary-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .summary-top-label{font-size:13px;color:var(--muted);font-weight:700;}
@@ -68,8 +73,7 @@ input::placeholder{color:#4a5568;}
 .dept-card.koji .dept-card-amount{color:var(--accent);}
 .dept-card.kanri .dept-card-amount{color:var(--purple);}
 .dept-card-count{font-size:11px;color:var(--muted);margin-top:2px;}
- 
-/* 目標バー */
+
 .goal-bar-wrap{margin-top:8px;}
 .goal-meta{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;}
 .goal-pct{font-weight:700;}
@@ -77,12 +81,10 @@ input::placeholder{color:#4a5568;}
 .goal-bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
 .goal-bar-fill.koji{background:linear-gradient(90deg,var(--accent),#60c0ff);}
 .goal-bar-fill.kanri{background:linear-gradient(90deg,var(--purple),#d08aff);}
-.goal-bar-fill.person{background:linear-gradient(90deg,var(--amber),#fbbf24);}
 .goal-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
 .goal-not-set{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;}
 .goal-setting-btn{width:100%;margin-top:12px;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;font-weight:600;}
- 
-/* 担当者サマリーカード */
+
 .person-summary-card{background:var(--surface);border-radius:14px;padding:14px;margin-top:10px;border:1px solid var(--border);}
 .person-summary-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .person-summary-name{font-size:15px;font-weight:800;}
@@ -100,8 +102,7 @@ input::placeholder{color:#4a5568;}
 .mini-bar-fill{height:100%;border-radius:2px;}
 .mini-bar-fill.normal{background:linear-gradient(90deg,var(--amber),#fbbf24);}
 .mini-bar-fill.over{background:linear-gradient(90deg,var(--green),#86efac);}
- 
-/* モーダル */
+
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
 .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bottom));width:100%;max-width:640px;border-top:1px solid var(--border);max-height:85vh;overflow-y:auto;}
 .modal-title{font-size:16px;font-weight:800;margin-bottom:16px;color:#fff;}
@@ -115,6 +116,7 @@ input::placeholder{color:#4a5568;}
 .modal-field input:focus{border-color:var(--accent);}
 .modal-actions{display:flex;gap:8px;margin-top:16px;}
 .modal-save{flex:1;padding:13px;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;border-radius:10px;color:#fff;font-weight:800;font-size:15px;cursor:pointer;}
+.modal-save.amber{background:linear-gradient(135deg,var(--amber),var(--red));}
 .modal-cancel{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;}
 .person-goal-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .person-goal-name{font-size:13px;font-weight:700;min-width:70px;}
@@ -123,8 +125,7 @@ input::placeholder{color:#4a5568;}
 .person-goal-inputs input:focus{border-color:var(--accent);}
 .person-goal-labels{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
 .person-goal-labels span{font-size:10px;color:var(--muted);text-align:center;}
- 
-/* 登録フォーム */
+
 .card{background:var(--surface);border-radius:16px;padding:16px;margin-top:14px;border:1px solid var(--border);}
 .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
 .field{margin-bottom:10px;}
@@ -140,27 +141,27 @@ input::placeholder{color:#4a5568;}
 .btn-secondary{padding:13px 16px;background:var(--border);border:none;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;margin-top:12px;margin-left:8px;}
 .form-actions{display:flex;}
 .form-actions .btn-primary{flex:1;}
- 
-/* 一覧タブ内セカンダリタブ */
+
 .sub-tabs{display:flex;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin-top:14px;}
 .sub-tab{flex:1;padding:9px 0;border-radius:9px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
 .sub-tab.active{background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;}
- 
+.sub-tab.active-amber{background:linear-gradient(135deg,var(--amber),var(--red));color:#fff;}
+
 .dept-filter{display:flex;gap:6px;margin-top:12px;}
 .dft-btn{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
 .dft-btn.a-all,.dft-btn.a-koji{border-color:var(--accent);color:var(--accent);background:rgba(79,156,249,.1);}
 .dft-btn.a-kanri{border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,.1);}
- 
+
 .year-bar{display:flex;align-items:center;gap:10px;margin-top:12px;}
 .year-bar label{font-size:12px;color:var(--muted);}
 .year-bar select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 10px;font-size:14px;outline:none;-webkit-appearance:none;}
 .year-total{margin-left:auto;font-size:13px;color:var(--muted);}
 .year-total strong{color:var(--accent);font-size:15px;}
- 
+
 .dept-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;margin-right:4px;vertical-align:middle;}
 .dept-badge.koji{background:rgba(79,156,249,.15);color:var(--accent);}
 .dept-badge.kanri{background:rgba(168,85,247,.15);color:var(--purple);}
- 
+
 .section-header{display:flex;align-items:center;gap:8px;margin:14px 0 6px;}
 .section-line{flex:1;height:1px;background:var(--border);}
 .section-title{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
@@ -169,7 +170,7 @@ input::placeholder{color:#4a5568;}
 .section-subtotal{font-size:12px;font-weight:700;white-space:nowrap;}
 .section-subtotal.koji{color:var(--accent);}
 .section-subtotal.kanri{color:var(--purple);}
- 
+
 .record{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
 .record-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
 .record-meta{font-size:12px;color:var(--muted);margin-bottom:8px;}
@@ -177,7 +178,7 @@ input::placeholder{color:#4a5568;}
 .record-actions{display:flex;gap:6px;flex-shrink:0;margin-left:10px;}
 .btn-edit{background:var(--border);border:none;border-radius:8px;color:var(--muted);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
 .btn-del{background:var(--danger-bg);border:none;border-radius:8px;color:var(--danger);padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
- 
+
 .agg-row{background:var(--surface);border-radius:12px;padding:12px 14px;margin-top:8px;border:1px solid var(--border);}
 .agg-row.empty{opacity:.35;}
 .agg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -192,25 +193,31 @@ input::placeholder{color:#4a5568;}
 .bar-fill.purple{background:linear-gradient(90deg,var(--purple),var(--accent));}
 .chips{display:flex;flex-wrap:wrap;gap:4px;}
 .chip{font-size:11px;background:var(--bg);border-radius:6px;padding:2px 8px;color:var(--muted);}
- 
+
+/* 着工予定 */
+.team-summary-card{border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+.sched-record{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
+.sched-date-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(245,158,11,.15);color:var(--amber);margin-right:6px;flex-shrink:0;}
+.sched-team-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;}
+.mandays-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:4px 10px;}
+.mandays-num{font-size:18px;font-weight:900;color:var(--red);}
+.mandays-unit{font-size:11px;color:var(--muted);}
+.day-block{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
+.day-block.empty{opacity:.4;}
+.day-item{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
+.no-schedule{font-size:12px;color:#4a5568;}
+
 .empty-state{text-align:center;color:#4a5568;padding:48px 0;font-size:14px;}
 .loading-state{text-align:center;color:var(--muted);padding:48px 0;font-size:14px;}
 .toast{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bottom) + 12px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 20px;font-size:14px;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;z-index:999;animation:fadeUp .25s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
- 
-/* 登録完了アニメ */
-.reg-success{text-align:center;padding:40px 20px;}
-.reg-success-icon{font-size:56px;margin-bottom:16px;}
-.reg-success-msg{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;}
-.reg-success-sub{font-size:13px;color:var(--muted);}
 </style>
 </head>
 <body>
- 
-<!-- ヘッダー -->
+
 <div class="header">
   <div class="header-inner">
-    <div class="header-bar"></div>
+    <div class="header-bar kanko" id="headerBar"></div>
     <div>
       <h1 id="pageTitle">完工金 集計</h1>
       <div class="count" id="headerCount">読み込み中...</div>
@@ -218,10 +225,9 @@ input::placeholder{color:#4a5568;}
     <span class="sync-badge syncing" id="syncBadge">接続中...</span>
   </div>
 </div>
- 
-<!-- ホームページ -->
+
+<!-- ホーム -->
 <div class="page active" id="page-home">
-  <!-- 年間サマリー -->
   <div class="summary-card">
     <div class="summary-top">
       <span class="summary-top-label">📊 年間集計</span>
@@ -241,7 +247,6 @@ input::placeholder{color:#4a5568;}
         <div id="kanriYearGoal"></div>
       </div>
     </div>
-    <!-- 月間 -->
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="summary-top" style="margin-bottom:10px;">
         <span class="summary-top-label">📅 月間集計</span>
@@ -267,15 +272,13 @@ input::placeholder{color:#4a5568;}
       <button class="goal-setting-btn" style="flex:1" onclick="openPersonGoalModal()">👤 担当者目標設定</button>
     </div>
   </div>
- 
-  <!-- 担当者別サマリー -->
   <div style="margin-top:16px;padding-top:4px;">
     <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:2px;">👤 担当者別</div>
     <div id="personSummaryList"><div class="loading-state" style="padding:24px 0">読み込み中...</div></div>
   </div>
 </div>
- 
-<!-- 登録ページ -->
+
+<!-- 登録 -->
 <div class="page" id="page-reg">
   <div class="card" style="margin-top:14px;">
     <div class="card-title" id="formTitle">＋ 新規登録</div>
@@ -297,8 +300,8 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
- 
-<!-- 一覧ページ -->
+
+<!-- 一覧 -->
 <div class="page" id="page-list">
   <div class="sub-tabs">
     <button class="sub-tab active" id="sub-list" onclick="switchSub('list')">一覧</button>
@@ -317,24 +320,44 @@ input::placeholder{color:#4a5568;}
   </div>
   <div id="listContent"><div class="loading-state">🔄 読み込み中...</div></div>
 </div>
- 
+
+<!-- 着工予定 -->
+<div class="page" id="page-schedule">
+  <div class="summary-card" style="margin-top:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <span style="font-size:13px;color:var(--muted);font-weight:700;">🏗 班別サマリー</span>
+      <span style="font-size:12px;color:var(--muted);">合計 <strong id="schedTotalMD" style="color:var(--amber)">0人工</strong></span>
+    </div>
+    <div id="teamSummaryList"><div class="loading-state" style="padding:16px 0">読み込み中...</div></div>
+  </div>
+  <div class="sub-tabs">
+    <button class="sub-tab active-amber" id="ssub-list" onclick="switchSchedSub('list')">📋 一覧</button>
+    <button class="sub-tab" id="ssub-week" onclick="switchSchedSub('week')">📅 日別</button>
+  </div>
+  <div id="schedContent"><div class="loading-state">🔄 読み込み中...</div></div>
+</div>
+
 <!-- ボトムタブ -->
 <div class="bottom-tab">
   <button class="tab-btn active" id="nav-home" onclick="switchPage('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
     <span>ホーム</span>
   </button>
-  <div class="tab-center">
-    <button class="tab-center-btn" onclick="switchPage('reg')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="white"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
-  </div>
   <button class="tab-btn" id="nav-list" onclick="switchPage('list')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
     <span>一覧</span>
   </button>
+  <div class="tab-center">
+    <button class="tab-center-btn kanko" id="centerBtn" onclick="handleCenterBtn()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+  <button class="tab-btn" id="nav-schedule" onclick="switchPage('schedule')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>着工予定</span>
+  </button>
 </div>
- 
+
 <!-- 課目標モーダル -->
 <div class="modal-overlay" id="goalModal" style="display:none" onclick="if(event.target===this)closeGoalModal()">
   <div class="modal">
@@ -359,7 +382,7 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
- 
+
 <!-- 担当者目標モーダル -->
 <div class="modal-overlay" id="personGoalModal" style="display:none" onclick="if(event.target===this)closePersonGoalModal()">
   <div class="modal">
@@ -371,14 +394,29 @@ input::placeholder{color:#4a5568;}
     </div>
   </div>
 </div>
- 
+
+<!-- 着工予定 登録・編集モーダル -->
+<div class="modal-overlay" id="schedModal" style="display:none" onclick="if(event.target===this)closeSchedModal()">
+  <div class="modal">
+    <div class="modal-title" id="schedModalTitle">＋ 着工予定を登録</div>
+    <div class="field"><label>着工日 *</label><input type="date" id="sfDate"></div>
+    <div class="field"><label>着工現場名 *</label><input type="text" id="sfSite" placeholder="例：山田邸 外壁塗装工事"></div>
+    <div class="field"><label>担当班 *</label><input type="text" id="sfTeam" placeholder="例：塗装班A"></div>
+    <div class="field"><label>担当管理者</label><input type="text" id="sfManager" placeholder="例：鈴木 一郎"></div>
+    <div class="field"><label>人工数 *</label><input type="number" id="sfMandays" placeholder="例：3" inputmode="numeric"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeSchedModal()">キャンセル</button>
+      <button class="modal-save amber" id="schedSaveBtn" onclick="handleSchedSubmit()">登録する</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" style="display:none"></div>
- 
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-// ↓ setDoc を追加
 import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
- 
+
 const firebaseConfig = {
   apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
   authDomain: "kanko-app-96378.firebaseapp.com",
@@ -387,327 +425,233 @@ const firebaseConfig = {
   messagingSenderId: "415170223801",
   appId: "1:415170223801:web:1b10387e20cb2e4b678568"
 };
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-const colRef=collection(db,"records");
- 
-// ── Firestore settings ドキュメント参照 ──
-const goalsDocRef=doc(db,"settings","goals");
-const personGoalsDocRef=doc(db,"settings","personGoals");
- 
-let records=[],editId=null,currentPage='home',currentSub='list',deptFilter='all',selDept='',toastTimer=null,isLoading=true;
- 
-// ↓ localStorageの読み込みを削除し、デフォルト値のみにする（Firestoreから取得）
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db, "records");
+const schedColRef = collection(db, "schedule");
+const goalsDocRef = doc(db, "settings", "goals");
+const personGoalsDocRef = doc(db, "settings", "personGoals");
+
+const TEAM_COLORS = [
+  {bg:"rgba(79,156,249,0.12)",border:"rgba(79,156,249,0.3)",text:"#4f9cf9"},
+  {bg:"rgba(168,85,247,0.12)",border:"rgba(168,85,247,0.3)",text:"#a855f7"},
+  {bg:"rgba(245,158,11,0.12)",border:"rgba(245,158,11,0.3)",text:"#f59e0b"},
+  {bg:"rgba(34,197,94,0.12)",border:"rgba(34,197,94,0.3)",text:"#22c55e"},
+  {bg:"rgba(239,68,68,0.12)",border:"rgba(239,68,68,0.3)",text:"#ef4444"},
+  {bg:"rgba(20,184,166,0.12)",border:"rgba(20,184,166,0.3)",text:"#14b8a6"},
+];
+const teamColorMap = {}; let teamColorIdx = 0;
+function getTeamColor(team){if(!teamColorMap[team])teamColorMap[team]=TEAM_COLORS[teamColorIdx++%TEAM_COLORS.length];return teamColorMap[team];}
+
+let records=[],schedRecords=[],editId=null,schedEditId=null;
+let currentPage='home',currentSub='list',currentSchedSub='list',deptFilter='all',selDept='',toastTimer=null,isLoading=true,isSchedLoading=true;
 let goals={kojiMonth:0,kojiYear:0,kanriMonth:0,kanriYear:0};
 let personGoals={};
- 
-// ── records リスナー（既存） ──
+
+// Firestore リスナー
 onSnapshot(query(colRef,orderBy("createdAt","desc")),
-  snap=>{records=snap.docs.map(d=>({id:d.id,...d.data()}));isLoading=false;document.getElementById('syncBadge').textContent='🟢 同期中';document.getElementById('syncBadge').className='sync-badge online';render();},
-  err=>{console.error(err);document.getElementById('syncBadge').textContent='🔴 オフライン';document.getElementById('syncBadge').className='sync-badge offline';}
+  snap=>{records=snap.docs.map(d=>({id:d.id,...d.data()}));isLoading=false;setBadge(true);render();},
+  err=>{console.error(err);setBadge(false);}
 );
- 
-// ── 課の目標 リアルタイムリスナー（Firestore同期） ──
-onSnapshot(goalsDocRef,
-  snap=>{
-    if(snap.exists()){
-      goals=snap.data();
-    } else {
-      // Firestoreにまだ保存されていない場合、localStorageから移行
-      const local=localStorage.getItem('kanko_goals');
-      if(local){
-        goals=JSON.parse(local);
-        setDoc(goalsDocRef,goals).catch(console.error);
-        localStorage.removeItem('kanko_goals');
-      }
-    }
-    render();
-  },
-  err=>console.error('goals sync error:',err)
+onSnapshot(query(schedColRef,orderBy("date","asc")),
+  snap=>{schedRecords=snap.docs.map(d=>({id:d.id,...d.data()}));isSchedLoading=false;render();},
+  err=>console.error(err)
 );
- 
-// ── 担当者目標 リアルタイムリスナー（Firestore同期） ──
-onSnapshot(personGoalsDocRef,
-  snap=>{
-    if(snap.exists()){
-      personGoals=snap.data();
-    } else {
-      // Firestoreにまだ保存されていない場合、localStorageから移行
-      const local=localStorage.getItem('kanko_person_goals');
-      if(local){
-        personGoals=JSON.parse(local);
-        setDoc(personGoalsDocRef,personGoals).catch(console.error);
-        localStorage.removeItem('kanko_person_goals');
-      }
-    }
-    render();
-  },
-  err=>console.error('personGoals sync error:',err)
-);
- 
+onSnapshot(goalsDocRef,snap=>{
+  if(snap.exists()){goals=snap.data();}
+  else{const l=localStorage.getItem('kanko_goals');if(l){goals=JSON.parse(l);setDoc(goalsDocRef,goals).catch(console.error);localStorage.removeItem('kanko_goals');}}
+  render();
+},err=>console.error(err));
+onSnapshot(personGoalsDocRef,snap=>{
+  if(snap.exists()){personGoals=snap.data();}
+  else{const l=localStorage.getItem('kanko_person_goals');if(l){personGoals=JSON.parse(l);setDoc(personGoalsDocRef,personGoals).catch(console.error);localStorage.removeItem('kanko_person_goals');}}
+  render();
+},err=>console.error(err));
+
+function setBadge(ok){const b=document.getElementById('syncBadge');b.textContent=ok?'🟢 同期中':'🔴 オフライン';b.className='sync-badge '+(ok?'online':'offline');}
 const fmt=n=>Number(n||0).toLocaleString('ja-JP');
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const dc=dept=>dept==='工事課'?'koji':dept==='管理課'?'kanri':'';
- 
+const dc=d=>d==='工事課'?'koji':d==='管理課'?'kanri':'';
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2500);}
- 
-// ページ切替
-const PAGE_TITLES={home:'完工金 集計',reg:'新規登録',list:'一覧'};
+
+// ── ページ切替 ──
+const PAGE_TITLES={home:'完工金 集計',reg:'新規登録',list:'一覧',schedule:'来週の着工予定'};
 window.switchPage=page=>{
   currentPage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  if(page!=='reg') document.getElementById('nav-'+page)?.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active','active-sched'));
+  const isS=page==='schedule';
+  if(isS){document.getElementById('nav-schedule').classList.add('active-sched');}
+  else if(page!=='reg'){document.getElementById('nav-'+page)?.classList.add('active');}
+  document.getElementById('centerBtn').className='tab-center-btn '+(isS?'schedule':'kanko');
+  document.getElementById('headerBar').className='header-bar '+(isS?'schedule':'kanko');
   document.getElementById('pageTitle').textContent=PAGE_TITLES[page]||'完工金 集計';
-  window.scrollTo({top:0});
-  render();
+  document.getElementById('headerCount').textContent=isS?`${getWeekRange()} · ${schedRecords.length}件`:records.length+' 件 登録中';
+  window.scrollTo({top:0});render();
 };
- 
-window.switchSub=sub=>{
-  currentSub=sub;
-  ['list','monthly','assignee'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('active',s===sub));
-  document.getElementById('yearBar').style.display=sub==='list'?'none':'flex';
-  render();
-};
- 
-window.setDF=dept=>{
-  deptFilter=dept;
-  document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');
-  document.getElementById('df-koji').className='dft-btn'+(dept==='工事課'?' a-koji':'');
-  document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');
-  render();
-};
- 
-// 目標バー
-function goalBarHTML(actual,goal,cls){
-  if(!goal)return`<div class="goal-not-set">目標未設定</div>`;
-  const pct=Math.round(actual/goal*100),over=actual>=goal;
-  return`<div class="goal-bar-wrap"><div class="goal-meta"><span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${pct}%達成</span><span style="color:var(--muted);font-size:10px">${over?'✅ 達成！':'残 ¥'+fmt(goal-actual)}</span></div><div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${Math.min(pct,100)}%"></div></div></div>`;
+
+function getNextWeekDates(){
+  const today=new Date(),dow=today.getDay(),diff=dow===0?1:8-dow;
+  const monday=new Date(today);monday.setDate(today.getDate()+diff);
+  return Array.from({length:6},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
 }
- 
-function personGoalItemHTML(label,actual,goal){
-  if(!goal)return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-remain">未設定</div></div>`;
-  const pct=Math.round(actual/goal*100),over=actual>=goal;
-  return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-pct${over?' achieved':''}">${pct}%${over?' ✅':''}</div><div class="person-goal-item-remain">${over?'達成！':'残 ¥'+fmt(goal-actual)}</div><div class="mini-bar-bg"><div class="mini-bar-fill ${over?'over':'normal'}" style="width:${Math.min(pct,100)}%"></div></div></div>`;
-}
- 
-// 課目標モーダル
-window.openGoalModal=()=>{
-  document.getElementById('gKojiMonth').value=goals.kojiMonth||'';
-  document.getElementById('gKojiYear').value=goals.kojiYear||'';
-  document.getElementById('gKanriMonth').value=goals.kanriMonth||'';
-  document.getElementById('gKanriYear').value=goals.kanriYear||'';
-  document.getElementById('goalModal').style.display='flex';
-};
-window.closeGoalModal=()=>document.getElementById('goalModal').style.display='none';
- 
-// ↓ localStorage → Firestore setDoc に変更
-window.saveGoals=async()=>{
-  const newGoals={
-    kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,
-    kojiYear:Number(document.getElementById('gKojiYear').value)||0,
-    kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,
-    kanriYear:Number(document.getElementById('gKanriYear').value)||0
-  };
-  try{
-    await setDoc(goalsDocRef,newGoals);
-    window.closeGoalModal();
-    showToast('✅ 目標金額を保存しました（全員に同期）');
-  }catch(e){
-    console.error(e);
-    showToast('❌ 保存に失敗しました');
+function getWeekRange(){const d=getNextWeekDates();const f=x=>`${x.getMonth()+1}/${x.getDate()}`;return`${f(d[0])}(月)〜${f(d[5])}(土)`;}
+function dateToStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+const DAYS=['月','火','水','木','金','土'];
+
+window.handleCenterBtn=()=>{ if(currentPage==='schedule')openSchedModal(); else switchPage('reg'); };
+
+// 着工予定モーダル
+window.openSchedModal=id=>{
+  schedEditId=id||null;
+  if(id){
+    const r=schedRecords.find(x=>x.id===id);if(!r)return;
+    document.getElementById('sfDate').value=r.date||'';
+    document.getElementById('sfSite').value=r.siteName||'';
+    document.getElementById('sfTeam').value=r.team||'';
+    document.getElementById('sfManager').value=r.manager||'';
+    document.getElementById('sfMandays').value=r.mandays||'';
+    document.getElementById('schedModalTitle').textContent='✏️ 着工予定を編集';
+    document.getElementById('schedSaveBtn').textContent='更新する';
+  }else{
+    ['sfDate','sfSite','sfTeam','sfManager','sfMandays'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('schedModalTitle').textContent='＋ 着工予定を登録';
+    document.getElementById('schedSaveBtn').textContent='登録する';
   }
+  document.getElementById('schedModal').style.display='flex';
 };
- 
-// 担当者目標モーダル
-window.openPersonGoalModal=()=>{
-  const assignees=[...new Set(records.map(r=>r.assignee).filter(Boolean))].sort();
-  if(!assignees.length){showToast('⚠️ 担当者が登録されていません');return;}
-  let html=`<div class="person-goal-labels"><span>月間目標（円）</span><span>年間目標（円）</span></div>`;
-  html+=assignees.map(name=>{const g=personGoals[name]||{};return`<div class="person-goal-row"><div class="person-goal-name">${esc(name)}</div><div class="person-goal-inputs"><input type="number" id="pg_m_${esc(name)}" value="${g.month||''}" placeholder="月間" inputmode="numeric"><input type="number" id="pg_y_${esc(name)}" value="${g.year||''}" placeholder="年間" inputmode="numeric"></div></div>`;}).join('');
-  document.getElementById('personGoalContent').innerHTML=html;
-  document.getElementById('personGoalModal').style.display='flex';
+window.closeSchedModal=()=>{document.getElementById('schedModal').style.display='none';schedEditId=null;};
+window.handleSchedSubmit=async()=>{
+  const d=document.getElementById('sfDate').value,s=document.getElementById('sfSite').value.trim(),t=document.getElementById('sfTeam').value.trim(),m=document.getElementById('sfManager').value.trim(),md=document.getElementById('sfMandays').value;
+  if(!d||!s||!t||!md){showToast('⚠️ 日付・現場名・担当班・人工数は必須です');return;}
+  const data={date:d,siteName:s,team:t,manager:m,mandays:Number(md)};
+  const btn=document.getElementById('schedSaveBtn');btn.disabled=true;
+  try{
+    if(schedEditId){await updateDoc(doc(db,'schedule',schedEditId),{...data,updatedAt:serverTimestamp()});showToast('✅ 更新しました');}
+    else{await addDoc(schedColRef,{...data,createdAt:serverTimestamp()});showToast('✅ 登録しました！');}
+    window.closeSchedModal();
+  }catch(e){showToast('❌ エラーが発生しました');console.error(e);}
+  btn.disabled=false;
 };
-window.closePersonGoalModal=()=>document.getElementById('personGoalModal').style.display='none';
- 
-// ↓ localStorage → Firestore setDoc に変更
-window.savePersonGoals=async()=>{
-  const newPersonGoals={...personGoals};
-  [...new Set(records.map(r=>r.assignee).filter(Boolean))].forEach(name=>{
-    newPersonGoals[name]={
-      month:Number(document.getElementById('pg_m_'+name)?.value)||0,
-      year:Number(document.getElementById('pg_y_'+name)?.value)||0
-    };
+window.handleSchedDelete=async id=>{
+  if(!confirm('この着工予定を削除しますか？'))return;
+  try{await deleteDoc(doc(db,'schedule',id));showToast('🗑️ 削除しました');}
+  catch(e){showToast('❌ 削除に失敗しました');}
+};
+
+// 着工予定サブタブ
+window.switchSchedSub=sub=>{
+  currentSchedSub=sub;
+  ['list','week'].forEach(s=>{
+    const el=document.getElementById('ssub-'+s);
+    el.className='sub-tab'+(s===sub?' active-amber':'');
   });
-  try{
-    await setDoc(personGoalsDocRef,newPersonGoals);
-    window.closePersonGoalModal();
-    showToast('✅ 担当者の目標を保存しました（全員に同期）');
-  }catch(e){
-    console.error(e);
-    showToast('❌ 保存に失敗しました');
-  }
+  render();
 };
- 
-// フォーム
+
+// 完工金関連
+window.switchSub=sub=>{currentSub=sub;['list','monthly','assignee'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('active',s===sub));document.getElementById('yearBar').style.display=sub==='list'?'none':'flex';render();};
+window.setDF=dept=>{deptFilter=dept;document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');document.getElementById('df-koji').className='dft-btn'+(dept==='工事課'?' a-koji':'');document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');render();};
+
+function goalBarHTML(actual,goal,cls){if(!goal)return`<div class="goal-not-set">目標未設定</div>`;const pct=Math.round(actual/goal*100),over=actual>=goal;return`<div class="goal-bar-wrap"><div class="goal-meta"><span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${pct}%達成</span><span style="color:var(--muted);font-size:10px">${over?'✅ 達成！':'残 ¥'+fmt(goal-actual)}</span></div><div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${Math.min(pct,100)}%"></div></div></div>`;}
+function personGoalItemHTML(label,actual,goal){if(!goal)return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-remain">未設定</div></div>`;const pct=Math.round(actual/goal*100),over=actual>=goal;return`<div class="person-goal-item"><div class="person-goal-item-label">${label}</div><div class="person-goal-item-pct${over?' achieved':''}">${pct}%${over?' ✅':''}</div><div class="person-goal-item-remain">${over?'達成！':'残 ¥'+fmt(goal-actual)}</div><div class="mini-bar-bg"><div class="mini-bar-fill ${over?'over':'normal'}" style="width:${Math.min(pct,100)}%"></div></div></div>`;}
+
+window.openGoalModal=()=>{document.getElementById('gKojiMonth').value=goals.kojiMonth||'';document.getElementById('gKojiYear').value=goals.kojiYear||'';document.getElementById('gKanriMonth').value=goals.kanriMonth||'';document.getElementById('gKanriYear').value=goals.kanriYear||'';document.getElementById('goalModal').style.display='flex';};
+window.closeGoalModal=()=>document.getElementById('goalModal').style.display='none';
+window.saveGoals=async()=>{const ng={kojiMonth:Number(document.getElementById('gKojiMonth').value)||0,kojiYear:Number(document.getElementById('gKojiYear').value)||0,kanriMonth:Number(document.getElementById('gKanriMonth').value)||0,kanriYear:Number(document.getElementById('gKanriYear').value)||0};try{await setDoc(goalsDocRef,ng);window.closeGoalModal();showToast('✅ 目標金額を保存しました（全員に同期）');}catch(e){console.error(e);showToast('❌ 保存に失敗しました');}};
+
+window.openPersonGoalModal=()=>{const assignees=[...new Set(records.map(r=>r.assignee).filter(Boolean))].sort();if(!assignees.length){showToast('⚠️ 担当者が登録されていません');return;}let html=`<div class="person-goal-labels"><span>月間目標（円）</span><span>年間目標（円）</span></div>`;html+=assignees.map(name=>{const g=personGoals[name]||{};return`<div class="person-goal-row"><div class="person-goal-name">${esc(name)}</div><div class="person-goal-inputs"><input type="number" id="pg_m_${esc(name)}" value="${g.month||''}" placeholder="月間" inputmode="numeric"><input type="number" id="pg_y_${esc(name)}" value="${g.year||''}" placeholder="年間" inputmode="numeric"></div></div>`;}).join('');document.getElementById('personGoalContent').innerHTML=html;document.getElementById('personGoalModal').style.display='flex';};
+window.closePersonGoalModal=()=>document.getElementById('personGoalModal').style.display='none';
+window.savePersonGoals=async()=>{const np={...personGoals};[...new Set(records.map(r=>r.assignee).filter(Boolean))].forEach(name=>{np[name]={month:Number(document.getElementById('pg_m_'+name)?.value)||0,year:Number(document.getElementById('pg_y_'+name)?.value)||0};});try{await setDoc(personGoalsDocRef,np);window.closePersonGoalModal();showToast('✅ 担当者の目標を保存しました（全員に同期）');}catch(e){console.error(e);showToast('❌ 保存に失敗しました');}};
+
 window.selectDept=dept=>{selDept=dept;document.getElementById('btnKoji').className='dept-btn'+(dept==='工事課'?' active-koji':'');document.getElementById('btnKanri').className='dept-btn'+(dept==='管理課'?' active-kanri':'');};
 const getForm=()=>({name:document.getElementById('fName').value.trim(),client:document.getElementById('fClient').value.trim(),date:document.getElementById('fDate').value,assignee:document.getElementById('fAssignee').value.trim(),dept:selDept,amount:document.getElementById('fAmount').value});
 function setForm(r){document.getElementById('fName').value=r.name||'';document.getElementById('fClient').value=r.client||'';document.getElementById('fDate').value=r.date||'';document.getElementById('fAssignee').value=r.assignee||'';document.getElementById('fAmount').value=r.amount||'';window.selectDept(r.dept||'');}
 function clearForm(){setForm({});selDept='';document.getElementById('btnKoji').className='dept-btn';document.getElementById('btnKanri').className='dept-btn';}
- 
-window.handleSubmit=async()=>{
-  const f=getForm();
-  if(!f.name||!f.date||!f.amount){showToast('⚠️ 案件名・完工日・金額は必須です');return;}
-  if(!f.dept){showToast('⚠️ 課を選択してください');return;}
-  const btn=document.getElementById('submitBtn');btn.disabled=true;
-  try{
-    if(editId){
-      await updateDoc(doc(db,"records",editId),{...f,updatedAt:serverTimestamp()});
-      showToast('✅ 更新しました');editId=null;
-      document.getElementById('formTitle').textContent='＋ 新規登録';
-      document.getElementById('submitBtn').textContent='登録する';
-      document.getElementById('cancelBtn').style.display='none';
-      clearForm();
-    }else{
-      await addDoc(colRef,{...f,createdAt:serverTimestamp()});
-      clearForm();
-      showToast('✅ 登録しました！');
-      setTimeout(()=>window.switchPage('home'),800);
-    }
-  }catch(e){showToast('❌ エラーが発生しました');console.error(e);}
-  btn.disabled=false;
-};
- 
+
+window.handleSubmit=async()=>{const f=getForm();if(!f.name||!f.date||!f.amount){showToast('⚠️ 案件名・完工日・金額は必須です');return;}if(!f.dept){showToast('⚠️ 課を選択してください');return;}const btn=document.getElementById('submitBtn');btn.disabled=true;try{if(editId){await updateDoc(doc(db,"records",editId),{...f,updatedAt:serverTimestamp()});showToast('✅ 更新しました');editId=null;document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';clearForm();}else{await addDoc(colRef,{...f,createdAt:serverTimestamp()});clearForm();showToast('✅ 登録しました！');setTimeout(()=>window.switchPage('home'),800);}}catch(e){showToast('❌ エラーが発生しました');console.error(e);}btn.disabled=false;};
 window.handleCancel=()=>{editId=null;clearForm();document.getElementById('formTitle').textContent='＋ 新規登録';document.getElementById('submitBtn').textContent='登録する';document.getElementById('cancelBtn').style.display='none';};
-window.handleEdit=id=>{
-  const r=records.find(x=>x.id===id);if(!r)return;
-  editId=id;setForm(r);
-  document.getElementById('formTitle').textContent='✏️ 編集中';
-  document.getElementById('submitBtn').textContent='更新する';
-  document.getElementById('cancelBtn').style.display='';
-  window.switchPage('reg');
-};
+window.handleEdit=id=>{const r=records.find(x=>x.id===id);if(!r)return;editId=id;setForm(r);document.getElementById('formTitle').textContent='✏️ 編集中';document.getElementById('submitBtn').textContent='更新する';document.getElementById('cancelBtn').style.display='';window.switchPage('reg');};
 window.handleDelete=async id=>{if(!confirm('この案件を削除しますか？'))return;try{await deleteDoc(doc(db,"records",id));if(editId===id)window.handleCancel();showToast('🗑️ 削除しました');}catch(e){showToast('❌ 削除に失敗しました');}};
- 
+
 function getYears(){const ys=new Set(records.map(r=>r.date?new Date(r.date).getFullYear():null).filter(Boolean));ys.add(new Date().getFullYear());return[...ys].sort((a,b)=>b-a);}
-function buildSelects(){
-  const years=getYears();
-  ['summaryYear','yearSelect'].forEach(id=>{const sel=document.getElementById(id);const cur=sel.value||String(new Date().getFullYear());sel.innerHTML=years.map(y=>`<option value="${y}"${String(y)===cur?' selected':''}>${y}年</option>`).join('');});
-  const ms=document.getElementById('summaryMonth');
-  const now=new Date();const curM=ms.value||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
-  const MN=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  let opts='';years.forEach(y=>MN.forEach((ml,mi)=>{const v=y+'-'+String(mi+1).padStart(2,'0');opts+=`<option value="${v}"${v===curM?' selected':''}>${y}年 ${ml}</option>`;}));
-  ms.innerHTML=opts;
-}
+function buildSelects(){const years=getYears();['summaryYear','yearSelect'].forEach(id=>{const sel=document.getElementById(id);const cur=sel.value||String(new Date().getFullYear());sel.innerHTML=years.map(y=>`<option value="${y}"${String(y)===cur?' selected':''}>${y}年</option>`).join('');});const ms=document.getElementById('summaryMonth');const now=new Date();const curM=ms.value||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));const MN=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];let opts='';years.forEach(y=>MN.forEach((ml,mi)=>{const v=y+'-'+String(mi+1).padStart(2,'0');opts+=`<option value="${v}"${v===curM?' selected':''}>${y}年 ${ml}</option>`;}));ms.innerHTML=opts;}
 const getSY=()=>Number(document.getElementById('summaryYear').value)||new Date().getFullYear();
 const getSM=()=>document.getElementById('summaryMonth').value||(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
 const getFY=()=>Number(document.getElementById('yearSelect').value)||new Date().getFullYear();
 const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
- 
 function recordHTML(r){return`<div class="record"><div style="display:flex;align-items:flex-start"><div style="flex:1;min-width:0"><div class="record-name"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)}</div><div class="record-meta">${r.client?esc(r.client)+'　':''}${r.date||''}${r.assignee?'　担当：'+esc(r.assignee):''}</div><div class="record-amount">¥${fmt(r.amount)}</div></div><div class="record-actions"><button class="btn-edit" onclick="handleEdit('${r.id}')">編集</button><button class="btn-del" onclick="handleDelete('${r.id}')">削除</button></div></div></div>`;}
- 
+
 window.render=()=>{
-  if(isLoading)return;
-  document.getElementById('headerCount').textContent=records.length+' 件 登録中';
-  buildSelects();
- 
-  // ── ホーム ──
-  const sy=getSY();
-  const syR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===sy);
-  const kYR=syR.filter(r=>r.dept==='工事課'),knYR=syR.filter(r=>r.dept==='管理課');
-  const kYA=kYR.reduce((s,r)=>s+Number(r.amount||0),0),knYA=knYR.reduce((s,r)=>s+Number(r.amount||0),0);
-  document.getElementById('kojiYearAmt').textContent='¥'+fmt(kYA);
-  document.getElementById('kojiYearCnt').textContent=kYR.length+'件';
-  document.getElementById('kanriYearAmt').textContent='¥'+fmt(knYA);
-  document.getElementById('kanriYearCnt').textContent=knYR.length+'件';
-  document.getElementById('kojiYearGoal').innerHTML=goalBarHTML(kYA,goals.kojiYear,'koji');
-  document.getElementById('kanriYearGoal').innerHTML=goalBarHTML(knYA,goals.kanriYear,'kanri');
- 
-  const sm=getSM();const[smY,smM]=sm.split('-').map(Number);
-  const smR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===smY&&new Date(r.date).getMonth()+1===smM);
-  const kMR=smR.filter(r=>r.dept==='工事課'),knMR=smR.filter(r=>r.dept==='管理課');
-  const kMA=kMR.reduce((s,r)=>s+Number(r.amount||0),0),knMA=knMR.reduce((s,r)=>s+Number(r.amount||0),0);
-  document.getElementById('kojiMonthAmt').textContent='¥'+fmt(kMA);
-  document.getElementById('kojiMonthCnt').textContent=kMR.length+'件';
-  document.getElementById('kanriMonthAmt').textContent='¥'+fmt(knMA);
-  document.getElementById('kanriMonthCnt').textContent=knMR.length+'件';
-  document.getElementById('kojiMonthGoal').innerHTML=goalBarHTML(kMA,goals.kojiMonth,'koji');
-  document.getElementById('kanriMonthGoal').innerHTML=goalBarHTML(knMA,goals.kanriMonth,'kanri');
- 
-  // 担当者サマリー
-  const assignees=[...new Set(syR.map(r=>r.assignee).filter(Boolean))].sort();
-  const psl=document.getElementById('personSummaryList');
-  if(!assignees.length){psl.innerHTML='<div class="empty-state" style="padding:24px 0">担当者データがありません</div>';}
-  else{
-    psl.innerHTML=assignees.map(name=>{
-      const yRecs=syR.filter(r=>r.assignee===name);
-      const mRecs=smR.filter(r=>r.assignee===name);
-      const yAmt=yRecs.reduce((s,r)=>s+Number(r.amount||0),0);
-      const mAmt=mRecs.reduce((s,r)=>s+Number(r.amount||0),0);
-      const g=personGoals[name]||{};
-      const dept=yRecs[0]?.dept||'';
-      return`<div class="person-summary-card">
-        <div class="person-summary-header">
-          <div><span class="dept-badge ${dc(dept)}">${esc(dept)}</span><span class="person-summary-name">${esc(name)}</span></div>
-          <div class="person-summary-right">
-            <div class="person-summary-year-amt${dept==='管理課'?' p':''}">¥${fmt(yAmt)}</div>
-            <div class="person-summary-count">${sy}年 ${yRecs.length}件</div>
-          </div>
-        </div>
-        <div class="person-goal-grid">
-          ${personGoalItemHTML('月間達成率',mAmt,g.month)}
-          ${personGoalItemHTML('年間達成率',yAmt,g.year)}
-        </div>
-      </div>`;
-    }).join('');
+  // ヘッダー
+  const isS=currentPage==='schedule';
+  document.getElementById('headerCount').textContent=isS?`${getWeekRange()} · ${schedRecords.length}件`:records.length+' 件 登録中';
+
+  // ── ホーム & 一覧 ──
+  if(!isLoading){
+    buildSelects();
+    const sy=getSY();
+    const syR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===sy);
+    const kYR=syR.filter(r=>r.dept==='工事課'),knYR=syR.filter(r=>r.dept==='管理課');
+    const kYA=kYR.reduce((s,r)=>s+Number(r.amount||0),0),knYA=knYR.reduce((s,r)=>s+Number(r.amount||0),0);
+    document.getElementById('kojiYearAmt').textContent='¥'+fmt(kYA);document.getElementById('kojiYearCnt').textContent=kYR.length+'件';
+    document.getElementById('kanriYearAmt').textContent='¥'+fmt(knYA);document.getElementById('kanriYearCnt').textContent=knYR.length+'件';
+    document.getElementById('kojiYearGoal').innerHTML=goalBarHTML(kYA,goals.kojiYear,'koji');
+    document.getElementById('kanriYearGoal').innerHTML=goalBarHTML(knYA,goals.kanriYear,'kanri');
+
+    const sm=getSM();const[smY,smM]=sm.split('-').map(Number);
+    const smR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===smY&&new Date(r.date).getMonth()+1===smM);
+    const kMR=smR.filter(r=>r.dept==='工事課'),knMR=smR.filter(r=>r.dept==='管理課');
+    const kMA=kMR.reduce((s,r)=>s+Number(r.amount||0),0),knMA=knMR.reduce((s,r)=>s+Number(r.amount||0),0);
+    document.getElementById('kojiMonthAmt').textContent='¥'+fmt(kMA);document.getElementById('kojiMonthCnt').textContent=kMR.length+'件';
+    document.getElementById('kanriMonthAmt').textContent='¥'+fmt(knMA);document.getElementById('kanriMonthCnt').textContent=knMR.length+'件';
+    document.getElementById('kojiMonthGoal').innerHTML=goalBarHTML(kMA,goals.kojiMonth,'koji');
+    document.getElementById('kanriMonthGoal').innerHTML=goalBarHTML(knMA,goals.kanriMonth,'kanri');
+
+    const assignees=[...new Set(syR.map(r=>r.assignee).filter(Boolean))].sort();
+    const psl=document.getElementById('personSummaryList');
+    if(!assignees.length){psl.innerHTML='<div class="empty-state" style="padding:24px 0">担当者データがありません</div>';}
+    else{psl.innerHTML=assignees.map(name=>{const yRecs=syR.filter(r=>r.assignee===name);const mRecs=smR.filter(r=>r.assignee===name);const yAmt=yRecs.reduce((s,r)=>s+Number(r.amount||0),0);const mAmt=mRecs.reduce((s,r)=>s+Number(r.amount||0),0);const g=personGoals[name]||{};const dept=yRecs[0]?.dept||'';return`<div class="person-summary-card"><div class="person-summary-header"><div><span class="dept-badge ${dc(dept)}">${esc(dept)}</span><span class="person-summary-name">${esc(name)}</span></div><div class="person-summary-right"><div class="person-summary-year-amt${dept==='管理課'?' p':''}">¥${fmt(yAmt)}</div><div class="person-summary-count">${sy}年 ${yRecs.length}件</div></div></div><div class="person-goal-grid">${personGoalItemHTML('月間達成率',mAmt,g.month)}${personGoalItemHTML('年間達成率',yAmt,g.year)}</div></div>`;}).join('');}
+
+    const fy=getFY();const fyR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===fy);
+    const dfR=deptFilter==='all'?fyR:fyR.filter(r=>r.dept===deptFilter);
+    document.getElementById('yearTotal').textContent='¥'+fmt(dfR.reduce((s,r)=>s+Number(r.amount||0),0));
+    const lc=document.getElementById('listContent');
+    if(currentSub==='list'){const listR=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);if(!listR.length){lc.innerHTML='<div class="empty-state">まだ登録がありません</div>';return;}if(deptFilter==='all'){const kR=listR.filter(r=>r.dept==='工事課'),knR=listR.filter(r=>r.dept==='管理課'),otR=listR.filter(r=>r.dept!=='工事課'&&r.dept!=='管理課');let html='';if(kR.length){const t=kR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title koji">🔨 工事課</span><span class="section-subtotal koji">¥${fmt(t)} / ${kR.length}件</span><div class="section-line"></div></div>`+kR.map(recordHTML).join('');}if(knR.length){const t=knR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title kanri">📋 管理課</span><span class="section-subtotal kanri">¥${fmt(t)} / ${knR.length}件</span><div class="section-line"></div></div>`+knR.map(recordHTML).join('');}if(otR.length)html+=otR.map(recordHTML).join('');lc.innerHTML=html;}else{lc.innerHTML=listR.map(recordHTML).join('');}return;}
+    if(currentSub==='monthly'){const maxV=Math.max(...MONTHS.map((_,i)=>dfR.filter(r=>new Date(r.date).getMonth()+1===i+1).reduce((s,r)=>s+Number(r.amount||0),0)),1);lc.innerHTML=MONTHS.map((label,i)=>{const items=dfR.filter(r=>new Date(r.date).getMonth()+1===i+1);const total=items.reduce((s,r)=>s+Number(r.amount||0),0);const chips=items.map(r=>`<span class="chip"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');return`<div class="agg-row${!items.length?' empty':''}"><div class="agg-header"><span class="agg-label">${fy}年 ${label}</span><div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div></div>${items.length?`<div class="bar-bg"><div class="bar-fill blue" style="width:${(total/maxV*100).toFixed(1)}%"></div></div><div class="chips">${chips}</div>`:''}</div>`;}).join('');return;}
+    if(currentSub==='assignee'){const map={};dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});const entries=Object.values(map).sort((a,b)=>b.total-a.total);if(!entries.length){lc.innerHTML='<div class="empty-state">データがありません</div>';return;}const maxV=Math.max(...entries.map(e=>e.total),1);lc.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');}
   }
- 
-  // ── 一覧ページ ──
-  const fy=getFY();
-  const fyR=records.filter(r=>r.date&&new Date(r.date).getFullYear()===fy);
-  const dfR=deptFilter==='all'?fyR:fyR.filter(r=>r.dept===deptFilter);
-  document.getElementById('yearTotal').textContent='¥'+fmt(dfR.reduce((s,r)=>s+Number(r.amount||0),0));
- 
-  const lc=document.getElementById('listContent');
- 
-  if(currentSub==='list'){
-    const listR=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);
-    if(!listR.length){lc.innerHTML='<div class="empty-state">まだ登録がありません</div>';return;}
-    if(deptFilter==='all'){
-      const kR=listR.filter(r=>r.dept==='工事課'),knR=listR.filter(r=>r.dept==='管理課'),otR=listR.filter(r=>r.dept!=='工事課'&&r.dept!=='管理課');
-      let html='';
-      if(kR.length){const t=kR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title koji">🔨 工事課</span><span class="section-subtotal koji">¥${fmt(t)} / ${kR.length}件</span><div class="section-line"></div></div>`+kR.map(recordHTML).join('');}
-      if(knR.length){const t=knR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title kanri">📋 管理課</span><span class="section-subtotal kanri">¥${fmt(t)} / ${knR.length}件</span><div class="section-line"></div></div>`+knR.map(recordHTML).join('');}
-      if(otR.length)html+=otR.map(recordHTML).join('');
-      lc.innerHTML=html;
-    }else{lc.innerHTML=listR.map(recordHTML).join('');}
-    return;
-  }
- 
-  if(currentSub==='monthly'){
-    const maxV=Math.max(...MONTHS.map((_,i)=>dfR.filter(r=>new Date(r.date).getMonth()+1===i+1).reduce((s,r)=>s+Number(r.amount||0),0)),1);
-    lc.innerHTML=MONTHS.map((label,i)=>{
-      const items=dfR.filter(r=>new Date(r.date).getMonth()+1===i+1);
-      const total=items.reduce((s,r)=>s+Number(r.amount||0),0);
-      const chips=items.map(r=>`<span class="chip"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');
-      return`<div class="agg-row${!items.length?' empty':''}"><div class="agg-header"><span class="agg-label">${fy}年 ${label}</span><div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div></div>${items.length?`<div class="bar-bg"><div class="bar-fill blue" style="width:${(total/maxV*100).toFixed(1)}%"></div></div><div class="chips">${chips}</div>`:''}</div>`;
-    }).join('');
-    return;
-  }
- 
-  if(currentSub==='assignee'){
-    const map={};
-    dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});
-    const entries=Object.values(map).sort((a,b)=>b.total-a.total);
-    if(!entries.length){lc.innerHTML='<div class="empty-state">データがありません</div>';return;}
-    const maxV=Math.max(...entries.map(e=>e.total),1);
-    lc.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label person"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');
+
+  // ── 着工予定 ──
+  if(!isSchedLoading){
+    const teamMap={};
+    schedRecords.forEach(r=>{if(!teamMap[r.team])teamMap[r.team]={count:0,mandays:0,managers:new Set()};teamMap[r.team].count++;teamMap[r.team].mandays+=Number(r.mandays||0);if(r.manager)teamMap[r.team].managers.add(r.manager);});
+    const teamEntries=Object.entries(teamMap).sort((a,b)=>b[1].mandays-a[1].mandays);
+    const maxMD=Math.max(...teamEntries.map(([,v])=>v.mandays),1);
+    const totalMD=schedRecords.reduce((s,r)=>s+Number(r.mandays||0),0);
+    document.getElementById('schedTotalMD').textContent=totalMD+'人工';
+    const tsl=document.getElementById('teamSummaryList');
+    if(!teamEntries.length){tsl.innerHTML='<div class="empty-state" style="padding:16px 0;font-size:13px">着工予定を登録すると班別集計が表示されます</div>';}
+    else{tsl.innerHTML=teamEntries.map(([team,val])=>{const c=getTeamColor(team);const pct=Math.round(val.mandays/maxMD*100);return`<div class="team-summary-card" style="background:${c.bg};border:1px solid ${c.border}"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:14px;font-weight:800;color:${c.text}">${esc(team)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc([...val.managers].join('・'))||'未設定'}</div></div><div style="text-align:right"><span style="font-size:20px;font-weight:900;color:${c.text}">${val.mandays}</span><span style="font-size:11px;color:var(--muted);margin-left:2px">人工</span><div style="font-size:11px;color:var(--muted)">${val.count}現場</div></div></div><div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${c.text};border-radius:3px"></div></div></div>`;}).join('');}
+
+    const sc=document.getElementById('schedContent');
+    if(currentSchedSub==='list'){
+      if(!schedRecords.length){sc.innerHTML='<div class="empty-state">まだ登録がありません<br><br>右下の 📅 タブの ＋ ボタンから登録できます</div>';return;}
+      sc.innerHTML=schedRecords.map(r=>{const c=getTeamColor(r.team);return`<div class="sched-record"><div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;margin-bottom:5px"><span class="sched-date-badge">${(r.date||'').slice(5).replace('-','/')}</span><span style="font-size:15px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.siteName)}</span></div><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="sched-team-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div><div class="mandays-badge"><span class="mandays-num">${r.mandays}</span><span class="mandays-unit">人工</span></div></div><div class="record-actions"><button class="btn-edit" onclick="openSchedModal('${r.id}')">編集</button><button class="btn-del" onclick="handleSchedDelete('${r.id}')">削除</button></div></div></div>`;}).join('');return;
+    }
+    if(currentSchedSub==='week'){
+      const weekDates=getNextWeekDates();
+      const grouped={};schedRecords.forEach(r=>{if(!grouped[r.date])grouped[r.date]=[];grouped[r.date].push(r);});
+      sc.innerHTML=weekDates.map((d,i)=>{
+        const key=dateToStr(d);const items=grouped[key]||[];const dayMD=items.reduce((s,r)=>s+Number(r.mandays||0),0);const isSat=i===5;
+        return`<div class="day-block${!items.length?' empty':''}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${items.length?10:0}px"><span style="font-weight:800;font-size:15px;color:${isSat?'#60a5fa':'#fff'}">${d.getMonth()+1}/${d.getDate()}（${DAYS[i]}）</span><div><span style="font-weight:900;font-size:15px;color:var(--amber)">${items.length}件</span>${dayMD>0?`<span style="font-size:11px;color:var(--muted);margin-left:8px">${dayMD}人工</span>`:''}</div></div>${items.length?items.map(r=>{const c=getTeamColor(r.team);return`<div class="day-item"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700">${esc(r.siteName)}</span><span style="font-size:13px;font-weight:900;color:var(--red)">${r.mandays}人工</span></div><div style="margin-top:4px"><span class="sched-team-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;padding:1px 6px;border-radius:4px;margin-right:6px">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div></div>`;}).join(''):`<div class="no-schedule">予定なし</div>`}</div>`;
+      }).join('');
+    }
   }
 };
- 
-if('serviceWorker' in navigator){const sw=`const C='kanko-v7';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
+
+if('serviceWorker' in navigator){const sw=`const C='kanko-v8';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
 </script>
 </body>
 </html>
- 
