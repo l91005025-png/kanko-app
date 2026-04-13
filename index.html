@@ -206,14 +206,100 @@ input::placeholder{color:#4a5568;}
 .day-block.empty{opacity:.4;}
 .day-item{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
 .no-schedule{font-size:12px;color:#4a5568;}
+.ampm-btn{padding:10px 4px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;text-align:center;line-height:1.6;transition:all .2s;}
+.ampm-btn.active-ampm{border-color:var(--amber);background:rgba(245,158,11,.15);color:var(--amber);}
+.daily-date-card{background:var(--surface);border-radius:14px;padding:14px;margin-top:8px;border:1px solid var(--border);}
+.daily-date-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.daily-cal{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1e293b,#0f172a);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);flex-shrink:0;}
+.daily-cal-day{font-size:18px;font-weight:900;line-height:1;}
+.daily-cal-dow{font-size:9px;font-weight:700;}
+.ampm-block{border-radius:8px;padding:6px 10px;margin-bottom:6px;}
 
 .empty-state{text-align:center;color:#4a5568;padding:48px 0;font-size:14px;}
 .loading-state{text-align:center;color:var(--muted);padding:48px 0;font-size:14px;}
 .toast{position:fixed;bottom:calc(var(--tab-h) + var(--safe-bottom) + 12px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 20px;font-size:14px;color:var(--text);box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;z-index:999;animation:fadeUp .25s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+/* PINスクリーン */
+#pinScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.pin-logo{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#2563eb,#1e3a8a);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:36px;}
+.pin-title{font-size:22px;font-weight:800;color:#fff;text-align:center;}
+.pin-sub{font-size:13px;color:var(--muted);margin-top:6px;text-align:center;}
+.pin-dots{display:flex;gap:16px;margin:32px 0;}
+.pin-dot{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.15);transition:background .2s;}
+.pin-dot.filled{background:var(--accent);box-shadow:0 0 8px rgba(79,156,249,0.6);}
+.pin-dot.error{background:var(--danger);}
+.pin-error{color:var(--danger);font-size:13px;margin-top:-16px;margin-bottom:16px;min-height:18px;}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:280px;}
+.pin-key{height:72px;border-radius:16px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:var(--text);font-size:26px;font-weight:600;cursor:pointer;transition:background .15s;}
+.pin-key:active{background:rgba(255,255,255,0.14);}
+.pin-key.del{color:var(--danger);font-size:22px;}
+.pin-key.empty{background:transparent;border-color:transparent;cursor:default;}
+
 </style>
 </head>
 <body>
+
+
+<!-- PINスクリーン -->
+<div id="pinScreen">
+  <div class="pin-logo">🏠</div>
+  <div class="pin-title">完工金集計</div>
+  <div class="pin-sub">PINコードを入力してください</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <button class="pin-key empty" disabled></button>
+    <button class="pin-key" onclick="pinPress('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+</div>
+
+<script>
+const PIN_CORRECT='5963';
+let pinVal='';
+function pinPress(v){
+  if(pinVal.length>=4)return;
+  pinVal+=v;
+  updateDots();
+  if(pinVal.length===4){
+    setTimeout(()=>{
+      if(pinVal===PIN_CORRECT){
+        document.getElementById('pinScreen').style.display='none';
+      }else{
+        document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('error'));
+        document.getElementById('pinError').textContent='PINが違います';
+        setTimeout(()=>{
+          pinVal='';
+          updateDots(true);
+          document.getElementById('pinError').textContent='';
+        },700);
+      }
+    },200);
+  }
+}
+function pinDel(){if(pinVal.length>0){pinVal=pinVal.slice(0,-1);updateDots();}}
+function updateDots(reset){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled',!reset&&i<pinVal.length);
+    d.classList.remove('error');
+  }
+}
+</script>
 
 <div class="header">
   <div class="header-inner">
@@ -306,6 +392,7 @@ input::placeholder{color:#4a5568;}
   <div class="sub-tabs">
     <button class="sub-tab active" id="sub-list" onclick="switchSub('list')">一覧</button>
     <button class="sub-tab" id="sub-monthly" onclick="switchSub('monthly')">月別</button>
+    <button class="sub-tab" id="sub-daily" onclick="switchSub('daily')">📅 日別</button>
     <button class="sub-tab" id="sub-assignee" onclick="switchSub('assignee')">担当者別</button>
   </div>
   <div class="dept-filter">
@@ -404,6 +491,14 @@ input::placeholder{color:#4a5568;}
     <div class="field"><label>担当班 *</label><input type="text" id="sfTeam" placeholder="例：塗装班A"></div>
     <div class="field"><label>担当管理者</label><input type="text" id="sfManager" placeholder="例：鈴木 一郎"></div>
     <div class="field"><label>人工数 *</label><input type="number" id="sfMandays" placeholder="例：3" inputmode="numeric"></div>
+    <div class="field">
+      <label>着工時間帯 *</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+        <button type="button" class="ampm-btn" id="ampm-am" onclick="selectAmpm('午前')">🌅<br><span>午前</span></button>
+        <button type="button" class="ampm-btn" id="ampm-pm" onclick="selectAmpm('午後')">🌇<br><span>午後</span></button>
+        <button type="button" class="ampm-btn active-ampm" id="ampm-all" onclick="selectAmpm('終日')">📅<br><span>終日</span></button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeSchedModal()">キャンセル</button>
       <button class="modal-save amber" id="schedSaveBtn" onclick="handleSchedSubmit()">登録する</button>
@@ -503,6 +598,15 @@ const DAYS=['月','火','水','木','金','土','日','月','火','水','木','�
 window.handleCenterBtn=()=>{ if(currentPage==='schedule')openSchedModal(); else switchPage('reg'); };
 
 // 着工予定モーダル
+let schedAmpm='終日';
+window.selectAmpm=v=>{
+  schedAmpm=v;
+  ['am','pm','all'].forEach(k=>{
+    const map={'am':'午前','pm':'午後','all':'終日'};
+    const el=document.getElementById('ampm-'+k);
+    if(el)el.className='ampm-btn'+(map[k]===v?' active-ampm':'');
+  });
+};
 window.openSchedModal=id=>{
   schedEditId=id||null;
   if(id){
@@ -512,12 +616,14 @@ window.openSchedModal=id=>{
     document.getElementById('sfTeam').value=r.team||'';
     document.getElementById('sfManager').value=r.manager||'';
     document.getElementById('sfMandays').value=r.mandays||'';
+    window.selectAmpm(r.ampm||'終日');
     document.getElementById('schedModalTitle').textContent='✏️ 着工予定を編集';
     document.getElementById('schedSaveBtn').textContent='更新する';
   }else{
     ['sfDate','sfSite','sfTeam','sfManager','sfMandays'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('schedModalTitle').textContent='＋ 着工予定を登録';
     document.getElementById('schedSaveBtn').textContent='登録する';
+    window.selectAmpm('終日');
   }
   document.getElementById('schedModal').style.display='flex';
 };
@@ -525,7 +631,7 @@ window.closeSchedModal=()=>{document.getElementById('schedModal').style.display=
 window.handleSchedSubmit=async()=>{
   const d=document.getElementById('sfDate').value,s=document.getElementById('sfSite').value.trim(),t=document.getElementById('sfTeam').value.trim(),m=document.getElementById('sfManager').value.trim(),md=document.getElementById('sfMandays').value;
   if(!d||!s||!t||!md){showToast('⚠️ 日付・現場名・担当班・人工数は必須です');return;}
-  const data={date:d,siteName:s,team:t,manager:m,mandays:Number(md)};
+  const data={date:d,siteName:s,team:t,manager:m,mandays:Number(md),ampm:schedAmpm};
   const btn=document.getElementById('schedSaveBtn');btn.disabled=true;
   try{
     if(schedEditId){await updateDoc(doc(db,'schedule',schedEditId),{...data,updatedAt:serverTimestamp()});showToast('✅ 更新しました');}
@@ -551,7 +657,7 @@ window.switchSchedSub=sub=>{
 };
 
 // 完工金関連
-window.switchSub=sub=>{currentSub=sub;['list','monthly','assignee'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('active',s===sub));document.getElementById('yearBar').style.display=sub==='list'?'none':'flex';render();};
+window.switchSub=sub=>{currentSub=sub;['list','monthly','daily','assignee'].forEach(s=>{const el=document.getElementById('sub-'+s);if(el)el.classList.toggle('active',s===sub);});document.getElementById('yearBar').style.display=(sub==='list'||sub==='daily')?'none':'flex';render();};
 window.setDF=dept=>{deptFilter=dept;document.getElementById('df-all').className='dft-btn'+(dept==='all'?' a-all':'');document.getElementById('df-koji').className='dft-btn'+(dept==='工事課'?' a-koji':'');document.getElementById('df-kanri').className='dft-btn'+(dept==='管理課'?' a-kanri':'');render();};
 
 function goalBarHTML(actual,goal,cls){if(!goal)return`<div class="goal-not-set">目標未設定</div>`;const pct=Math.round(actual/goal*100),over=actual>=goal;return`<div class="goal-bar-wrap"><div class="goal-meta"><span class="goal-pct" style="color:${over?'var(--green)':'inherit'}">${pct}%達成</span><span style="color:var(--muted);font-size:10px">${over?'✅ 達成！':'残 ¥'+fmt(goal-actual)}</span></div><div class="goal-bar-bg"><div class="goal-bar-fill ${over?'over':cls}" style="width:${Math.min(pct,100)}%"></div></div></div>`;}
@@ -620,6 +726,43 @@ window.render=()=>{
     const lc=document.getElementById('listContent');
     if(currentSub==='list'){const listR=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);if(!listR.length){lc.innerHTML='<div class="empty-state">まだ登録がありません</div>';}else if(deptFilter==='all'){const kR=listR.filter(r=>r.dept==='工事課'),knR=listR.filter(r=>r.dept==='管理課'),otR=listR.filter(r=>r.dept!=='工事課'&&r.dept!=='管理課');let html='';if(kR.length){const t=kR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title koji">🔨 工事課</span><span class="section-subtotal koji">¥${fmt(t)} / ${kR.length}件</span><div class="section-line"></div></div>`+kR.map(recordHTML).join('');}if(knR.length){const t=knR.reduce((s,r)=>s+Number(r.amount||0),0);html+=`<div class="section-header"><div class="section-line"></div><span class="section-title kanri">📋 管理課</span><span class="section-subtotal kanri">¥${fmt(t)} / ${knR.length}件</span><div class="section-line"></div></div>`+knR.map(recordHTML).join('');}if(otR.length)html+=otR.map(recordHTML).join('');lc.innerHTML=html;}else{lc.innerHTML=listR.map(recordHTML).join('');}
     }else if(currentSub==='monthly'){const maxV=Math.max(...MONTHS.map((_,i)=>dfR.filter(r=>new Date(r.date).getMonth()+1===i+1).reduce((s,r)=>s+Number(r.amount||0),0)),1);lc.innerHTML=MONTHS.map((label,i)=>{const items=dfR.filter(r=>new Date(r.date).getMonth()+1===i+1);const total=items.reduce((s,r)=>s+Number(r.amount||0),0);const chips=items.map(r=>`<span class="chip"><span class="dept-badge ${dc(r.dept)}">${esc(r.dept||'')}</span>${esc(r.name)} ¥${fmt(r.amount)}</span>`).join('');return`<div class="agg-row${!items.length?' empty':''}"><div class="agg-header"><span class="agg-label">${fy}年 ${label}</span><div class="agg-right"><span class="agg-amount">¥${fmt(total)}</span><span class="agg-count">${items.length}件</span></div></div>${items.length?`<div class="bar-bg"><div class="bar-fill blue" style="width:${(total/maxV*100).toFixed(1)}%"></div></div><div class="chips">${chips}</div>`:''}</div>`;}).join('');
+    }else if(currentSub==='daily'){
+      // 日別ビュー
+      const allRecs=deptFilter==='all'?records:records.filter(r=>r.dept===deptFilter);
+      const byDate={};allRecs.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
+      const sortedD=Object.keys(byDate).sort((a,b)=>b>a?1:-1);
+      if(!sortedD.length){lc.innerHTML='<div class="empty-state">データがありません</div>';}
+      else{
+        lc.innerHTML='<div style="font-size:12px;color:var(--muted);margin:8px 0 4px;padding:6px 10px;background:rgba(79,156,249,0.08);border-radius:8px;border:1px solid rgba(79,156,249,0.15)">📅 完工日ごとの進捗を確認できます</div>'+sortedD.map(date=>{
+          const items=byDate[date];
+          const total=items.reduce((s,r)=>s+Number(r.amount||0),0);
+          const kojiA=items.filter(r=>r.dept==='工事課').reduce((s,r)=>s+Number(r.amount||0),0);
+          const kanriA=items.filter(r=>r.dept==='管理課').reduce((s,r)=>s+Number(r.amount||0),0);
+          const dObj=new Date(date);const dow=['日','月','火','水','木','金','土'][dObj.getDay()];
+          const isWE=dObj.getDay()===0||dObj.getDay()===6;
+          const dowColor=dObj.getDay()===0?'var(--danger)':dObj.getDay()===6?'#60a5fa':'var(--text)';
+          return\`<div class="daily-date-card">
+            <div class="daily-date-header">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="daily-cal">
+                  <div class="daily-cal-day" style="color:\${dowColor}">\${dObj.getDate()}</div>
+                  <div class="daily-cal-dow" style="color:\${dowColor}">\${dow}曜</div>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:700">\${dObj.getMonth()+1}月\${dObj.getDate()}日（\${dow}）</div>
+                  <div style="font-size:11px;color:var(--muted)">\${items.length}件完工</div>
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:18px;font-weight:900;color:var(--accent)">¥\${fmt(total)}</div>
+              </div>
+            </div>
+            \${kojiA>0?\`<div class="ampm-block" style="background:rgba(79,156,249,0.08);border:1px solid rgba(79,156,249,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--accent);font-weight:700">🔨 工事課</span><span style="font-size:13px;font-weight:900;color:var(--accent)">¥\${fmt(kojiA)}</span></div></div>\`:''}
+            \${kanriA>0?\`<div class="ampm-block" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--purple);font-weight:700">📋 管理課</span><span style="font-size:13px;font-weight:900;color:var(--purple)">¥\${fmt(kanriA)}</span></div></div>\`:''}
+            \${items.map(r=>\`<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:4px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">\${esc(r.name)}</span><span style="font-size:13px;font-weight:900;color:var(--accent);flex-shrink:0;margin-left:8px">¥\${fmt(r.amount)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">担当：\${esc(r.assignee||'未設定')}</div></div>\`).join('')}
+          </div>\`;
+        }).join('');
+      }
     }else if(currentSub==='assignee'){const map={};dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});const entries=Object.values(map).sort((a,b)=>b.total-a.total);if(!entries.length){lc.innerHTML='<div class="empty-state">データがありません</div>';}else{const maxV=Math.max(...entries.map(e=>e.total),1);lc.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');}}
   }
 
@@ -638,20 +781,22 @@ window.render=()=>{
     const sc=document.getElementById('schedContent');
     if(currentSchedSub==='list'){
       if(!schedRecords.length){sc.innerHTML='<div class="empty-state">まだ登録がありません<br><br>右下の 📅 タブの ＋ ボタンから登録できます</div>';return;}
-      sc.innerHTML=schedRecords.map(r=>{const c=getTeamColor(r.team);return`<div class="sched-record"><div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;margin-bottom:5px"><span class="sched-date-badge">${(r.date||'').slice(5).replace('-','/')}</span><span style="font-size:15px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.siteName)}</span></div><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="sched-team-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div><div class="mandays-badge"><span class="mandays-num">${r.mandays}</span><span class="mandays-unit">人工</span></div></div><div class="record-actions"><button class="btn-edit" onclick="openSchedModal('${r.id}')">編集</button><button class="btn-del" onclick="handleSchedDelete('${r.id}')">削除</button></div></div></div>`;}).join('');return;
+      sc.innerHTML=schedRecords.map(r=>{const c=getTeamColor(r.team);return`<div class="sched-record"><div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;margin-bottom:5px"><span class="sched-date-badge">${(r.date||'').slice(5).replace('-','/')}</span>${r.ampm?`<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:${r.ampm==='午前'?'rgba(79,156,249,0.15)':r.ampm==='午後'?'rgba(245,158,11,0.15)':'rgba(34,197,94,0.15)'};color:${r.ampm==='午前'?'#4f9cf9':r.ampm==='午後'?'#f59e0b':'#22c55e'};margin-right:4px">${r.ampm==='午前'?'🌅':r.ampm==='午後'?'🌇':'📅'} ${r.ampm}</span>`:''}<span style="font-size:15px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.siteName)}</span></div><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="sched-team-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div><div class="mandays-badge"><span class="mandays-num">${r.mandays}</span><span class="mandays-unit">人工</span></div></div><div class="record-actions"><button class="btn-edit" onclick="openSchedModal('${r.id}')">編集</button><button class="btn-del" onclick="handleSchedDelete('${r.id}')">削除</button></div></div></div>`;}).join('');return;
     }
     if(currentSchedSub==='week'){
       const weekDates=getNextWeekDates();
       const grouped={};schedRecords.forEach(r=>{if(!grouped[r.date])grouped[r.date]=[];grouped[r.date].push(r);});
       sc.innerHTML=weekDates.map((d,i)=>{
         const key=dateToStr(d);const items=grouped[key]||[];const dayMD=items.reduce((s,r)=>s+Number(r.mandays||0),0);const isSat=i%7===5;const isSun=i%7===6;const dayColor=isSun?'#f87171':isSat?'#60a5fa':'#fff';
-        return`<div class="day-block${!items.length?' empty':''}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${items.length?10:0}px"><span style="font-weight:800;font-size:15px;color:${dayColor}">${d.getMonth()+1}/${d.getDate()}（${DAYS[i]}）</span><div><span style="font-weight:900;font-size:15px;color:var(--amber)">${items.length}件</span>${dayMD>0?`<span style="font-size:11px;color:var(--muted);margin-left:8px">${dayMD}人工</span>`:''}</div></div>${items.length?items.map(r=>{const c=getTeamColor(r.team);return`<div class="day-item"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700">${esc(r.siteName)}</span><span style="font-size:13px;font-weight:900;color:var(--red)">${r.mandays}人工</span></div><div style="margin-top:4px"><span class="sched-team-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;padding:1px 6px;border-radius:4px;margin-right:6px">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div></div>`;}).join(''):`<div class="no-schedule">予定なし</div>`}</div>`;
+        const amItems=items.filter(r=>r.ampm==='午前');const pmItems=items.filter(r=>r.ampm==='午後');const adItems=items.filter(r=>!r.ampm||r.ampm==='終日');
+        const renderSchedItems=(arr,bg,borderC,labelColor,icon,label)=>arr.length?`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:${labelColor};margin-bottom:4px">${icon} ${label}</div>${arr.map(r=>{const c=getTeamColor(r.team);return`<div style="background:${bg};border:1px solid ${borderC};border-radius:8px;padding:7px 10px;margin-bottom:4px"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">${esc(r.siteName)}</span><span style="font-size:12px;font-weight:900;color:var(--red)">${r.mandays}人工</span></div><div style="margin-top:3px"><span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c.bg};color:${c.text};border:1px solid ${c.border};margin-right:6px">${esc(r.team)}</span><span style="font-size:11px;color:var(--muted)">👤 ${esc(r.manager)||'未設定'}</span></div></div>`;}).join('')}</div>`:'';
+        return`<div class="day-block${!items.length?' empty':''}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${items.length?10:0}px"><span style="font-weight:800;font-size:15px;color:${dayColor}">${d.getMonth()+1}/${d.getDate()}（${DAYS[i]}）</span><div><span style="font-weight:900;font-size:15px;color:var(--amber)">${items.length}件</span>${dayMD>0?`<span style="font-size:11px;color:var(--muted);margin-left:8px">${dayMD}人工</span>`:''}</div></div>${items.length?renderSchedItems(amItems,'rgba(79,156,249,0.06)','rgba(79,156,249,0.15)','#4f9cf9','🌅','午前')+renderSchedItems(pmItems,'rgba(245,158,11,0.06)','rgba(245,158,11,0.15)','#f59e0b','🌇','午後')+renderSchedItems(adItems,'rgba(34,197,94,0.06)','rgba(34,197,94,0.15)','#22c55e','📅','終日'):`<div class="no-schedule">予定なし</div>`}</div>`;
       }).join('');
     }
   }
 };
 
-if('serviceWorker' in navigator){const sw=`const C='kanko-v8';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
+if('serviceWorker' in navigator){const sw=`const C='kanko-v9';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{if(e.request.url.includes('firestore.googleapis.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
 </script>
 </body>
 </html>
