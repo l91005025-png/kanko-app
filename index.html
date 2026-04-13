@@ -741,26 +741,24 @@ window.render=()=>{
           const dObj=new Date(date);const dow=['日','月','火','水','木','金','土'][dObj.getDay()];
           const isWE=dObj.getDay()===0||dObj.getDay()===6;
           const dowColor=dObj.getDay()===0?'var(--danger)':dObj.getDay()===6?'#60a5fa':'var(--text)';
-          return\`<div class="daily-date-card">
-            <div class="daily-date-header">
-              <div style="display:flex;align-items:center;gap:10px">
-                <div class="daily-cal">
-                  <div class="daily-cal-day" style="color:\${dowColor}">\${dObj.getDate()}</div>
-                  <div class="daily-cal-dow" style="color:\${dowColor}">\${dow}曜</div>
-                </div>
-                <div>
-                  <div style="font-size:13px;font-weight:700">\${dObj.getMonth()+1}月\${dObj.getDate()}日（\${dow}）</div>
-                  <div style="font-size:11px;color:var(--muted)">\${items.length}件完工</div>
-                </div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-size:18px;font-weight:900;color:var(--accent)">¥\${fmt(total)}</div>
-              </div>
-            </div>
-            \${kojiA>0?\`<div class="ampm-block" style="background:rgba(79,156,249,0.08);border:1px solid rgba(79,156,249,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--accent);font-weight:700">🔨 工事課</span><span style="font-size:13px;font-weight:900;color:var(--accent)">¥\${fmt(kojiA)}</span></div></div>\`:''}
-            \${kanriA>0?\`<div class="ampm-block" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--purple);font-weight:700">📋 管理課</span><span style="font-size:13px;font-weight:900;color:var(--purple)">¥\${fmt(kanriA)}</span></div></div>\`:''}
-            \${items.map(r=>\`<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:4px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">\${esc(r.name)}</span><span style="font-size:13px;font-weight:900;color:var(--accent);flex-shrink:0;margin-left:8px">¥\${fmt(r.amount)}</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">担当：\${esc(r.assignee||'未設定')}</div></div>\`).join('')}
-          </div>\`;
+          const dateStr=(dObj.getMonth()+1)+'月'+dObj.getDate()+'日（'+dow+'）';
+          let html='<div class="daily-date-card">';
+          html+='<div class="daily-date-header">';
+          html+='<div style="display:flex;align-items:center;gap:10px">';
+          html+='<div class="daily-cal">';
+          html+='<div class="daily-cal-day" style="color:'+dowColor+'">'+dObj.getDate()+'</div>';
+          html+='<div class="daily-cal-dow" style="color:'+dowColor+'">'+dow+'曜</div>';
+          html+='</div><div>';
+          html+='<div style="font-size:13px;font-weight:700">'+dateStr+'</div>';
+          html+='<div style="font-size:11px;color:var(--muted)">'+items.length+'件完工</div>';
+          html+='</div></div>';
+          html+='<div style="text-align:right"><div style="font-size:18px;font-weight:900;color:var(--accent)">¥'+fmt(total)+'</div></div>';
+          html+='</div>';
+          if(kojiA>0)html+='<div class="ampm-block" style="background:rgba(79,156,249,0.08);border:1px solid rgba(79,156,249,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--accent);font-weight:700">🔨 工事課</span><span style="font-size:13px;font-weight:900;color:var(--accent)">¥'+fmt(kojiA)+'</span></div></div>';
+          if(kanriA>0)html+='<div class="ampm-block" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15)"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--purple);font-weight:700">📋 管理課</span><span style="font-size:13px;font-weight:900;color:var(--purple)">¥'+fmt(kanriA)+'</span></div></div>';
+          items.forEach(r=>{html+='<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:4px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+esc(r.name)+'</span><span style="font-size:13px;font-weight:900;color:var(--accent);flex-shrink:0;margin-left:8px">¥'+fmt(r.amount)+'</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">担当：'+esc(r.assignee||'未設定')+'</div></div>';});
+          html+='</div>';
+          return html;
         }).join('');
       }
     }else if(currentSub==='assignee'){const map={};dfR.forEach(r=>{const k=(r.assignee||'未設定')+'___'+(r.dept||'');if(!map[k])map[k]={name:r.assignee||'未設定',dept:r.dept||'',total:0,count:0};map[k].total+=Number(r.amount||0);map[k].count++;});const entries=Object.values(map).sort((a,b)=>b.total-a.total);if(!entries.length){lc.innerHTML='<div class="empty-state">データがありません</div>';}else{const maxV=Math.max(...entries.map(e=>e.total),1);lc.innerHTML=entries.map(d=>`<div class="agg-row"><div class="agg-header"><span class="agg-label"><span class="dept-badge ${dc(d.dept)}">${esc(d.dept)}</span>${esc(d.name)}</span><div class="agg-right"><span class="agg-amount${d.dept==='管理課'?' p':''}">¥${fmt(d.total)}</span><span class="agg-count">${d.count}件</span></div></div><div class="bar-bg"><div class="bar-fill ${d.dept==='管理課'?'purple':'blue'}" style="width:${(d.total/maxV*100).toFixed(1)}%"></div></div></div>`).join('');}}
