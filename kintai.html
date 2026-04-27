@@ -1,44 +1,34 @@
 <!DOCTYPE html>
 <!--
   ============================================================
-  勤怠管理Webアプリ（kintai.html）
+  勤怠管理Webアプリ（管理者用） - kintai.html
   既存Firebaseプロジェクト「kanko-app-96378」を流用
   ============================================================
 
+  ■ 役割分担
+  - スタッフ用（kintai-staff.html）
+      打刻 / 自分の勤怠一覧 / 申請提出
+  - 管理者用（この kintai.html）
+      全スタッフ勤怠閲覧 / 申請の承認・却下・取消・編集・削除 / スタッフ管理 / 設定
+      ※ adminロール以外のユーザーがログインすると管理者用機能は使えません
+
   ■ Firebaseコンソールでの事前設定（必須）
-  ------------------------------------------------------------
-  1. Firebase Console > kanko-app-96378 > Authentication > 「始める」をクリック
+  1. Firebase Console > kanko-app-96378 > Authentication > 「始める」
   2. Sign-in method > メール/パスワード を有効化
-  3. Firestore > ルール に以下を追記（既存ルールは残したまま追加）：
+  3. Firestore ルールに以下を追記（既存ルールはそのまま残す）：
 
-     rules_version = '2';
-     service cloud.firestore {
-       match /databases/{database}/documents {
-
-         // 既存ルール（records / schedule / settings 等）はそのまま残す
-
-         // --- 勤怠管理アプリ用ルール（追記） ---
-         match /users/{userId} {
-           allow read, write: if request.auth != null;
-         }
-         match /attendance/{docId} {
-           allow read, write: if request.auth != null;
-         }
-         match /requests/{docId} {
-           allow read, write: if request.auth != null;
-         }
-         match /kintai_settings/{docId} {
-           allow read: if request.auth != null;
-           allow write: if request.auth != null
-             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
-         }
-       }
+     match /users/{userId}       { allow read, write: if request.auth != null; }
+     match /attendance/{docId}   { allow read, write: if request.auth != null; }
+     match /requests/{docId}     { allow read, write: if request.auth != null; }
+     match /kintai_settings/{docId} {
+       allow read: if request.auth != null;
+       allow write: if request.auth != null
+         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
      }
 
   ■ 既存コレクションとの分離
-  ------------------------------------------------------------
-  既存の records / schedule / settings コレクションには一切触れません。
-  勤怠アプリは users / attendance / requests / kintai_settings のみ使用します。
+  既存の records / schedule / settings には一切触れません。
+  勤怠アプリは users / attendance / requests / kintai_settings のみ使用。
   ============================================================
 -->
 <html lang="ja">
@@ -46,114 +36,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#2563EB" />
-  <title>勤怠管理</title>
+  <title>勤怠（管理者）</title>
   <style>
-    /* ========== 基本スタイル ========== */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
-      background: #F8FAFC;
-      color: #0F172A;
-      font-size: 16px;
-      line-height: 1.5;
+      background: #F8FAFC; color: #0F172A;
+      font-size: 16px; line-height: 1.5;
     }
     button { font-family: inherit; cursor: pointer; }
     input, select, textarea { font-family: inherit; font-size: 16px; }
 
-    /* ========== ログイン画面 ========== */
-    #loginScreen {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .login-card {
-      background: #fff;
-      width: 100%;
-      max-width: 400px;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    }
-    .login-card h1 {
-      margin: 0 0 4px;
-      font-size: 24px;
-      color: #2563EB;
-    }
-    .login-card p.sub {
-      margin: 0 0 20px;
-      color: #64748B;
-      font-size: 14px;
-    }
-    .login-tabs {
-      display: flex;
-      background: #F1F5F9;
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 16px;
-    }
-    .login-tabs button {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      background: transparent;
-      border-radius: 8px;
-      color: #64748B;
-      font-weight: 600;
-    }
-    .login-tabs button.active {
-      background: #fff;
-      color: #2563EB;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+    #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { background: #fff; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
+    .login-card h1 { margin: 0 0 4px; font-size: 24px; color: #2563EB; }
+    .login-card p.sub { margin: 0 0 20px; color: #64748B; font-size: 14px; }
+    .login-tabs { display: flex; background: #F1F5F9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+    .login-tabs button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; color: #64748B; font-weight: 600; }
+    .login-tabs button.active { background: #fff; color: #2563EB; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 
-    /* ========== 共通フォーム ========== */
     .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 6px;
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #fff; transition: border-color 0.15s;
     }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #CBD5E1;
-      border-radius: 10px;
-      background: #fff;
-      transition: border-color 0.15s;
-    }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #2563EB;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
     }
     .form-group textarea { min-height: 80px; resize: vertical; }
 
-    /* ========== ボタン ========== */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 56px;
-      padding: 0 20px;
-      border: none;
-      border-radius: 12px;
-      background: #2563EB;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 700;
-      transition: background 0.15s, transform 0.05s;
-      width: 100%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 56px; padding: 0 20px; border: none; border-radius: 12px;
+      background: #2563EB; color: #fff; font-size: 16px; font-weight: 700;
+      transition: background 0.15s, transform 0.05s; width: 100%;
     }
     .btn:hover { background: #1D4ED8; }
     .btn:active { transform: scale(0.98); }
@@ -164,323 +81,124 @@
     .btn.danger:hover { background: #B91C1C; }
     .btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; width: auto; border-radius: 8px; }
 
-    /* ローディングスピナー */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
     .btn.secondary .spinner { border-color: rgba(37,99,235,0.3); border-top-color: #2563EB; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ========== メインアプリ ========== */
     #app { display: none; min-height: 100vh; padding-bottom: 80px; }
-    .topbar {
-      background: #2563EB;
-      color: #fff;
-      padding: 14px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+    #blockedScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 16px; text-align: center; }
+    #blockedScreen .card { max-width: 420px; }
+    #blockedScreen h2 { margin-top: 0; color: #DC2626; }
+    #blockedScreen a { color: #2563EB; }
+
+    .topbar { background: #2563EB; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
     .topbar h1 { margin: 0; font-size: 18px; }
     .topbar .user-info { font-size: 13px; opacity: 0.95; }
-    .topbar button {
-      background: rgba(255,255,255,0.18);
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-    }
+    .topbar button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
 
-    .container { padding: 16px; max-width: 800px; margin: 0 auto; }
+    .container { padding: 16px; max-width: 900px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); margin-bottom: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 16px; color: #1E293B; }
 
-    /* カード */
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 2px 8px rgba(15,23,42,0.05);
-      margin-bottom: 16px;
-    }
-    .card h2 {
-      margin: 0 0 12px;
-      font-size: 16px;
-      color: #1E293B;
-    }
-
-    /* ========== 打刻タブ ========== */
-    .clock-time {
-      font-size: 40px;
-      font-weight: 700;
-      text-align: center;
-      color: #2563EB;
-      font-variant-numeric: tabular-nums;
-      margin: 8px 0;
-    }
-    .clock-date {
-      text-align: center;
-      color: #64748B;
-      margin-bottom: 16px;
-    }
-    .clock-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 8px;
-    }
-    .clock-buttons .btn {
-      min-height: 72px;
-      font-size: 18px;
-    }
-    .btn-in { background: #10B981; }
-    .btn-in:hover { background: #059669; }
-    .btn-out { background: #F59E0B; }
-    .btn-out:hover { background: #D97706; }
-
-    .today-record {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .today-record .slot {
-      background: #F1F5F9;
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-    }
-    .today-record .slot .label { font-size: 11px; color: #64748B; }
-    .today-record .slot .value { font-size: 18px; font-weight: 700; color: #0F172A; font-variant-numeric: tabular-nums; }
-
-    /* ========== タブバー ========== */
-    .tabbar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #fff;
-      border-top: 1px solid #E2E8F0;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      z-index: 10;
-      box-shadow: 0 -2px 10px rgba(15,23,42,0.04);
-    }
-    .tabbar button {
-      padding: 10px 4px 14px;
-      border: none;
-      background: transparent;
-      color: #64748B;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      min-height: 60px;
-    }
+    .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 10; box-shadow: 0 -2px 10px rgba(15,23,42,0.04); }
+    .tabbar button { padding: 10px 4px 14px; border: none; background: transparent; color: #64748B; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; }
     .tabbar button.active { color: #2563EB; }
     .tabbar button .ico { font-size: 20px; line-height: 1; }
-    .tabbar button.admin-only { display: none; }
-    body.is-admin .tabbar button.admin-only { display: flex; }
 
-    /* ========== 勤怠一覧テーブル ========== */
-    .month-selector {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .month-selector input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid #CBD5E1;
-      border-radius: 10px;
-    }
-    .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
-    table.attendance {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    table.attendance th, table.attendance td {
-      padding: 8px 6px;
-      text-align: center;
-      border-bottom: 1px solid #E2E8F0;
-      white-space: nowrap;
-    }
-    table.attendance th {
-      background: #F8FAFC;
-      color: #475569;
-      font-weight: 600;
-    }
-    table.attendance td { font-variant-numeric: tabular-nums; }
-    table.attendance tr.saturday td:first-child,
-    table.attendance tr.saturday td:nth-child(2) { color: #2563EB; }
-    table.attendance tr.sunday td:first-child,
-    table.attendance tr.sunday td:nth-child(2),
-    table.attendance tr.holiday td:first-child,
-    table.attendance tr.holiday td:nth-child(2) { color: #DC2626; }
+    .month-selector { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .month-selector input { flex: 1; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 10px; }
 
-    .month-summary {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-    .month-summary .item {
-      background: #EFF6FF;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .month-summary .item .label { font-size: 12px; color: #475569; }
-    .month-summary .item .value { font-size: 20px; font-weight: 700; color: #2563EB; }
+    .staff-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #E2E8F0; gap: 8px; }
+    .staff-row:last-child { border-bottom: none; }
+    .staff-row .info .name { font-weight: 600; }
+    .staff-row .info .email { font-size: 12px; color: #64748B; }
+    .staff-row .controls { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .staff-row select { padding: 6px 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; }
 
-    /* ========== 申請 ========== */
-    .request-list .req-item {
-      padding: 12px;
-      border-radius: 10px;
-      background: #F8FAFC;
-      margin-bottom: 8px;
-      border-left: 4px solid #94A3B8;
-    }
+    .role-badge { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+    .role-admin { background: #FEF3C7; color: #B45309; }
+    .role-staff { background: #E0E7FF; color: #3730A3; }
+
+    .req-item { padding: 12px; border-radius: 10px; background: #F8FAFC; margin-bottom: 8px; border-left: 4px solid #94A3B8; }
     .req-item.status-申請中 { border-left-color: #F59E0B; }
     .req-item.status-承認 { border-left-color: #10B981; }
     .req-item.status-却下 { border-left-color: #DC2626; }
-    .req-item .head {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-    .req-item .status-badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #E2E8F0;
-      color: #475569;
-    }
+    .req-item .head { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 600; }
+    .req-item .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #E2E8F0; color: #475569; }
     .req-item.status-申請中 .status-badge { background: #FEF3C7; color: #B45309; }
     .req-item.status-承認 .status-badge { background: #D1FAE5; color: #047857; }
     .req-item.status-却下 .status-badge { background: #FEE2E2; color: #B91C1C; }
     .req-item .meta { font-size: 12px; color: #64748B; }
     .req-item .reason { font-size: 13px; margin-top: 6px; color: #334155; }
-    .req-item .actions { display: flex; gap: 8px; margin-top: 8px; }
+    .req-item .actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 
-    /* ========== 管理タブ ========== */
-    .staff-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid #E2E8F0;
-    }
-    .staff-row:last-child { border-bottom: none; }
-    .staff-row .info .name { font-weight: 600; }
-    .staff-row .info .email { font-size: 12px; color: #64748B; }
-    .staff-row .controls { display: flex; gap: 6px; align-items: center; }
-    .staff-row select {
-      padding: 6px 8px;
-      border: 1px solid #CBD5E1;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-    .role-badge {
-      display: inline-block;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-    }
-    .role-admin { background: #FEF3C7; color: #B45309; }
-    .role-staff { background: #E0E7FF; color: #3730A3; }
+    .edit-form { display: none; margin-top: 10px; padding: 12px; background: #fff; border: 1px solid #CBD5E1; border-radius: 10px; }
+    .edit-form.open { display: block; }
+    .edit-form .form-group { margin-bottom: 10px; }
 
-    /* ========== 画面切り替え ========== */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ========== トースト通知 ========== */
-    #toast {
-      position: fixed;
-      bottom: 90px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #0F172A;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      opacity: 0;
-      transition: opacity 0.25s, transform 0.25s;
-      z-index: 100;
-      max-width: calc(100% - 32px);
-    }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .filter-row select, .filter-row input { padding: 8px 10px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 14px; }
+
+    #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0F172A; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.25s, transform 0.25s; z-index: 100; max-width: calc(100% - 32px); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background: #DC2626; }
     #toast.success { background: #10B981; }
-
-    /* ========== 共通 ========== */
-    .empty {
-      text-align: center;
-      color: #94A3B8;
-      padding: 30px 10px;
-      font-size: 14px;
-    }
-    .inline-row {
-      display: flex;
-      gap: 8px;
-    }
-    .inline-row input { flex: 1; }
+    .empty { text-align: center; color: #94A3B8; padding: 30px 10px; font-size: 14px; }
     hr.sep { border: none; border-top: 1px solid #E2E8F0; margin: 14px 0; }
+
+    /* 勤怠詳細テーブル */
+    .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+    table.attendance { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.attendance th, table.attendance td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+    table.attendance th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    table.attendance td { font-variant-numeric: tabular-nums; }
+    table.attendance tr.saturday td:first-child, table.attendance tr.saturday td:nth-child(2) { color: #2563EB; }
+    table.attendance tr.sunday td:first-child, table.attendance tr.sunday td:nth-child(2),
+    table.attendance tr.holiday td:first-child, table.attendance tr.holiday td:nth-child(2) { color: #DC2626; }
+
+    .staff-link { color: #2563EB; cursor: pointer; text-decoration: underline; }
   </style>
 </head>
 <body>
 
-  <!-- ========== ログイン画面 ========== -->
+  <!-- ログイン画面 -->
   <div id="loginScreen">
     <div class="login-card">
-      <h1>勤怠管理</h1>
-      <p class="sub">メールアドレスでログインまたは新規登録</p>
-
-      <div class="login-tabs">
-        <button id="tabLogin" class="active" type="button">ログイン</button>
-        <button id="tabSignup" type="button">新規登録</button>
-      </div>
-
-      <div id="signupNameGroup" class="form-group" style="display:none;">
-        <label>氏名</label>
-        <input type="text" id="authName" placeholder="山田 太郎" />
-      </div>
+      <h1>勤怠管理（管理者）</h1>
+      <p class="sub">管理者権限のあるアカウントでログインしてください</p>
       <div class="form-group">
         <label>メールアドレス</label>
         <input type="email" id="authEmail" placeholder="example@example.com" autocomplete="email" />
       </div>
       <div class="form-group">
-        <label>パスワード（6文字以上）</label>
+        <label>パスワード</label>
         <input type="password" id="authPassword" autocomplete="current-password" />
       </div>
       <button id="authSubmit" class="btn" type="button">ログイン</button>
+      <p class="sub" style="margin-top:16px; text-align:center;">
+        新規登録は <a href="kintai-staff.html" style="color:#2563EB;">スタッフ用アプリ</a> からお願いします。
+      </p>
     </div>
   </div>
 
-  <!-- ========== メインアプリ ========== -->
+  <!-- 権限なし画面 -->
+  <div id="blockedScreen">
+    <div class="card">
+      <h2>管理者権限がありません</h2>
+      <p>このページは管理者専用です。<br>スタッフは <a href="kintai-staff.html">スタッフ用アプリ</a> をご利用ください。</p>
+      <hr class="sep" />
+      <button id="blockedLogoutBtn" class="btn secondary" type="button">ログアウト</button>
+    </div>
+  </div>
+
+  <!-- 管理者メイン -->
   <div id="app">
     <div class="topbar">
       <div>
-        <h1>勤怠管理</h1>
+        <h1>勤怠管理（管理者）</h1>
         <div class="user-info" id="topbarUser"></div>
       </div>
       <button id="logoutBtn" type="button">ログアウト</button>
@@ -488,130 +206,17 @@
 
     <div class="container">
 
-      <!-- 打刻タブ -->
-      <div id="tab-clock" class="tab-content active">
+      <!-- スタッフ管理 -->
+      <div id="tab-staff" class="tab-content active">
         <div class="card">
-          <div class="clock-date" id="clockDate">----年--月--日（-）</div>
-          <div class="clock-time" id="clockTime">--:--:--</div>
-          <div class="clock-buttons">
-            <button id="btnClockIn" class="btn btn-in" type="button">出勤</button>
-            <button id="btnClockOut" class="btn btn-out" type="button">退勤</button>
-          </div>
-          <div class="today-record">
-            <div class="slot">
-              <div class="label">出勤</div>
-              <div class="value" id="todayIn">--:--</div>
-            </div>
-            <div class="slot">
-              <div class="label">退勤</div>
-              <div class="value" id="todayOut">--:--</div>
-            </div>
-            <div class="slot">
-              <div class="label">労働</div>
-              <div class="value" id="todayWork">--:--</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>手動修正（本日分）</h2>
-          <div class="form-group">
-            <label>出勤時刻</label>
-            <input type="time" id="manualIn" />
-          </div>
-          <div class="form-group">
-            <label>退勤時刻</label>
-            <input type="time" id="manualOut" />
-          </div>
-          <div class="form-group">
-            <label>備考</label>
-            <input type="text" id="manualNote" placeholder="任意" />
-          </div>
-          <button id="manualSaveBtn" class="btn secondary" type="button">修正を保存</button>
-        </div>
-      </div>
-
-      <!-- 勤怠一覧タブ -->
-      <div id="tab-list" class="tab-content">
-        <div class="card">
-          <div class="month-selector">
-            <input type="month" id="listMonth" />
-            <button id="listReloadBtn" class="btn small secondary" type="button">更新</button>
-          </div>
-          <div class="table-wrap">
-            <table class="attendance" id="listTable">
-              <thead>
-                <tr>
-                  <th>日</th><th>曜</th><th>出勤</th><th>退勤</th><th>労働</th><th>残業</th>
-                </tr>
-              </thead>
-              <tbody id="listBody"></tbody>
-            </table>
-          </div>
-          <div class="month-summary">
-            <div class="item">
-              <div class="label">合計労働時間</div>
-              <div class="value" id="sumWork">0:00</div>
-            </div>
-            <div class="item">
-              <div class="label">合計残業時間</div>
-              <div class="value" id="sumOver">0:00</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 申請タブ -->
-      <div id="tab-request" class="tab-content">
-        <div class="card">
-          <h2>新規申請</h2>
-          <div class="form-group">
-            <label>申請種別</label>
-            <select id="reqType">
-              <option value="有給">有給休暇</option>
-              <option value="半休">半休</option>
-              <option value="直行">直行</option>
-              <option value="直帰">直帰</option>
-              <option value="遅刻">遅刻</option>
-              <option value="早退">早退</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>対象日</label>
-            <input type="date" id="reqDate" />
-          </div>
-          <div class="form-group">
-            <label>理由</label>
-            <textarea id="reqReason" placeholder="理由を入力"></textarea>
-          </div>
-          <button id="reqSubmitBtn" class="btn" type="button">申請する</button>
-        </div>
-
-        <div class="card">
-          <h2>申請一覧</h2>
-          <div id="reqList" class="request-list"></div>
-        </div>
-      </div>
-
-      <!-- 管理タブ -->
-      <div id="tab-admin" class="tab-content">
-        <div class="card">
-          <h2>スタッフ管理</h2>
+          <h2>スタッフ一覧</h2>
           <div id="staffList"></div>
-          <hr class="sep" />
+        </div>
+        <div class="card">
           <h2>スタッフ追加</h2>
-          <div class="form-group">
-            <label>氏名</label>
-            <input type="text" id="newStaffName" />
-          </div>
-          <div class="form-group">
-            <label>メールアドレス</label>
-            <input type="email" id="newStaffEmail" />
-          </div>
-          <div class="form-group">
-            <label>初期パスワード（6文字以上）</label>
-            <input type="password" id="newStaffPassword" />
-          </div>
+          <div class="form-group"><label>氏名</label><input type="text" id="newStaffName" /></div>
+          <div class="form-group"><label>メールアドレス</label><input type="email" id="newStaffEmail" /></div>
+          <div class="form-group"><label>初期パスワード（6文字以上）</label><input type="password" id="newStaffPassword" /></div>
           <div class="form-group">
             <label>権限</label>
             <select id="newStaffRole">
@@ -621,9 +226,12 @@
           </div>
           <button id="newStaffBtn" class="btn" type="button">スタッフを追加</button>
         </div>
+      </div>
 
+      <!-- 勤怠管理 -->
+      <div id="tab-attendance" class="tab-content">
         <div class="card">
-          <h2>全スタッフの当月勤怠</h2>
+          <h2>全スタッフの月次勤怠サマリ</h2>
           <div class="month-selector">
             <input type="month" id="adminMonth" />
             <button id="adminReloadBtn" class="btn small secondary" type="button">更新</button>
@@ -631,17 +239,41 @@
           <div id="adminAttendance"></div>
         </div>
 
-        <div class="card">
-          <h2>申請承認</h2>
-          <div id="adminRequests" class="request-list"></div>
-        </div>
-
-        <div class="card">
-          <h2>設定</h2>
-          <div class="form-group">
-            <label>所定労働時間（分）</label>
-            <input type="number" id="settingWorkMin" min="0" step="1" />
+        <div class="card" id="detailCard" style="display:none;">
+          <h2 id="detailTitle">個別勤怠</h2>
+          <div class="table-wrap">
+            <table class="attendance">
+              <thead><tr><th>日</th><th>曜</th><th>出勤</th><th>退勤</th><th>労働</th><th>残業</th><th>編集</th></tr></thead>
+              <tbody id="detailBody"></tbody>
+            </table>
           </div>
+          <button id="detailCloseBtn" class="btn small secondary" style="margin-top:12px;" type="button">閉じる</button>
+        </div>
+      </div>
+
+      <!-- 申請管理 -->
+      <div id="tab-requests" class="tab-content">
+        <div class="card">
+          <h2>申請管理</h2>
+          <div class="filter-row">
+            <select id="reqFilterStatus">
+              <option value="all">全ステータス</option>
+              <option value="申請中">申請中</option>
+              <option value="承認">承認</option>
+              <option value="却下">却下</option>
+            </select>
+            <select id="reqFilterUser"><option value="all">全スタッフ</option></select>
+            <button id="reqReloadBtn" class="btn small secondary" type="button">更新</button>
+          </div>
+          <div id="adminRequests"></div>
+        </div>
+      </div>
+
+      <!-- 設定 -->
+      <div id="tab-settings" class="tab-content">
+        <div class="card">
+          <h2>所定労働時間・祝日設定</h2>
+          <div class="form-group"><label>所定労働時間（分）</label><input type="number" id="settingWorkMin" min="0" step="1" /></div>
           <div class="form-group">
             <label>祝日リスト（1行1日付：YYYY-MM-DD）</label>
             <textarea id="settingHolidays" placeholder="2025-01-01&#10;2025-01-13"></textarea>
@@ -652,45 +284,32 @@
 
     </div>
 
-    <!-- タブバー -->
     <nav class="tabbar">
-      <button data-tab="tab-clock" class="active" type="button">
-        <span class="ico">◎</span>打刻
-      </button>
-      <button data-tab="tab-list" type="button">
-        <span class="ico">▤</span>勤怠一覧
-      </button>
-      <button data-tab="tab-request" type="button">
-        <span class="ico">✎</span>申請
-      </button>
-      <button data-tab="tab-admin" class="admin-only" type="button">
-        <span class="ico">★</span>管理
-      </button>
+      <button data-tab="tab-staff" class="active" type="button"><span class="ico">👥</span>スタッフ</button>
+      <button data-tab="tab-attendance" type="button"><span class="ico">▤</span>勤怠</button>
+      <button data-tab="tab-requests" type="button"><span class="ico">✎</span>申請</button>
+      <button data-tab="tab-settings" type="button"><span class="ico">⚙</span>設定</button>
     </nav>
   </div>
 
   <div id="toast"></div>
 
-  <!-- ========== Firebase SDK（compat版） ========== -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
   <script>
   // ============================================================
-  // Firebase初期化
+  // Firebase初期化（kanko-app-96378）
   // ============================================================
-  // kanko-appのfirebaseConfig
   const firebaseConfig = {
-  apiKey: "AIzaSyCNP-jkL5WRx4IeC6IqkLWsyVo_83RXDEM",
-  authDomain: "kintai-app-95b49.firebaseapp.com",
-  projectId: "kintai-app-95b49",
-  storageBucket: "kintai-app-95b49.firebasestorage.app",
-  messagingSenderId: "276856206619",
-  appId: "1:276856206619:web:0dab1ee8b413265af64fbe",
-  measurementId: "G-G6J2QMY7NX"
-};
-
+    apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
+    authDomain: "kanko-app-96378.firebaseapp.com",
+    projectId: "kanko-app-96378",
+    storageBucket: "kanko-app-96378.firebasestorage.app",
+    messagingSenderId: "415170223801",
+    appId: "1:415170223801:web:1b10387e20cb2e4b678568"
+  };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
@@ -699,8 +318,6 @@
   // 共通ユーティリティ
   // ============================================================
   const $ = (id) => document.getElementById(id);
-
-  // トースト通知
   let toastTimer = null;
   function toast(msg, type = "") {
     const el = $("toast");
@@ -709,29 +326,15 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { el.className = type; }, 2800);
   }
-
-  // 日付ユーティリティ
   function pad(n) { return String(n).padStart(2, "0"); }
-  function todayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  }
-  function currentMonthStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
-  }
+  function currentMonthStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
   function formatHM(date) {
     if (!date) return "--:--";
     const d = date instanceof Date ? date : date.toDate();
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
-  function minutesToHM(min) {
-    if (!min || min < 0) return "0:00";
-    return `${Math.floor(min/60)}:${pad(min%60)}`;
-  }
+  function minutesToHM(min) { if (!min || min < 0) return "0:00"; return `${Math.floor(min/60)}:${pad(min%60)}`; }
   const weekdayJp = ["日","月","火","水","木","金","土"];
-
-  // ボタンのローディング表示
   function setLoading(btn, loading) {
     if (loading) {
       btn.dataset.originalText = btn.innerHTML;
@@ -742,68 +345,9 @@
       btn.disabled = false;
     }
   }
-
-  // ============================================================
-  // グローバル状態
-  // ============================================================
-  let currentUser = null;   // Firebase Authのuser
-  let userData = null;      // usersコレクションのデータ
-  let settings = { workMinutesPerDay: 480, holidays: [] };
-  let clockTimer = null;
-
-  // ============================================================
-  // 認証UI
-  // ============================================================
-  let authMode = "login"; // "login" | "signup"
-
-  $("tabLogin").addEventListener("click", () => {
-    authMode = "login";
-    $("tabLogin").classList.add("active");
-    $("tabSignup").classList.remove("active");
-    $("signupNameGroup").style.display = "none";
-    $("authSubmit").textContent = "ログイン";
-  });
-  $("tabSignup").addEventListener("click", () => {
-    authMode = "signup";
-    $("tabSignup").classList.add("active");
-    $("tabLogin").classList.remove("active");
-    $("signupNameGroup").style.display = "block";
-    $("authSubmit").textContent = "新規登録";
-  });
-
-  $("authSubmit").addEventListener("click", async () => {
-    const email = $("authEmail").value.trim();
-    const password = $("authPassword").value;
-    const name = $("authName").value.trim();
-    if (!email || !password) { toast("メールとパスワードを入力してください", "error"); return; }
-    if (authMode === "signup" && !name) { toast("氏名を入力してください", "error"); return; }
-
-    const btn = $("authSubmit");
-    setLoading(btn, true);
-    try {
-      if (authMode === "signup") {
-        const cred = await auth.createUserWithEmailAndPassword(email, password);
-        // 初回登録者はadmin、それ以降はstaff
-        const usersSnap = await db.collection("users").limit(1).get();
-        const isFirst = usersSnap.empty;
-        await db.collection("users").doc(cred.user.uid).set({
-          name: name,
-          email: email,
-          role: isFirst ? "admin" : "staff",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        toast(isFirst ? "管理者として登録しました" : "登録しました", "success");
-      } else {
-        await auth.signInWithEmailAndPassword(email, password);
-      }
-    } catch (e) {
-      console.error(e);
-      toast(translateAuthError(e), "error");
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
   function translateAuthError(e) {
     const code = e && e.code ? e.code : "";
     const map = {
@@ -818,82 +362,92 @@
     return map[code] || (e.message || "エラーが発生しました");
   }
 
-  $("logoutBtn").addEventListener("click", async () => {
-    await auth.signOut();
-  });
+  // ============================================================
+  // グローバル状態
+  // ============================================================
+  let currentUser = null;
+  let userData = null;
+  let settings = { workMinutesPerDay: 480, holidays: [] };
+  let allUsers = {}; // uid -> userData キャッシュ
+  let allRequests = []; // 申請管理の全データ
 
   // ============================================================
-  // 認証状態の監視
+  // 認証UI
+  // ============================================================
+  $("authSubmit").addEventListener("click", async () => {
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    if (!email || !password) { toast("メールとパスワードを入力してください", "error"); return; }
+    const btn = $("authSubmit");
+    setLoading(btn, true);
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (e) {
+      console.error(e);
+      toast(translateAuthError(e), "error");
+    } finally { setLoading(btn, false); }
+  });
+
+  $("logoutBtn").addEventListener("click", async () => { await auth.signOut(); });
+  $("blockedLogoutBtn").addEventListener("click", async () => { await auth.signOut(); });
+
+  // ============================================================
+  // 認証状態の監視 + 管理者チェック
   // ============================================================
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       currentUser = user;
       try {
-        // usersドキュメント取得（無ければ作成）
         const ref = db.collection("users").doc(user.uid);
-        let snap = await ref.get();
+        const snap = await ref.get();
         if (!snap.exists) {
-          const usersSnap = await db.collection("users").limit(1).get();
-          const isFirst = usersSnap.empty;
-          await ref.set({
-            name: user.email.split("@")[0],
-            email: user.email,
-            role: isFirst ? "admin" : "staff",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          snap = await ref.get();
+          // usersドキュメントが無い = スタッフ用アプリから先に登録が必要
+          showBlocked();
+          return;
         }
         userData = snap.data();
-
-        // 設定取得
-        await loadSettings();
-
-        // UI表示
-        $("loginScreen").style.display = "none";
-        $("app").style.display = "block";
-        $("topbarUser").textContent = `${userData.name}（${userData.role === "admin" ? "管理者" : "スタッフ"}）`;
-        if (userData.role === "admin") document.body.classList.add("is-admin");
-        else document.body.classList.remove("is-admin");
-
-        startClockTimer();
-        await refreshTodayRecord();
-        $("listMonth").value = currentMonthStr();
-        $("adminMonth").value = currentMonthStr();
-        $("reqDate").value = todayStr();
-        await loadAttendanceList();
-        await loadMyRequests();
-        if (userData.role === "admin") {
-          await loadStaffList();
-          await loadAdminRequests();
-          await loadAdminAttendance();
-          $("settingWorkMin").value = settings.workMinutesPerDay;
-          $("settingHolidays").value = (settings.holidays || []).join("\n");
+        if (userData.role !== "admin") {
+          showBlocked();
+          return;
         }
+
+        await loadSettings();
+        $("loginScreen").style.display = "none";
+        $("blockedScreen").style.display = "none";
+        $("app").style.display = "block";
+        $("topbarUser").textContent = `${userData.name}（管理者）`;
+
+        $("adminMonth").value = currentMonthStr();
+        $("settingWorkMin").value = settings.workMinutesPerDay;
+        $("settingHolidays").value = (settings.holidays || []).join("\n");
+
+        await loadStaffList();
+        await loadAdminAttendance();
+        await loadAdminRequests();
       } catch (e) {
         console.error(e);
         toast("データの取得に失敗しました: " + e.message, "error");
       }
     } else {
-      currentUser = null;
-      userData = null;
-      stopClockTimer();
+      currentUser = null; userData = null;
       $("loginScreen").style.display = "flex";
+      $("blockedScreen").style.display = "none";
       $("app").style.display = "none";
-      document.body.classList.remove("is-admin");
     }
   });
+
+  function showBlocked() {
+    $("loginScreen").style.display = "none";
+    $("app").style.display = "none";
+    $("blockedScreen").style.display = "flex";
+  }
 
   async function loadSettings() {
     try {
       const snap = await db.collection("kintai_settings").doc("config").get();
-      if (snap.exists) {
-        settings = Object.assign({ workMinutesPerDay: 480, holidays: [] }, snap.data());
-      } else {
-        settings = { workMinutesPerDay: 480, holidays: [] };
-      }
-    } catch (e) {
-      console.warn("設定読み込み失敗:", e);
-    }
+      if (snap.exists) settings = Object.assign({ workMinutesPerDay: 480, holidays: [] }, snap.data());
+      else settings = { workMinutesPerDay: 480, holidays: [] };
+    } catch (e) { console.warn("設定読み込み失敗:", e); }
   }
 
   // ============================================================
@@ -910,327 +464,28 @@
   });
 
   // ============================================================
-  // 打刻タブ
-  // ============================================================
-  function startClockTimer() {
-    updateClockDisplay();
-    clockTimer = setInterval(updateClockDisplay, 1000);
-  }
-  function stopClockTimer() {
-    if (clockTimer) clearInterval(clockTimer);
-    clockTimer = null;
-  }
-  function updateClockDisplay() {
-    const d = new Date();
-    $("clockTime").textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    $("clockDate").textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${weekdayJp[d.getDay()]}）`;
-  }
-
-  // 本日のattendanceドキュメントを取得
-  async function getTodayAttendance() {
-    const snap = await db.collection("attendance")
-      .where("uid", "==", currentUser.uid)
-      .where("date", "==", todayStr())
-      .limit(1)
-      .get();
-    if (snap.empty) return null;
-    const doc = snap.docs[0];
-    return { id: doc.id, ...doc.data() };
-  }
-
-  async function refreshTodayRecord() {
-    try {
-      const rec = await getTodayAttendance();
-      if (rec) {
-        $("todayIn").textContent = rec.clockIn ? formatHM(rec.clockIn) : "--:--";
-        $("todayOut").textContent = rec.clockOut ? formatHM(rec.clockOut) : "--:--";
-        $("todayWork").textContent = rec.workMinutes ? minutesToHM(rec.workMinutes) : "--:--";
-        if (rec.clockIn) $("manualIn").value = formatHM(rec.clockIn);
-        if (rec.clockOut) $("manualOut").value = formatHM(rec.clockOut);
-        $("manualNote").value = rec.note || "";
-      } else {
-        $("todayIn").textContent = "--:--";
-        $("todayOut").textContent = "--:--";
-        $("todayWork").textContent = "--:--";
-        $("manualIn").value = "";
-        $("manualOut").value = "";
-        $("manualNote").value = "";
-      }
-    } catch (e) {
-      console.error(e);
-      toast("本日の記録を取得できませんでした", "error");
-    }
-  }
-
-  // 労働時間・残業時間の計算
-  function calcMinutes(clockIn, clockOut) {
-    if (!clockIn || !clockOut) return { workMinutes: 0, overtimeMinutes: 0 };
-    const inMs = clockIn instanceof Date ? clockIn.getTime() : clockIn.toDate().getTime();
-    const outMs = clockOut instanceof Date ? clockOut.getTime() : clockOut.toDate().getTime();
-    const workMinutes = Math.max(0, Math.round((outMs - inMs) / 60000));
-    const overtimeMinutes = Math.max(0, workMinutes - (settings.workMinutesPerDay || 480));
-    return { workMinutes, overtimeMinutes };
-  }
-
-  // 出勤打刻
-  $("btnClockIn").addEventListener("click", async () => {
-    const btn = $("btnClockIn");
-    setLoading(btn, true);
-    try {
-      const existing = await getTodayAttendance();
-      if (existing && existing.clockIn) {
-        toast("本日は既に出勤済みです", "error");
-        return;
-      }
-      const now = new Date();
-      if (existing) {
-        await db.collection("attendance").doc(existing.id).update({ clockIn: now });
-      } else {
-        await db.collection("attendance").add({
-          uid: currentUser.uid,
-          date: todayStr(),
-          clockIn: now,
-          clockOut: null,
-          workMinutes: 0,
-          overtimeMinutes: 0,
-          note: ""
-        });
-      }
-      toast("出勤を記録しました", "success");
-      await refreshTodayRecord();
-    } catch (e) {
-      console.error(e);
-      toast("出勤の記録に失敗しました: " + e.message, "error");
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
-  // 退勤打刻
-  $("btnClockOut").addEventListener("click", async () => {
-    const btn = $("btnClockOut");
-    setLoading(btn, true);
-    try {
-      const existing = await getTodayAttendance();
-      if (!existing || !existing.clockIn) {
-        toast("出勤が記録されていません", "error");
-        return;
-      }
-      if (existing.clockOut) {
-        toast("本日は既に退勤済みです", "error");
-        return;
-      }
-      const now = new Date();
-      const { workMinutes, overtimeMinutes } = calcMinutes(existing.clockIn, now);
-      await db.collection("attendance").doc(existing.id).update({
-        clockOut: now,
-        workMinutes,
-        overtimeMinutes
-      });
-      toast("退勤を記録しました", "success");
-      await refreshTodayRecord();
-    } catch (e) {
-      console.error(e);
-      toast("退勤の記録に失敗しました: " + e.message, "error");
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
-  // 手動修正
-  $("manualSaveBtn").addEventListener("click", async () => {
-    const btn = $("manualSaveBtn");
-    const inVal = $("manualIn").value;
-    const outVal = $("manualOut").value;
-    const note = $("manualNote").value;
-    if (!inVal && !outVal) { toast("時刻を入力してください", "error"); return; }
-
-    setLoading(btn, true);
-    try {
-      const dateStr = todayStr();
-      const makeDate = (hhmm) => {
-        if (!hhmm) return null;
-        const [h, m] = hhmm.split(":").map(Number);
-        const d = new Date();
-        d.setHours(h, m, 0, 0);
-        return d;
-      };
-      const clockIn = makeDate(inVal);
-      const clockOut = makeDate(outVal);
-      const { workMinutes, overtimeMinutes } = (clockIn && clockOut)
-        ? calcMinutes(clockIn, clockOut)
-        : { workMinutes: 0, overtimeMinutes: 0 };
-
-      const existing = await getTodayAttendance();
-      const payload = {
-        uid: currentUser.uid,
-        date: dateStr,
-        clockIn: clockIn,
-        clockOut: clockOut,
-        workMinutes,
-        overtimeMinutes,
-        note: note || ""
-      };
-      if (existing) {
-        await db.collection("attendance").doc(existing.id).update(payload);
-      } else {
-        await db.collection("attendance").add(payload);
-      }
-      toast("修正を保存しました", "success");
-      await refreshTodayRecord();
-    } catch (e) {
-      console.error(e);
-      toast("保存に失敗しました: " + e.message, "error");
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
-  // ============================================================
-  // 勤怠一覧タブ
-  // ============================================================
-  $("listReloadBtn").addEventListener("click", loadAttendanceList);
-  $("listMonth").addEventListener("change", loadAttendanceList);
-
-  async function loadAttendanceList() {
-    try {
-      const month = $("listMonth").value || currentMonthStr();
-      const [y, m] = month.split("-").map(Number);
-      const daysInMonth = new Date(y, m, 0).getDate();
-      const startStr = `${y}-${pad(m)}-01`;
-      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
-
-      const snap = await db.collection("attendance")
-        .where("uid", "==", currentUser.uid)
-        .where("date", ">=", startStr)
-        .where("date", "<=", endStr)
-        .get();
-      const byDate = {};
-      snap.forEach(doc => { byDate[doc.data().date] = doc.data(); });
-
-      const tbody = $("listBody");
-      tbody.innerHTML = "";
-      let sumWork = 0, sumOver = 0;
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
-        const dateObj = new Date(y, m-1, d);
-        const dow = dateObj.getDay();
-        const isHoliday = (settings.holidays || []).includes(dateStr);
-        const rec = byDate[dateStr];
-
-        const tr = document.createElement("tr");
-        if (isHoliday) tr.classList.add("holiday");
-        else if (dow === 0) tr.classList.add("sunday");
-        else if (dow === 6) tr.classList.add("saturday");
-
-        const clockInStr = rec && rec.clockIn ? formatHM(rec.clockIn) : "-";
-        const clockOutStr = rec && rec.clockOut ? formatHM(rec.clockOut) : "-";
-        const workStr = rec && rec.workMinutes ? minutesToHM(rec.workMinutes) : "-";
-        const overStr = rec && rec.overtimeMinutes ? minutesToHM(rec.overtimeMinutes) : "-";
-        if (rec) {
-          sumWork += rec.workMinutes || 0;
-          sumOver += rec.overtimeMinutes || 0;
-        }
-
-        tr.innerHTML = `
-          <td>${d}</td>
-          <td>${weekdayJp[dow]}</td>
-          <td>${clockInStr}</td>
-          <td>${clockOutStr}</td>
-          <td>${workStr}</td>
-          <td>${overStr}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-      $("sumWork").textContent = minutesToHM(sumWork);
-      $("sumOver").textContent = minutesToHM(sumOver);
-    } catch (e) {
-      console.error(e);
-      toast("一覧の取得に失敗しました: " + e.message, "error");
-    }
-  }
-
-  // ============================================================
-  // 申請タブ
-  // ============================================================
-  $("reqSubmitBtn").addEventListener("click", async () => {
-    const btn = $("reqSubmitBtn");
-    const type = $("reqType").value;
-    const date = $("reqDate").value;
-    const reason = $("reqReason").value.trim();
-    if (!date) { toast("対象日を入力してください", "error"); return; }
-    if (!reason) { toast("理由を入力してください", "error"); return; }
-
-    setLoading(btn, true);
-    try {
-      await db.collection("requests").add({
-        uid: currentUser.uid,
-        type, date, reason,
-        status: "申請中",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        approvedBy: null
-      });
-      $("reqReason").value = "";
-      toast("申請を送信しました", "success");
-      await loadMyRequests();
-      if (userData.role === "admin") await loadAdminRequests();
-    } catch (e) {
-      console.error(e);
-      toast("申請の送信に失敗しました: " + e.message, "error");
-    } finally {
-      setLoading(btn, false);
-    }
-  });
-
-  async function loadMyRequests() {
-    try {
-      const snap = await db.collection("requests")
-        .where("uid", "==", currentUser.uid)
-        .get();
-      const list = [];
-      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-      list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-
-      const container = $("reqList");
-      if (list.length === 0) {
-        container.innerHTML = '<div class="empty">申請はまだありません</div>';
-        return;
-      }
-      container.innerHTML = list.map(r => `
-        <div class="req-item status-${r.status}">
-          <div class="head">
-            <span>${r.type}</span>
-            <span class="status-badge">${r.status}</span>
-          </div>
-          <div class="meta">対象日：${r.date}</div>
-          <div class="reason">${escapeHtml(r.reason || "")}</div>
-        </div>
-      `).join("");
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  }
-
-  // ============================================================
-  // 管理タブ
+  // スタッフ管理
   // ============================================================
   async function loadStaffList() {
     try {
       const snap = await db.collection("users").get();
       const list = [];
-      snap.forEach(d => list.push({ uid: d.id, ...d.data() }));
+      allUsers = {};
+      snap.forEach(d => {
+        const data = d.data();
+        list.push({ uid: d.id, ...data });
+        allUsers[d.id] = data;
+      });
       list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
 
+      // 申請フィルタ用のユーザーセレクト更新
+      const userSel = $("reqFilterUser");
+      userSel.innerHTML = '<option value="all">全スタッフ</option>' + list.map(u =>
+        `<option value="${u.uid}">${escapeHtml(u.name || u.email)}</option>`
+      ).join("");
+
       const container = $("staffList");
-      if (list.length === 0) {
-        container.innerHTML = '<div class="empty">スタッフがいません</div>';
-        return;
-      }
+      if (list.length === 0) { container.innerHTML = '<div class="empty">スタッフがいません</div>'; return; }
       container.innerHTML = list.map(u => `
         <div class="staff-row" data-uid="${u.uid}">
           <div class="info">
@@ -1245,6 +500,7 @@
               <option value="staff" ${u.role==="staff"?"selected":""}>スタッフ</option>
               <option value="admin" ${u.role==="admin"?"selected":""}>管理者</option>
             </select>
+            <button class="btn small secondary view-btn" type="button">勤怠</button>
             <button class="btn small danger del-btn" type="button">削除</button>
           </div>
         </div>
@@ -1254,22 +510,21 @@
         const uid = row.dataset.uid;
         row.querySelector(".role-select").addEventListener("change", async (e) => {
           const newRole = e.target.value;
-          // 管理者が0人にならないか確認
           if (newRole === "staff") {
             const adminSnap = await db.collection("users").where("role", "==", "admin").get();
-            const adminCount = adminSnap.size;
-            if (adminCount <= 1) {
+            if (adminSnap.size <= 1) {
               toast("管理者が0人になるため変更できません。先に別の管理者を設定してください。", "error");
-              e.target.value = "admin"; // セレクトを元に戻す
+              e.target.value = "admin";
               return;
             }
           }
           try {
             await db.collection("users").doc(uid).update({ role: newRole });
             toast("権限を更新しました", "success");
-            await loadStaffList(); // バッジを再描画
+            await loadStaffList();
           } catch (err) { toast("権限の更新に失敗: " + err.message, "error"); }
         });
+        row.querySelector(".view-btn").addEventListener("click", () => showStaffDetail(uid));
         row.querySelector(".del-btn").addEventListener("click", async () => {
           if (uid === currentUser.uid) { toast("自分自身は削除できません", "error"); return; }
           if (!confirm("このスタッフのusersドキュメントを削除します。よろしいですか？\n※Firebase Authのアカウントは別途コンソールから削除してください。")) return;
@@ -1280,12 +535,10 @@
           } catch (err) { toast("削除失敗: " + err.message, "error"); }
         });
       });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   }
 
-  // スタッフ追加（セカンダリAuthインスタンスで管理者をログアウトさせずに作成）
+  // スタッフ追加（セカンダリAuthインスタンスで管理者を保持したまま作成）
   $("newStaffBtn").addEventListener("click", async () => {
     const btn = $("newStaffBtn");
     const name = $("newStaffName").value.trim();
@@ -1306,87 +559,26 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       await secAuth.signOut();
-      $("newStaffName").value = "";
-      $("newStaffEmail").value = "";
-      $("newStaffPassword").value = "";
+      $("newStaffName").value = ""; $("newStaffEmail").value = ""; $("newStaffPassword").value = "";
       toast("スタッフを追加しました", "success");
       await loadStaffList();
     } catch (e) {
       console.error(e);
       toast("追加失敗: " + translateAuthError(e), "error");
     } finally {
-      if (secondary) {
-        try { await secondary.delete(); } catch (_) {}
-      }
+      if (secondary) { try { await secondary.delete(); } catch (_) {} }
       setLoading(btn, false);
     }
   });
 
-  async function loadAdminRequests() {
-    try {
-      const snap = await db.collection("requests").get();
-      const list = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-      list.sort((a, b) => {
-        if (a.status !== b.status) return a.status === "申請中" ? -1 : 1;
-        return (b.date || "").localeCompare(a.date || "");
-      });
-
-      // ユーザー名の取得
-      const usersSnap = await db.collection("users").get();
-      const userMap = {};
-      usersSnap.forEach(d => { userMap[d.id] = d.data().name || d.data().email; });
-
-      const container = $("adminRequests");
-      if (list.length === 0) {
-        container.innerHTML = '<div class="empty">申請はありません</div>';
-        return;
-      }
-      container.innerHTML = list.map(r => `
-        <div class="req-item status-${r.status}" data-id="${r.id}">
-          <div class="head">
-            <span>${escapeHtml(userMap[r.uid] || r.uid)} / ${r.type}</span>
-            <span class="status-badge">${r.status}</span>
-          </div>
-          <div class="meta">対象日：${r.date}</div>
-          <div class="reason">${escapeHtml(r.reason || "")}</div>
-          ${r.status === "申請中" ? `
-            <div class="actions">
-              <button class="btn small approve-btn" type="button">承認</button>
-              <button class="btn small secondary reject-btn" type="button">却下</button>
-            </div>
-          ` : ""}
-        </div>
-      `).join("");
-
-      container.querySelectorAll(".req-item").forEach(item => {
-        const id = item.dataset.id;
-        const approve = item.querySelector(".approve-btn");
-        const reject = item.querySelector(".reject-btn");
-        if (approve) approve.addEventListener("click", () => reviewRequest(id, "承認"));
-        if (reject) reject.addEventListener("click", () => reviewRequest(id, "却下"));
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function reviewRequest(id, status) {
-    try {
-      await db.collection("requests").doc(id).update({
-        status,
-        approvedBy: currentUser.uid
-      });
-      toast(`${status}しました`, "success");
-      await loadAdminRequests();
-      await loadMyRequests();
-    } catch (e) {
-      toast("更新失敗: " + e.message, "error");
-    }
-  }
-
+  // ============================================================
+  // 勤怠管理（全スタッフ集計 + 個別詳細）
+  // ============================================================
   $("adminReloadBtn").addEventListener("click", loadAdminAttendance);
   $("adminMonth").addEventListener("change", loadAdminAttendance);
+  $("detailCloseBtn").addEventListener("click", () => {
+    $("detailCard").style.display = "none";
+  });
 
   async function loadAdminAttendance() {
     try {
@@ -1403,6 +595,7 @@
 
       const users = [];
       userSnap.forEach(d => users.push({ uid: d.id, ...d.data() }));
+      users.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
       const perUser = {};
       users.forEach(u => { perUser[u.uid] = { user: u, work: 0, over: 0, days: 0 }; });
       attSnap.forEach(d => {
@@ -1419,22 +612,272 @@
         return `
           <div class="staff-row">
             <div class="info">
-              <div class="name">${escapeHtml(u.name || "")}
+              <div class="name"><span class="staff-link" data-uid="${u.uid}">${escapeHtml(u.name || "")}</span>
                 <span class="role-badge role-${u.role}">${u.role === "admin" ? "管理者" : "スタッフ"}</span>
               </div>
               <div class="email">出勤 ${p.days}日 / 労働 ${minutesToHM(p.work)} / 残業 ${minutesToHM(p.over)}</div>
+            </div>
+            <div class="controls">
+              <button class="btn small secondary detail-btn" data-uid="${u.uid}" type="button">詳細</button>
             </div>
           </div>
         `;
       }).join("");
       $("adminAttendance").innerHTML = rows || '<div class="empty">データがありません</div>';
+
+      $("adminAttendance").querySelectorAll(".detail-btn, .staff-link").forEach(el => {
+        el.addEventListener("click", () => showStaffDetail(el.dataset.uid));
+      });
     } catch (e) {
       console.error(e);
-      toast("管理用データ取得失敗: " + e.message, "error");
+      toast("勤怠データ取得失敗: " + e.message, "error");
     }
   }
 
-  // 設定保存
+  // 個別スタッフの月次詳細
+  async function showStaffDetail(uid) {
+    try {
+      // タブを勤怠管理に切替
+      document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+      document.querySelector('[data-tab="tab-attendance"]').classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      $("tab-attendance").classList.add("active");
+
+      const user = allUsers[uid];
+      const userName = user ? user.name : uid;
+      const month = $("adminMonth").value || currentMonthStr();
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+
+      const snap = await db.collection("attendance")
+        .where("uid", "==", uid)
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      const byDate = {};
+      snap.forEach(d => { byDate[d.data().date] = { id: d.id, ...d.data() }; });
+
+      $("detailTitle").textContent = `${userName} の ${month} の勤怠`;
+      const tbody = $("detailBody");
+      tbody.innerHTML = "";
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+        const dateObj = new Date(y, m-1, d);
+        const dow = dateObj.getDay();
+        const isHoliday = (settings.holidays || []).includes(dateStr);
+        const rec = byDate[dateStr];
+        const tr = document.createElement("tr");
+        if (isHoliday) tr.classList.add("holiday");
+        else if (dow === 0) tr.classList.add("sunday");
+        else if (dow === 6) tr.classList.add("saturday");
+        const inStr = rec && rec.clockIn ? formatHM(rec.clockIn) : "-";
+        const outStr = rec && rec.clockOut ? formatHM(rec.clockOut) : "-";
+        const workStr = rec && rec.workMinutes ? minutesToHM(rec.workMinutes) : "-";
+        const overStr = rec && rec.overtimeMinutes ? minutesToHM(rec.overtimeMinutes) : "-";
+        tr.innerHTML = `
+          <td>${d}</td><td>${weekdayJp[dow]}</td>
+          <td>${inStr}</td><td>${outStr}</td><td>${workStr}</td><td>${overStr}</td>
+          <td><button class="btn small secondary" data-uid="${uid}" data-date="${dateStr}" data-recid="${rec ? rec.id : ''}" type="button">編集</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll("button").forEach(b => {
+        b.addEventListener("click", () => editAttendance(b.dataset.uid, b.dataset.date, b.dataset.recid));
+      });
+      $("detailCard").style.display = "block";
+      $("detailCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      console.error(e);
+      toast("詳細取得失敗: " + e.message, "error");
+    }
+  }
+
+  // 勤怠レコードの編集（プロンプトベース・シンプル）
+  async function editAttendance(uid, dateStr, recId) {
+    const inStr = prompt(`${dateStr} の出勤時刻（HH:MM、空欄で削除）`, "");
+    if (inStr === null) return;
+    const outStr = prompt(`${dateStr} の退勤時刻（HH:MM、空欄で削除）`, "");
+    if (outStr === null) return;
+    const note = prompt("備考（任意）", "") || "";
+    try {
+      const makeDate = (hhmm) => {
+        if (!hhmm) return null;
+        const parts = hhmm.split(":");
+        if (parts.length < 2) return null;
+        const [h, m] = parts.map(Number);
+        if (isNaN(h) || isNaN(m)) return null;
+        const [y, mo, dd] = dateStr.split("-").map(Number);
+        return new Date(y, mo-1, dd, h, m, 0, 0);
+      };
+      const clockIn = makeDate(inStr);
+      const clockOut = makeDate(outStr);
+      let workMinutes = 0, overtimeMinutes = 0;
+      if (clockIn && clockOut) {
+        workMinutes = Math.max(0, Math.round((clockOut.getTime() - clockIn.getTime()) / 60000));
+        overtimeMinutes = Math.max(0, workMinutes - (settings.workMinutesPerDay || 480));
+      }
+      const payload = { uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note };
+      if (recId) await db.collection("attendance").doc(recId).update(payload);
+      else await db.collection("attendance").add(payload);
+      toast("勤怠を更新しました", "success");
+      await showStaffDetail(uid);
+      await loadAdminAttendance();
+    } catch (e) {
+      console.error(e);
+      toast("更新失敗: " + e.message, "error");
+    }
+  }
+
+  // ============================================================
+  // 申請管理（承認・却下・取消・編集・削除）
+  // ============================================================
+  $("reqReloadBtn").addEventListener("click", loadAdminRequests);
+  $("reqFilterStatus").addEventListener("change", renderAdminRequests);
+  $("reqFilterUser").addEventListener("change", renderAdminRequests);
+
+  async function loadAdminRequests() {
+    try {
+      const snap = await db.collection("requests").get();
+      allRequests = [];
+      snap.forEach(d => allRequests.push({ id: d.id, ...d.data() }));
+      allRequests.sort((a, b) => {
+        // 申請中を先頭、その後日付降順
+        if (a.status !== b.status) {
+          if (a.status === "申請中") return -1;
+          if (b.status === "申請中") return 1;
+        }
+        return (b.date || "").localeCompare(a.date || "");
+      });
+      renderAdminRequests();
+    } catch (e) { console.error(e); toast("申請取得失敗: " + e.message, "error"); }
+  }
+
+  function renderAdminRequests() {
+    const statusFilter = $("reqFilterStatus").value;
+    const userFilter = $("reqFilterUser").value;
+    const list = allRequests.filter(r => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (userFilter !== "all" && r.uid !== userFilter) return false;
+      return true;
+    });
+
+    const container = $("adminRequests");
+    if (list.length === 0) { container.innerHTML = '<div class="empty">申請はありません</div>'; return; }
+
+    container.innerHTML = list.map(r => {
+      const userName = (allUsers[r.uid] && allUsers[r.uid].name) || r.uid;
+      const approverName = r.approvedBy ? ((allUsers[r.approvedBy] && allUsers[r.approvedBy].name) || r.approvedBy) : "";
+      const isPending = r.status === "申請中";
+      return `
+        <div class="req-item status-${r.status}" data-id="${r.id}">
+          <div class="head">
+            <span>${escapeHtml(userName)} / ${r.type}</span>
+            <span class="status-badge">${r.status}</span>
+          </div>
+          <div class="meta">対象日：${r.date}${approverName ? ` / 処理者：${escapeHtml(approverName)}` : ""}</div>
+          <div class="reason">${escapeHtml(r.reason || "")}</div>
+          <div class="actions">
+            ${isPending ? `
+              <button class="btn small approve-btn" type="button">承認</button>
+              <button class="btn small secondary reject-btn" type="button">却下</button>
+            ` : `
+              <button class="btn small secondary revert-btn" type="button">取消（申請中に戻す）</button>
+            `}
+            <button class="btn small secondary edit-btn" type="button">編集</button>
+            <button class="btn small danger delete-btn" type="button">削除</button>
+          </div>
+          <div class="edit-form" data-id="${r.id}">
+            <div class="form-group">
+              <label>申請種別</label>
+              <select class="ef-type">
+                ${["有給","半休","直行","直帰","遅刻","早退"].map(t =>
+                  `<option value="${t}" ${t===r.type?"selected":""}>${t}</option>`).join("")}
+              </select>
+            </div>
+            <div class="form-group"><label>対象日</label><input type="date" class="ef-date" value="${r.date || ''}" /></div>
+            <div class="form-group"><label>理由</label><textarea class="ef-reason">${escapeHtml(r.reason || "")}</textarea></div>
+            <div class="form-group">
+              <label>ステータス</label>
+              <select class="ef-status">
+                <option value="申請中" ${r.status==="申請中"?"selected":""}>申請中</option>
+                <option value="承認" ${r.status==="承認"?"selected":""}>承認</option>
+                <option value="却下" ${r.status==="却下"?"selected":""}>却下</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn small ef-save" type="button">保存</button>
+              <button class="btn small secondary ef-cancel" type="button">キャンセル</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".req-item").forEach(item => {
+      const id = item.dataset.id;
+      const editForm = item.querySelector(".edit-form");
+      const approve = item.querySelector(".approve-btn");
+      const reject = item.querySelector(".reject-btn");
+      const revert = item.querySelector(".revert-btn");
+      const editBtn = item.querySelector(".edit-btn");
+      const delBtn = item.querySelector(".delete-btn");
+      const saveBtn = item.querySelector(".ef-save");
+      const cancelBtn = item.querySelector(".ef-cancel");
+
+      if (approve) approve.addEventListener("click", () => reviewRequest(id, "承認"));
+      if (reject) reject.addEventListener("click", () => reviewRequest(id, "却下"));
+      if (revert) revert.addEventListener("click", () => {
+        if (!confirm("この申請を「申請中」に戻します。よろしいですか？")) return;
+        reviewRequest(id, "申請中", true);
+      });
+      if (editBtn) editBtn.addEventListener("click", () => {
+        editForm.classList.toggle("open");
+      });
+      if (cancelBtn) cancelBtn.addEventListener("click", () => {
+        editForm.classList.remove("open");
+      });
+      if (saveBtn) saveBtn.addEventListener("click", async () => {
+        const type = editForm.querySelector(".ef-type").value;
+        const date = editForm.querySelector(".ef-date").value;
+        const reason = editForm.querySelector(".ef-reason").value.trim();
+        const status = editForm.querySelector(".ef-status").value;
+        if (!date || !reason) { toast("対象日と理由を入力してください", "error"); return; }
+        try {
+          const update = { type, date, reason, status };
+          // ステータス変更に応じてapprovedBy更新
+          if (status === "申請中") update.approvedBy = null;
+          else update.approvedBy = currentUser.uid;
+          await db.collection("requests").doc(id).update(update);
+          toast("申請を更新しました", "success");
+          await loadAdminRequests();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+      if (delBtn) delBtn.addEventListener("click", async () => {
+        if (!confirm("この申請を完全に削除します。よろしいですか？")) return;
+        try {
+          await db.collection("requests").doc(id).delete();
+          toast("削除しました", "success");
+          await loadAdminRequests();
+        } catch (e) { toast("削除失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  async function reviewRequest(id, status, isRevert = false) {
+    try {
+      const update = {
+        status,
+        approvedBy: status === "申請中" ? null : currentUser.uid
+      };
+      await db.collection("requests").doc(id).update(update);
+      toast(isRevert ? "申請中に戻しました" : `${status}しました`, "success");
+      await loadAdminRequests();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  }
+
+  // ============================================================
+  // 設定
+  // ============================================================
   $("settingSaveBtn").addEventListener("click", async () => {
     const btn = $("settingSaveBtn");
     const workMin = parseInt($("settingWorkMin").value, 10);
@@ -1454,9 +897,7 @@
     } catch (e) {
       console.error(e);
       toast("設定保存失敗: " + e.message, "error");
-    } finally {
-      setLoading(btn, false);
-    }
+    } finally { setLoading(btn, false); }
   });
 
   </script>
