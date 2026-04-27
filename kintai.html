@@ -36,6 +36,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#2563EB" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="勤怠管理者" />
   <title>勤怠（管理者）</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -231,10 +237,17 @@
       <!-- 勤怠管理 -->
       <div id="tab-attendance" class="tab-content">
         <div class="card">
+          <h2>本日の出勤状況</h2>
+          <div id="todayStatusList"></div>
+          <button id="todayStatusReloadBtn" class="btn small secondary" type="button" style="margin-top:10px;">更新</button>
+        </div>
+
+        <div class="card">
           <h2>全スタッフの月次勤怠サマリ</h2>
           <div class="month-selector">
             <input type="month" id="adminMonth" />
             <button id="adminReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="csvExportAttendanceBtn" class="btn small secondary" type="button">CSV出力</button>
           </div>
           <div id="adminAttendance"></div>
         </div>
@@ -264,6 +277,7 @@
             </select>
             <select id="reqFilterUser"><option value="all">全スタッフ</option></select>
             <button id="reqReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="csvExportRequestsBtn" class="btn small secondary" type="button">CSV出力</button>
           </div>
           <div id="adminRequests"></div>
         </div>
@@ -314,6 +328,13 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  // Service Worker登録（PWA用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW登録失敗', err));
+    });
+  }
+
   // ============================================================
   // 共通ユーティリティ
   // ============================================================
@@ -347,6 +368,23 @@
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+  // CSVダウンロード（Excel互換のためBOM付与）
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(r => r.map(c => {
+      const s = c == null ? "" : String(c);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
   function translateAuthError(e) {
     const code = e && e.code ? e.code : "";
@@ -422,6 +460,7 @@
         $("settingHolidays").value = (settings.holidays || []).join("\n");
 
         await loadStaffList();
+        await loadTodayStatus();
         await loadAdminAttendance();
         await loadAdminRequests();
       } catch (e) {
@@ -579,6 +618,104 @@
   $("detailCloseBtn").addEventListener("click", () => {
     $("detailCard").style.display = "none";
   });
+  $("todayStatusReloadBtn").addEventListener("click", loadTodayStatus);
+  $("csvExportAttendanceBtn").addEventListener("click", exportAttendanceCSV);
+
+  // 本日の出勤状況（全スタッフ）
+  async function loadTodayStatus() {
+    try {
+      const today = todayStr();
+      const [attSnap, reqSnap] = await Promise.all([
+        db.collection("attendance").where("date", "==", today).get(),
+        db.collection("requests").where("date", "==", today).where("status", "==", "承認").get()
+      ]);
+      const byUid = {};
+      attSnap.forEach(d => { byUid[d.data().uid] = d.data(); });
+      const reqByUid = {};
+      reqSnap.forEach(d => { const r = d.data(); reqByUid[r.uid] = r.type; });
+
+      const users = Object.keys(allUsers).map(uid => ({ uid, ...allUsers[uid] }));
+      users.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+
+      if (users.length === 0) {
+        $("todayStatusList").innerHTML = '<div class="empty">スタッフがいません</div>';
+        return;
+      }
+
+      $("todayStatusList").innerHTML = users.map(u => {
+        const rec = byUid[u.uid];
+        const reqType = reqByUid[u.uid];
+        let badge, color, time = "";
+        if (reqType) {
+          badge = reqType; color = "#F59E0B";
+        } else if (rec && rec.clockOut) {
+          badge = "退勤済"; color = "#3B82F6";
+          time = `出 ${formatHM(rec.clockIn)} / 退 ${formatHM(rec.clockOut)}`;
+        } else if (rec && rec.clockIn) {
+          badge = "出勤中"; color = "#10B981";
+          time = `出 ${formatHM(rec.clockIn)}`;
+        } else {
+          badge = "未出勤"; color = "#94A3B8";
+        }
+        return `
+          <div class="staff-row">
+            <div class="info">
+              <div class="name">${escapeHtml(u.name || "")}
+                <span class="role-badge" style="background:${color}22; color:${color};">${badge}</span>
+              </div>
+              <div class="email">${time || "&nbsp;"}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    } catch (e) {
+      console.error(e);
+      toast("本日状況の取得失敗: " + e.message, "error");
+    }
+  }
+
+  // 全スタッフの月次勤怠CSV出力
+  async function exportAttendanceCSV() {
+    const btn = $("csvExportAttendanceBtn");
+    setLoading(btn, true);
+    try {
+      const month = $("adminMonth").value || `${new Date().getFullYear()}-${pad(new Date().getMonth()+1)}`;
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      const snap = await db.collection("attendance")
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+
+      const rows = [["氏名", "メール", "日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
+      const records = [];
+      snap.forEach(d => records.push(d.data()));
+      records.sort((a, b) => (a.date || "").localeCompare(b.date || "") || ((allUsers[a.uid]?.name||"").localeCompare(allUsers[b.uid]?.name||"", "ja")));
+      records.forEach(r => {
+        const u = allUsers[r.uid] || {};
+        const dow = (() => {
+          const [yy, mm, dd] = r.date.split("-").map(Number);
+          return weekdayJp[new Date(yy, mm-1, dd).getDay()];
+        })();
+        rows.push([
+          u.name || "",
+          u.email || "",
+          r.date || "",
+          dow,
+          r.clockIn ? formatHM(r.clockIn) : "",
+          r.clockOut ? formatHM(r.clockOut) : "",
+          r.workMinutes || 0,
+          r.overtimeMinutes || 0,
+          r.note || ""
+        ]);
+      });
+      downloadCSV(`勤怠_${month}.csv`, rows);
+      toast("CSVを出力しました", "success");
+    } catch (e) {
+      console.error(e);
+      toast("CSV出力失敗: " + e.message, "error");
+    } finally { setLoading(btn, false); }
+  }
 
   async function loadAdminAttendance() {
     try {
@@ -734,6 +871,28 @@
   $("reqReloadBtn").addEventListener("click", loadAdminRequests);
   $("reqFilterStatus").addEventListener("change", renderAdminRequests);
   $("reqFilterUser").addEventListener("change", renderAdminRequests);
+  $("csvExportRequestsBtn").addEventListener("click", exportRequestsCSV);
+
+  // 申請CSV出力（現在のフィルタ適用後）
+  function exportRequestsCSV() {
+    const statusFilter = $("reqFilterStatus").value;
+    const userFilter = $("reqFilterUser").value;
+    const list = allRequests.filter(r => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (userFilter !== "all" && r.uid !== userFilter) return false;
+      return true;
+    });
+    const rows = [["氏名", "メール", "申請種別", "対象日", "ステータス", "理由", "処理者", "作成日時"]];
+    list.forEach(r => {
+      const u = allUsers[r.uid] || {};
+      const approver = r.approvedBy ? (allUsers[r.approvedBy]?.name || "") : "";
+      const created = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toISOString().slice(0,16).replace("T"," ") : "";
+      rows.push([u.name || "", u.email || "", r.type, r.date, r.status, r.reason || "", approver, created]);
+    });
+    const stamp = new Date().toISOString().slice(0,10);
+    downloadCSV(`申請_${stamp}.csv`, rows);
+    toast("CSVを出力しました", "success");
+  }
 
   async function loadAdminRequests() {
     try {
