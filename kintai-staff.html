@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  勤怠管理アプリ（スタッフ用） - kintai-staff.html
+  既存Firebaseプロジェクト「kanko-app-96378」を流用
+  ============================================================
+
+  ■ 役割分担
+  - スタッフ用（この kintai-staff.html）
+      打刻 / 自分の勤怠一覧 / 申請提出
+      ※ すべてのログインユーザー（管理者含む）が利用可能
+  - 管理者用（kintai.html）
+      全スタッフ勤怠閲覧 / 申請の承認・却下・取消・編集 / スタッフ管理 / 設定
+
+  ■ 使用コレクション（kintai.html と共通）
+  - users / attendance / requests / kintai_settings
+  ※ 既存の records / schedule / settings には一切触れません
+  ============================================================
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#2563EB" />
+  <title>勤怠（スタッフ）</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+      background: #F8FAFC; color: #0F172A;
+      font-size: 16px; line-height: 1.5;
+    }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea { font-family: inherit; font-size: 16px; }
+
+    /* ログイン */
+    #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { background: #fff; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
+    .login-card h1 { margin: 0 0 4px; font-size: 24px; color: #2563EB; }
+    .login-card p.sub { margin: 0 0 20px; color: #64748B; font-size: 14px; }
+    .login-tabs { display: flex; background: #F1F5F9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+    .login-tabs button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; color: #64748B; font-weight: 600; }
+    .login-tabs button.active { background: #fff; color: #2563EB; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #fff; transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 56px; padding: 0 20px; border: none; border-radius: 12px;
+      background: #2563EB; color: #fff; font-size: 16px; font-weight: 700;
+      transition: background 0.15s, transform 0.05s; width: 100%;
+    }
+    .btn:hover { background: #1D4ED8; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn.secondary { background: #fff; color: #2563EB; border: 1px solid #CBD5E1; }
+    .btn.secondary:hover { background: #F1F5F9; }
+    .btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; width: auto; border-radius: 8px; }
+
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .btn.secondary .spinner { border-color: rgba(37,99,235,0.3); border-top-color: #2563EB; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #app { display: none; min-height: 100vh; padding-bottom: 80px; }
+    .topbar { background: #2563EB; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .topbar h1 { margin: 0; font-size: 18px; }
+    .topbar .user-info { font-size: 13px; opacity: 0.95; }
+    .topbar button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+
+    .container { padding: 16px; max-width: 800px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); margin-bottom: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 16px; color: #1E293B; }
+
+    .clock-time { font-size: 40px; font-weight: 700; text-align: center; color: #2563EB; font-variant-numeric: tabular-nums; margin: 8px 0; }
+    .clock-date { text-align: center; color: #64748B; margin-bottom: 16px; }
+    .clock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .clock-buttons .btn { min-height: 72px; font-size: 18px; }
+    .btn-in { background: #10B981; } .btn-in:hover { background: #059669; }
+    .btn-out { background: #F59E0B; } .btn-out:hover { background: #D97706; }
+    .today-record { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .today-record .slot { background: #F1F5F9; border-radius: 10px; padding: 10px; text-align: center; }
+    .today-record .slot .label { font-size: 11px; color: #64748B; }
+    .today-record .slot .value { font-size: 18px; font-weight: 700; color: #0F172A; font-variant-numeric: tabular-nums; }
+
+    .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(3, 1fr); z-index: 10; box-shadow: 0 -2px 10px rgba(15,23,42,0.04); }
+    .tabbar button { padding: 10px 4px 14px; border: none; background: transparent; color: #64748B; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; }
+    .tabbar button.active { color: #2563EB; }
+    .tabbar button .ico { font-size: 20px; line-height: 1; }
+
+    .month-selector { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .month-selector input { flex: 1; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 10px; }
+    .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+    table.attendance { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.attendance th, table.attendance td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+    table.attendance th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    table.attendance td { font-variant-numeric: tabular-nums; }
+    table.attendance tr.saturday td:first-child,
+    table.attendance tr.saturday td:nth-child(2) { color: #2563EB; }
+    table.attendance tr.sunday td:first-child, table.attendance tr.sunday td:nth-child(2),
+    table.attendance tr.holiday td:first-child, table.attendance tr.holiday td:nth-child(2) { color: #DC2626; }
+
+    .month-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .month-summary .item { background: #EFF6FF; border-radius: 10px; padding: 12px; text-align: center; }
+    .month-summary .item .label { font-size: 12px; color: #475569; }
+    .month-summary .item .value { font-size: 20px; font-weight: 700; color: #2563EB; }
+
+    .request-list .req-item { padding: 12px; border-radius: 10px; background: #F8FAFC; margin-bottom: 8px; border-left: 4px solid #94A3B8; }
+    .req-item.status-申請中 { border-left-color: #F59E0B; }
+    .req-item.status-承認 { border-left-color: #10B981; }
+    .req-item.status-却下 { border-left-color: #DC2626; }
+    .req-item .head { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 600; }
+    .req-item .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #E2E8F0; color: #475569; }
+    .req-item.status-申請中 .status-badge { background: #FEF3C7; color: #B45309; }
+    .req-item.status-承認 .status-badge { background: #D1FAE5; color: #047857; }
+    .req-item.status-却下 .status-badge { background: #FEE2E2; color: #B91C1C; }
+    .req-item .meta { font-size: 12px; color: #64748B; }
+    .req-item .reason { font-size: 13px; margin-top: 6px; color: #334155; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0F172A; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.25s, transform 0.25s; z-index: 100; max-width: calc(100% - 32px); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: #DC2626; }
+    #toast.success { background: #10B981; }
+    .empty { text-align: center; color: #94A3B8; padding: 30px 10px; font-size: 14px; }
+
+    .admin-link { display: inline-block; margin-top: 12px; font-size: 13px; color: #2563EB; text-decoration: none; }
+    .admin-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div id="loginScreen">
+    <div class="login-card">
+      <h1>勤怠管理</h1>
+      <p class="sub">メールアドレスでログインまたは新規登録</p>
+      <div class="login-tabs">
+        <button id="tabLogin" class="active" type="button">ログイン</button>
+        <button id="tabSignup" type="button">新規登録</button>
+      </div>
+      <div id="signupNameGroup" class="form-group" style="display:none;">
+        <label>氏名</label>
+        <input type="text" id="authName" placeholder="山田 太郎" />
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="authEmail" placeholder="example@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>パスワード（6文字以上）</label>
+        <input type="password" id="authPassword" autocomplete="current-password" />
+      </div>
+      <button id="authSubmit" class="btn" type="button">ログイン</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="topbar">
+      <div>
+        <h1>勤怠管理</h1>
+        <div class="user-info" id="topbarUser"></div>
+      </div>
+      <button id="logoutBtn" type="button">ログアウト</button>
+    </div>
+
+    <div class="container">
+
+      <!-- 打刻タブ -->
+      <div id="tab-clock" class="tab-content active">
+        <div class="card">
+          <div class="clock-date" id="clockDate">----年--月--日（-）</div>
+          <div class="clock-time" id="clockTime">--:--:--</div>
+          <div class="clock-buttons">
+            <button id="btnClockIn" class="btn btn-in" type="button">出勤</button>
+            <button id="btnClockOut" class="btn btn-out" type="button">退勤</button>
+          </div>
+          <div class="today-record">
+            <div class="slot"><div class="label">出勤</div><div class="value" id="todayIn">--:--</div></div>
+            <div class="slot"><div class="label">退勤</div><div class="value" id="todayOut">--:--</div></div>
+            <div class="slot"><div class="label">労働</div><div class="value" id="todayWork">--:--</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>手動修正（本日分）</h2>
+          <div class="form-group"><label>出勤時刻</label><input type="time" id="manualIn" /></div>
+          <div class="form-group"><label>退勤時刻</label><input type="time" id="manualOut" /></div>
+          <div class="form-group"><label>備考</label><input type="text" id="manualNote" placeholder="任意" /></div>
+          <button id="manualSaveBtn" class="btn secondary" type="button">修正を保存</button>
+        </div>
+
+        <div class="card" id="adminLinkCard" style="display:none;">
+          <h2>管理者メニュー</h2>
+          <p style="margin:0; font-size:13px; color:#64748B;">あなたは管理者権限を持っています。管理画面は別URLです。</p>
+          <a class="admin-link" href="kintai.html">→ 管理者アプリを開く</a>
+        </div>
+      </div>
+
+      <!-- 勤怠一覧タブ -->
+      <div id="tab-list" class="tab-content">
+        <div class="card">
+          <div class="month-selector">
+            <input type="month" id="listMonth" />
+            <button id="listReloadBtn" class="btn small secondary" type="button">更新</button>
+          </div>
+          <div class="table-wrap">
+            <table class="attendance" id="listTable">
+              <thead>
+                <tr><th>日</th><th>曜</th><th>出勤</th><th>退勤</th><th>労働</th><th>残業</th></tr>
+              </thead>
+              <tbody id="listBody"></tbody>
+            </table>
+          </div>
+          <div class="month-summary">
+            <div class="item"><div class="label">合計労働時間</div><div class="value" id="sumWork">0:00</div></div>
+            <div class="item"><div class="label">合計残業時間</div><div class="value" id="sumOver">0:00</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 申請タブ -->
+      <div id="tab-request" class="tab-content">
+        <div class="card">
+          <h2>新規申請</h2>
+          <div class="form-group">
+            <label>申請種別</label>
+            <select id="reqType">
+              <option value="有給">有給休暇</option>
+              <option value="半休">半休</option>
+              <option value="直行">直行</option>
+              <option value="直帰">直帰</option>
+              <option value="遅刻">遅刻</option>
+              <option value="早退">早退</option>
+            </select>
+          </div>
+          <div class="form-group"><label>対象日</label><input type="date" id="reqDate" /></div>
+          <div class="form-group"><label>理由</label><textarea id="reqReason" placeholder="理由を入力"></textarea></div>
+          <button id="reqSubmitBtn" class="btn" type="button">申請する</button>
+        </div>
+
+        <div class="card">
+          <h2>申請一覧（自分）</h2>
+          <div id="reqList" class="request-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <nav class="tabbar">
+      <button data-tab="tab-clock" class="active" type="button"><span class="ico">◎</span>打刻</button>
+      <button data-tab="tab-list" type="button"><span class="ico">▤</span>勤怠一覧</button>
+      <button data-tab="tab-request" type="button"><span class="ico">✎</span>申請</button>
+    </nav>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script>
+  // ============================================================
+  // Firebase初期化（kanko-app-96378）
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAlAe6iwwkWGLBrjeqH3mplQg6NHHVzCSE",
+    authDomain: "kanko-app-96378.firebaseapp.com",
+    projectId: "kanko-app-96378",
+    storageBucket: "kanko-app-96378.firebasestorage.app",
+    messagingSenderId: "415170223801",
+    appId: "1:415170223801:web:1b10387e20cb2e4b678568"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // ============================================================
+  // 共通ユーティリティ
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  let toastTimer = null;
+  function toast(msg, type = "") {
+    const el = $("toast");
+    el.textContent = msg;
+    el.className = "show " + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = type; }, 2800);
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function currentMonthStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+  function formatHM(date) {
+    if (!date) return "--:--";
+    const d = date instanceof Date ? date : date.toDate();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function minutesToHM(min) { if (!min || min < 0) return "0:00"; return `${Math.floor(min/60)}:${pad(min%60)}`; }
+  const weekdayJp = ["日","月","火","水","木","金","土"];
+
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span>';
+      btn.disabled = true;
+    } else {
+      if (btn.dataset.originalText) btn.innerHTML = btn.dataset.originalText;
+      btn.disabled = false;
+    }
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ============================================================
+  // グローバル状態
+  // ============================================================
+  let currentUser = null;
+  let userData = null;
+  let settings = { workMinutesPerDay: 480, holidays: [] };
+  let clockTimer = null;
+
+  // ============================================================
+  // 認証UI
+  // ============================================================
+  let authMode = "login";
+  $("tabLogin").addEventListener("click", () => {
+    authMode = "login";
+    $("tabLogin").classList.add("active");
+    $("tabSignup").classList.remove("active");
+    $("signupNameGroup").style.display = "none";
+    $("authSubmit").textContent = "ログイン";
+  });
+  $("tabSignup").addEventListener("click", () => {
+    authMode = "signup";
+    $("tabSignup").classList.add("active");
+    $("tabLogin").classList.remove("active");
+    $("signupNameGroup").style.display = "block";
+    $("authSubmit").textContent = "新規登録";
+  });
+
+  $("authSubmit").addEventListener("click", async () => {
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    const name = $("authName").value.trim();
+    if (!email || !password) { toast("メールとパスワードを入力してください", "error"); return; }
+    if (authMode === "signup" && !name) { toast("氏名を入力してください", "error"); return; }
+
+    const btn = $("authSubmit");
+    setLoading(btn, true);
+    try {
+      if (authMode === "signup") {
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        const usersSnap = await db.collection("users").limit(1).get();
+        const isFirst = usersSnap.empty;
+        await db.collection("users").doc(cred.user.uid).set({
+          name, email,
+          role: isFirst ? "admin" : "staff",
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        toast(isFirst ? "管理者として登録しました" : "登録しました", "success");
+      } else {
+        await auth.signInWithEmailAndPassword(email, password);
+      }
+    } catch (e) {
+      console.error(e);
+      toast(translateAuthError(e), "error");
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  function translateAuthError(e) {
+    const code = e && e.code ? e.code : "";
+    const map = {
+      "auth/invalid-email": "メールアドレスの形式が正しくありません",
+      "auth/user-not-found": "ユーザーが見つかりません",
+      "auth/wrong-password": "パスワードが違います",
+      "auth/invalid-credential": "メールまたはパスワードが違います",
+      "auth/email-already-in-use": "このメールアドレスは既に使用されています",
+      "auth/weak-password": "パスワードは6文字以上で入力してください",
+      "auth/network-request-failed": "ネットワークエラーが発生しました"
+    };
+    return map[code] || (e.message || "エラーが発生しました");
+  }
+
+  $("logoutBtn").addEventListener("click", async () => { await auth.signOut(); });
+
+  // ============================================================
+  // 認証状態の監視
+  // ============================================================
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
+      try {
+        const ref = db.collection("users").doc(user.uid);
+        let snap = await ref.get();
+        if (!snap.exists) {
+          const usersSnap = await db.collection("users").limit(1).get();
+          const isFirst = usersSnap.empty;
+          await ref.set({
+            name: user.email.split("@")[0],
+            email: user.email,
+            role: isFirst ? "admin" : "staff",
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          snap = await ref.get();
+        }
+        userData = snap.data();
+        await loadSettings();
+
+        $("loginScreen").style.display = "none";
+        $("app").style.display = "block";
+        $("topbarUser").textContent = `${userData.name}（${userData.role === "admin" ? "管理者" : "スタッフ"}）`;
+        $("adminLinkCard").style.display = userData.role === "admin" ? "block" : "none";
+
+        startClockTimer();
+        await refreshTodayRecord();
+        $("listMonth").value = currentMonthStr();
+        $("reqDate").value = todayStr();
+        await loadAttendanceList();
+        await loadMyRequests();
+      } catch (e) {
+        console.error(e);
+        toast("データの取得に失敗しました: " + e.message, "error");
+      }
+    } else {
+      currentUser = null; userData = null;
+      stopClockTimer();
+      $("loginScreen").style.display = "flex";
+      $("app").style.display = "none";
+    }
+  });
+
+  async function loadSettings() {
+    try {
+      const snap = await db.collection("kintai_settings").doc("config").get();
+      if (snap.exists) settings = Object.assign({ workMinutesPerDay: 480, holidays: [] }, snap.data());
+      else settings = { workMinutesPerDay: 480, holidays: [] };
+    } catch (e) { console.warn("設定読み込み失敗:", e); }
+  }
+
+  // ============================================================
+  // タブ切替
+  // ============================================================
+  document.querySelectorAll(".tabbar button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.dataset.tab;
+      document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      $(tabId).classList.add("active");
+    });
+  });
+
+  // ============================================================
+  // 打刻
+  // ============================================================
+  function startClockTimer() { updateClockDisplay(); clockTimer = setInterval(updateClockDisplay, 1000); }
+  function stopClockTimer() { if (clockTimer) clearInterval(clockTimer); clockTimer = null; }
+  function updateClockDisplay() {
+    const d = new Date();
+    $("clockTime").textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    $("clockDate").textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${weekdayJp[d.getDay()]}）`;
+  }
+
+  async function getTodayAttendance() {
+    const snap = await db.collection("attendance")
+      .where("uid", "==", currentUser.uid)
+      .where("date", "==", todayStr())
+      .limit(1).get();
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { id: doc.id, ...doc.data() };
+  }
+
+  async function refreshTodayRecord() {
+    try {
+      const rec = await getTodayAttendance();
+      if (rec) {
+        $("todayIn").textContent = rec.clockIn ? formatHM(rec.clockIn) : "--:--";
+        $("todayOut").textContent = rec.clockOut ? formatHM(rec.clockOut) : "--:--";
+        $("todayWork").textContent = rec.workMinutes ? minutesToHM(rec.workMinutes) : "--:--";
+        if (rec.clockIn) $("manualIn").value = formatHM(rec.clockIn);
+        if (rec.clockOut) $("manualOut").value = formatHM(rec.clockOut);
+        $("manualNote").value = rec.note || "";
+      } else {
+        $("todayIn").textContent = "--:--"; $("todayOut").textContent = "--:--"; $("todayWork").textContent = "--:--";
+        $("manualIn").value = ""; $("manualOut").value = ""; $("manualNote").value = "";
+      }
+    } catch (e) { console.error(e); toast("本日の記録を取得できませんでした", "error"); }
+  }
+
+  function calcMinutes(clockIn, clockOut) {
+    if (!clockIn || !clockOut) return { workMinutes: 0, overtimeMinutes: 0 };
+    const inMs = clockIn instanceof Date ? clockIn.getTime() : clockIn.toDate().getTime();
+    const outMs = clockOut instanceof Date ? clockOut.getTime() : clockOut.toDate().getTime();
+    const workMinutes = Math.max(0, Math.round((outMs - inMs) / 60000));
+    const overtimeMinutes = Math.max(0, workMinutes - (settings.workMinutesPerDay || 480));
+    return { workMinutes, overtimeMinutes };
+  }
+
+  $("btnClockIn").addEventListener("click", async () => {
+    const btn = $("btnClockIn");
+    setLoading(btn, true);
+    try {
+      const existing = await getTodayAttendance();
+      if (existing && existing.clockIn) { toast("本日は既に出勤済みです", "error"); return; }
+      const now = new Date();
+      if (existing) await db.collection("attendance").doc(existing.id).update({ clockIn: now });
+      else await db.collection("attendance").add({
+        uid: currentUser.uid, date: todayStr(), clockIn: now, clockOut: null, workMinutes: 0, overtimeMinutes: 0, note: ""
+      });
+      toast("出勤を記録しました", "success");
+      await refreshTodayRecord();
+    } catch (e) { console.error(e); toast("出勤の記録に失敗しました: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  $("btnClockOut").addEventListener("click", async () => {
+    const btn = $("btnClockOut");
+    setLoading(btn, true);
+    try {
+      const existing = await getTodayAttendance();
+      if (!existing || !existing.clockIn) { toast("出勤が記録されていません", "error"); return; }
+      if (existing.clockOut) { toast("本日は既に退勤済みです", "error"); return; }
+      const now = new Date();
+      const { workMinutes, overtimeMinutes } = calcMinutes(existing.clockIn, now);
+      await db.collection("attendance").doc(existing.id).update({ clockOut: now, workMinutes, overtimeMinutes });
+      toast("退勤を記録しました", "success");
+      await refreshTodayRecord();
+    } catch (e) { console.error(e); toast("退勤の記録に失敗しました: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  $("manualSaveBtn").addEventListener("click", async () => {
+    const btn = $("manualSaveBtn");
+    const inVal = $("manualIn").value, outVal = $("manualOut").value, note = $("manualNote").value;
+    if (!inVal && !outVal) { toast("時刻を入力してください", "error"); return; }
+    setLoading(btn, true);
+    try {
+      const dateStr = todayStr();
+      const makeDate = (hhmm) => {
+        if (!hhmm) return null;
+        const [h, m] = hhmm.split(":").map(Number);
+        const d = new Date(); d.setHours(h, m, 0, 0);
+        return d;
+      };
+      const clockIn = makeDate(inVal), clockOut = makeDate(outVal);
+      const { workMinutes, overtimeMinutes } = (clockIn && clockOut) ? calcMinutes(clockIn, clockOut) : { workMinutes: 0, overtimeMinutes: 0 };
+      const existing = await getTodayAttendance();
+      const payload = { uid: currentUser.uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note: note || "" };
+      if (existing) await db.collection("attendance").doc(existing.id).update(payload);
+      else await db.collection("attendance").add(payload);
+      toast("修正を保存しました", "success");
+      await refreshTodayRecord();
+    } catch (e) { console.error(e); toast("保存に失敗しました: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  // ============================================================
+  // 勤怠一覧
+  // ============================================================
+  $("listReloadBtn").addEventListener("click", loadAttendanceList);
+  $("listMonth").addEventListener("change", loadAttendanceList);
+
+  async function loadAttendanceList() {
+    try {
+      const month = $("listMonth").value || currentMonthStr();
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      const snap = await db.collection("attendance")
+        .where("uid", "==", currentUser.uid)
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      const byDate = {};
+      snap.forEach(doc => { byDate[doc.data().date] = doc.data(); });
+
+      const tbody = $("listBody");
+      tbody.innerHTML = "";
+      let sumWork = 0, sumOver = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+        const dateObj = new Date(y, m-1, d);
+        const dow = dateObj.getDay();
+        const isHoliday = (settings.holidays || []).includes(dateStr);
+        const rec = byDate[dateStr];
+        const tr = document.createElement("tr");
+        if (isHoliday) tr.classList.add("holiday");
+        else if (dow === 0) tr.classList.add("sunday");
+        else if (dow === 6) tr.classList.add("saturday");
+        const clockInStr = rec && rec.clockIn ? formatHM(rec.clockIn) : "-";
+        const clockOutStr = rec && rec.clockOut ? formatHM(rec.clockOut) : "-";
+        const workStr = rec && rec.workMinutes ? minutesToHM(rec.workMinutes) : "-";
+        const overStr = rec && rec.overtimeMinutes ? minutesToHM(rec.overtimeMinutes) : "-";
+        if (rec) { sumWork += rec.workMinutes || 0; sumOver += rec.overtimeMinutes || 0; }
+        tr.innerHTML = `<td>${d}</td><td>${weekdayJp[dow]}</td><td>${clockInStr}</td><td>${clockOutStr}</td><td>${workStr}</td><td>${overStr}</td>`;
+        tbody.appendChild(tr);
+      }
+      $("sumWork").textContent = minutesToHM(sumWork);
+      $("sumOver").textContent = minutesToHM(sumOver);
+    } catch (e) { console.error(e); toast("一覧の取得に失敗しました: " + e.message, "error"); }
+  }
+
+  // ============================================================
+  // 申請
+  // ============================================================
+  $("reqSubmitBtn").addEventListener("click", async () => {
+    const btn = $("reqSubmitBtn");
+    const type = $("reqType").value, date = $("reqDate").value, reason = $("reqReason").value.trim();
+    if (!date) { toast("対象日を入力してください", "error"); return; }
+    if (!reason) { toast("理由を入力してください", "error"); return; }
+    setLoading(btn, true);
+    try {
+      await db.collection("requests").add({
+        uid: currentUser.uid, type, date, reason,
+        status: "申請中",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        approvedBy: null
+      });
+      $("reqReason").value = "";
+      toast("申請を送信しました", "success");
+      await loadMyRequests();
+    } catch (e) { console.error(e); toast("申請の送信に失敗しました: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  async function loadMyRequests() {
+    try {
+      const snap = await db.collection("requests").where("uid", "==", currentUser.uid).get();
+      const list = [];
+      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      list.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      const container = $("reqList");
+      if (list.length === 0) { container.innerHTML = '<div class="empty">申請はまだありません</div>'; return; }
+      container.innerHTML = list.map(r => `
+        <div class="req-item status-${r.status}">
+          <div class="head"><span>${r.type}</span><span class="status-badge">${r.status}</span></div>
+          <div class="meta">対象日：${r.date}</div>
+          <div class="reason">${escapeHtml(r.reason || "")}</div>
+        </div>
+      `).join("");
+    } catch (e) { console.error(e); }
+  }
+
+  </script>
+</body>
+</html>
