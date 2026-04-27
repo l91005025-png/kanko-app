@@ -1,0 +1,15 @@
+{
+  "name": "勤怠管理（管理者）",
+  "short_name": "勤怠管理者",
+  "description": "全スタッフの勤怠・申請を管理するアプリ",
+  "start_url": "./kintai.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
