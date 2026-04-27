@@ -1,0 +1,15 @@
+{
+  "name": "勤怠管理（スタッフ）",
+  "short_name": "勤怠",
+  "description": "出退勤の打刻と申請を行うアプリ",
+  "start_url": "./kintai-staff.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
