@@ -788,11 +788,15 @@
       const startStr = `${y}-${pad(m)}-01`;
       const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
 
-      const snap = await db.collection("attendance")
-        .where("uid", "==", uid)
-        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      // 複合インデックス回避のため uid のみで取得し、月範囲はクライアント側でフィルタ
+      const snap = await db.collection("attendance").where("uid", "==", uid).get();
       const byDate = {};
-      snap.forEach(d => { byDate[d.data().date] = { id: d.id, ...d.data() }; });
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.date >= startStr && data.date <= endStr) {
+          byDate[data.date] = { id: d.id, ...data };
+        }
+      });
 
       $("detailTitle").textContent = `${userName} の ${month} の勤怠`;
       const tbody = $("detailBody");
