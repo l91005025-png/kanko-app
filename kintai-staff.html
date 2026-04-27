@@ -22,6 +22,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#2563EB" />
+  <link rel="manifest" href="manifest-staff.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="勤怠" />
   <title>勤怠（スタッフ）</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -199,6 +205,15 @@
           <button id="manualSaveBtn" class="btn secondary" type="button">修正を保存</button>
         </div>
 
+        <div class="card" id="notifCard">
+          <h2>打刻忘れ通知</h2>
+          <p style="margin:0 0 10px; font-size:13px; color:#64748B;">
+            ブラウザ通知を許可すると、出勤忘れ（10:00以降）・退勤忘れ（19:00以降）にリマインドします。
+          </p>
+          <div id="notifStatus" style="font-size:13px; margin-bottom:10px;"></div>
+          <button id="notifBtn" class="btn secondary" type="button">通知を許可する</button>
+        </div>
+
         <div class="card" id="adminLinkCard" style="display:none;">
           <h2>管理者メニュー</h2>
           <p style="margin:0; font-size:13px; color:#64748B;">あなたは管理者権限を持っています。管理画面は別URLです。</p>
@@ -212,6 +227,7 @@
           <div class="month-selector">
             <input type="month" id="listMonth" />
             <button id="listReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="listCsvBtn" class="btn small secondary" type="button">CSV</button>
           </div>
           <div class="table-wrap">
             <table class="attendance" id="listTable">
@@ -285,6 +301,13 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  // Service Worker登録（PWA用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW登録失敗', err));
+    });
+  }
+
   // ============================================================
   // 共通ユーティリティ
   // ============================================================
@@ -320,6 +343,19 @@
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  // CSVダウンロード
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(r => r.map(c => {
+      const s = c == null ? "" : String(c);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ============================================================
@@ -425,6 +461,8 @@
         $("adminLinkCard").style.display = userData.role === "admin" ? "block" : "none";
 
         startClockTimer();
+        updateNotifUI();
+        if (Notification && Notification.permission === "granted") startReminderCheck();
         await refreshTodayRecord();
         $("listMonth").value = currentMonthStr();
         $("reqDate").value = todayStr();
@@ -437,6 +475,7 @@
     } else {
       currentUser = null; userData = null;
       stopClockTimer();
+      if (notifTimer) { clearInterval(notifTimer); notifTimer = null; }
       $("loginScreen").style.display = "flex";
       $("app").style.display = "none";
     }
@@ -573,6 +612,135 @@
   // ============================================================
   $("listReloadBtn").addEventListener("click", loadAttendanceList);
   $("listMonth").addEventListener("change", loadAttendanceList);
+  $("listCsvBtn").addEventListener("click", exportMyAttendanceCSV);
+
+  // 自分の月次勤怠CSV出力
+  async function exportMyAttendanceCSV() {
+    const btn = $("listCsvBtn");
+    setLoading(btn, true);
+    try {
+      const month = $("listMonth").value || currentMonthStr();
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      const snap = await db.collection("attendance")
+        .where("uid", "==", currentUser.uid)
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      const byDate = {};
+      snap.forEach(d => { byDate[d.data().date] = d.data(); });
+
+      const rows = [["日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
+      let sumWork = 0, sumOver = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+        const dow = weekdayJp[new Date(y, m-1, d).getDay()];
+        const r = byDate[dateStr];
+        rows.push([
+          dateStr, dow,
+          r && r.clockIn ? formatHM(r.clockIn) : "",
+          r && r.clockOut ? formatHM(r.clockOut) : "",
+          r ? (r.workMinutes || 0) : "",
+          r ? (r.overtimeMinutes || 0) : "",
+          r ? (r.note || "") : ""
+        ]);
+        if (r) { sumWork += r.workMinutes || 0; sumOver += r.overtimeMinutes || 0; }
+      }
+      rows.push(["", "合計", "", "", sumWork, sumOver, ""]);
+      const name = (userData.name || "勤怠").replace(/[\\/:*?"<>|]/g, "_");
+      downloadCSV(`勤怠_${name}_${month}.csv`, rows);
+      toast("CSVを出力しました", "success");
+    } catch (e) {
+      console.error(e);
+      toast("CSV出力失敗: " + e.message, "error");
+    } finally { setLoading(btn, false); }
+  }
+
+  // ============================================================
+  // 打刻忘れ通知
+  // ============================================================
+  let notifTimer = null;
+  let notified = {}; // { "YYYY-MM-DD-clockin": true } 重複通知防止
+
+  function updateNotifUI() {
+    if (!('Notification' in window)) {
+      $("notifStatus").textContent = "このブラウザは通知に対応していません";
+      $("notifBtn").style.display = "none";
+      return;
+    }
+    const p = Notification.permission;
+    if (p === "granted") {
+      $("notifStatus").textContent = "✓ 通知が有効です";
+      $("notifStatus").style.color = "#10B981";
+      $("notifBtn").style.display = "none";
+    } else if (p === "denied") {
+      $("notifStatus").textContent = "✗ 通知がブロックされています（ブラウザ設定から許可してください）";
+      $("notifStatus").style.color = "#DC2626";
+      $("notifBtn").style.display = "none";
+    } else {
+      $("notifStatus").textContent = "未設定";
+      $("notifStatus").style.color = "#64748B";
+      $("notifBtn").style.display = "inline-flex";
+    }
+  }
+
+  $("notifBtn").addEventListener("click", async () => {
+    if (!('Notification' in window)) return;
+    const p = await Notification.requestPermission();
+    updateNotifUI();
+    if (p === "granted") {
+      new Notification("勤怠管理", { body: "通知を有効にしました", icon: "icon.svg" });
+      startReminderCheck();
+    }
+  });
+
+  function notifyOnce(key, body) {
+    if (Notification.permission !== "granted") return;
+    const k = todayStr() + "-" + key;
+    if (notified[k]) return;
+    notified[k] = true;
+    new Notification("勤怠管理", { body, icon: "icon.svg" });
+  }
+
+  async function checkReminders() {
+    if (Notification.permission !== "granted") return;
+    if (!currentUser) return;
+    const now = new Date();
+    const dow = now.getDay();
+    const today = todayStr();
+    // 土日・祝日はスキップ
+    if (dow === 0 || dow === 6) return;
+    if ((settings.holidays || []).includes(today)) return;
+
+    // 申請（有給/半休等）が承認されている日はスキップ
+    try {
+      const reqSnap = await db.collection("requests")
+        .where("uid", "==", currentUser.uid)
+        .where("date", "==", today)
+        .where("status", "==", "承認").limit(1).get();
+      if (!reqSnap.empty) {
+        const t = reqSnap.docs[0].data().type;
+        if (t === "有給" || t === "半休") return;
+      }
+    } catch (_) {}
+
+    const rec = await getTodayAttendance();
+    const hour = now.getHours();
+    // 出勤忘れ：10:00以降、まだ出勤打刻なし
+    if (hour >= 10 && (!rec || !rec.clockIn)) {
+      notifyOnce("clockin", "出勤打刻を忘れていませんか？");
+    }
+    // 退勤忘れ：19:00以降、出勤済みだが退勤打刻なし
+    if (hour >= 19 && rec && rec.clockIn && !rec.clockOut) {
+      notifyOnce("clockout", "退勤打刻を忘れていませんか？");
+    }
+  }
+
+  function startReminderCheck() {
+    if (notifTimer) clearInterval(notifTimer);
+    checkReminders();
+    notifTimer = setInterval(checkReminders, 5 * 60 * 1000); // 5分ごと
+  }
 
   async function loadAttendanceList() {
     try {
