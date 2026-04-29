@@ -819,11 +819,14 @@
       const daysInMonth = new Date(y, m, 0).getDate();
       const startStr = `${y}-${pad(m)}-01`;
       const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      // 複合インデックス回避のため uid のみで取得し、月範囲はクライアント側でフィルタ
       const snap = await db.collection("attendance")
-        .where("uid", "==", currentUser.uid)
-        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+        .where("uid", "==", currentUser.uid).get();
       const byDate = {};
-      snap.forEach(d => { byDate[d.data().date] = d.data(); });
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.date >= startStr && data.date <= endStr) byDate[data.date] = data;
+      });
 
       const rows = [["日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
       let sumWork = 0, sumOver = 0;
@@ -942,11 +945,14 @@
       const daysInMonth = new Date(y, m, 0).getDate();
       const startStr = `${y}-${pad(m)}-01`;
       const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      // 複合インデックス回避のため uid のみで取得し、月範囲はクライアント側でフィルタ
       const snap = await db.collection("attendance")
-        .where("uid", "==", currentUser.uid)
-        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+        .where("uid", "==", currentUser.uid).get();
       const byDate = {};
-      snap.forEach(doc => { byDate[doc.data().date] = doc.data(); });
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (data.date >= startStr && data.date <= endStr) byDate[data.date] = data;
+      });
 
       const tbody = $("listBody");
       tbody.innerHTML = "";
