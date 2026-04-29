@@ -259,6 +259,17 @@
           <p style="margin:0; font-size:13px; color:#64748B;">あなたは管理者権限を持っています。管理画面は別URLです。</p>
           <a class="admin-link" href="kintai.html">→ 管理者アプリを開く</a>
         </div>
+
+        <div class="card" id="leaveBalanceCard">
+          <h2>有給残数</h2>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div style="font-size:36px; font-weight:700; color:#2563EB; font-variant-numeric:tabular-nums;" id="myLeaveBalance">--</div>
+            <div style="font-size:14px; color:#64748B;">日</div>
+          </div>
+          <p style="font-size:12px; color:#64748B; margin:6px 0 0;">
+            ※ 残数は管理者が管理しています。半休は0.5日として計算されます。
+          </p>
+        </div>
       </div>
 
       <!-- 勤怠一覧タブ -->
@@ -460,30 +471,69 @@
     return "部署上長承認待ち";
   }
 
-  function getMyDeptConfig() {
-    const deptId = userData && userData.department;
+  function getDeptConfig(deptId) {
     const d = allDepartments[deptId];
     if (!d) return {
       breakMinutes: 0,
       workMinutesPerDay: settings.workMinutesPerDay || 480,
-      regularHolidays: [0, 6],
-      extraHolidays: []
+      defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
+      extraHolidays: [],
+      monthOverrides: {}
     };
+    // 旧データ互換
+    let patterns = d.defaultPatterns;
+    if (!patterns) patterns = (d.regularHolidays || [0, 6]).map(dow => ({ kind: "weekly", dow }));
     return {
       breakMinutes: d.breakMinutes != null ? d.breakMinutes : 0,
       workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
-      regularHolidays: d.regularHolidays || [0, 6],
-      extraHolidays: d.extraHolidays || []
+      defaultPatterns: patterns,
+      extraHolidays: d.extraHolidays || [],
+      monthOverrides: d.monthOverrides || {}
     };
   }
 
-  function isMyHoliday(dateStr) {
+  function getMyDeptConfig() {
+    return getDeptConfig(userData && userData.department);
+  }
+
+  function patternMatchesDate(pat, year, month, day) {
+    const dateObj = new Date(year, month - 1, day);
+    if (pat.dow !== dateObj.getDay()) return false;
+    if (pat.kind === "weekly") return true;
+    if (pat.kind === "nth") {
+      const occurrence = Math.ceil(day / 7);
+      if (pat.nth === -1) {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        return day + 7 > daysInMonth;
+      }
+      return occurrence === pat.nth;
+    }
+    return false;
+  }
+
+  function isHolidayForDept(deptId, dateStr) {
     if ((settings.holidays || []).includes(dateStr)) return true;
-    const cfg = getMyDeptConfig();
-    if ((cfg.extraHolidays || []).includes(dateStr)) return true;
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const dow = new Date(y, m - 1, d).getDay();
-    return (cfg.regularHolidays || []).includes(dow);
+    const cfg = getDeptConfig(deptId);
+    const [y, m, day] = dateStr.split("-").map(Number);
+    // 月別調整 - 取消
+    const ymKey = `${y}-${pad(m)}`;
+    const ov = (cfg.monthOverrides || {})[ymKey] || {};
+    if ((ov.remove || []).includes(dateStr)) return false;
+    if ((ov.add || []).includes(dateStr)) return true;
+    // パターン
+    for (const p of (cfg.defaultPatterns || [])) {
+      if (patternMatchesDate(p, y, m, day)) return true;
+    }
+    // 固定休日
+    for (const s of (cfg.extraHolidays || [])) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s) && s === dateStr) return true;
+      if (/^\d{2}-\d{2}$/.test(s) && s === `${pad(m)}-${pad(day)}`) return true;
+    }
+    return false;
+  }
+
+  function isMyHoliday(dateStr) {
+    return isHolidayForDept(userData && userData.department, dateStr);
   }
 
   // ============================================================
@@ -597,6 +647,7 @@
         await loadMyRequests();
         if (userData.isDeptHead) await loadDeptApprovalQueue();
         renderCalLegend();
+        updateLeaveBalance();
       } catch (e) {
         console.error(e);
         toast("データの取得に失敗しました: " + e.message, "error");
@@ -926,11 +977,33 @@
   // ============================================================
   // 申請
   // ============================================================
+  // 自分の最新ユーザーデータから有給残数を表示
+  async function updateLeaveBalance() {
+    try {
+      const snap = await db.collection("users").doc(currentUser.uid).get();
+      if (!snap.exists) return;
+      const data = snap.data();
+      userData = data;
+      const bal = data.paidLeaveBalance != null ? data.paidLeaveBalance : 0;
+      $("myLeaveBalance").textContent = bal;
+    } catch (e) { console.warn("有給残数取得失敗:", e); }
+  }
+
   $("reqSubmitBtn").addEventListener("click", async () => {
     const btn = $("reqSubmitBtn");
     const type = $("reqType").value, date = $("reqDate").value, reason = $("reqReason").value.trim();
     if (!date) { toast("対象日を入力してください", "error"); return; }
     if (!reason) { toast("理由を入力してください", "error"); return; }
+    // 有給/半休の残数チェック
+    const need = type === "有給" ? 1 : (type === "半休" ? 0.5 : 0);
+    if (need > 0) {
+      const bal = userData.paidLeaveBalance != null ? userData.paidLeaveBalance : 0;
+      if (bal < need) {
+        if (!confirm(`有給残数が不足しています（残${bal}日 / 必要${need}日）。それでも申請しますか？`)) {
+          return;
+        }
+      }
+    }
     setLoading(btn, true);
     try {
       const payload = {
@@ -961,6 +1034,7 @@
       toast("申請を送信しました", "success");
       await loadMyRequests();
       if (userData.isDeptHead) await loadDeptApprovalQueue();
+      updateLeaveBalance();
     } catch (e) { console.error(e); toast("申請の送信に失敗しました: " + e.message, "error"); }
     finally { setLoading(btn, false); }
   });
@@ -1070,6 +1144,7 @@
       const update = {
         deptApproval: { status, by: currentUser.uid, at: ts }
       };
+      // 部署上長は一次承認のみ（管理者の最終承認まで残数は差し引かれない）
       if (status === "却下") {
         update.status = "却下";
         update.approvedBy = currentUser.uid;
@@ -1090,6 +1165,9 @@
     if (!$("calMonth").value) $("calMonth").value = currentMonthStr();
     loadStaffCalendar();
   });
+
+  // 打刻タブを開くたびに残数を再取得
+  document.querySelector('[data-tab="tab-clock"]').addEventListener("click", updateLeaveBalance);
 
   function renderCalLegend() {
     const items = [
