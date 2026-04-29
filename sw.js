@@ -1,10 +1,10 @@
 // 勤怠管理アプリ用 Service Worker
 // HTMLとアイコンのみキャッシュ。Firebase等のAPI呼び出しは常にネットワーク経由。
-const CACHE = 'kintai-v1';
+const CACHE = 'kintai-v2';
 const APP_SHELL = [
   './kintai.html',
   './kintai-staff.html',
-  './icon.svg',
+  './icon.png',
   './manifest.json',
   './manifest-staff.json'
 ];
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // 自身のオリジンのHTMLのみネットワーク優先＋キャッシュフォールバック
   if (url.origin === self.location.origin &&
-      (url.pathname.endsWith('.html') || url.pathname.endsWith('.svg') ||
+      (url.pathname.endsWith('.html') || url.pathname.endsWith('.png') ||
        url.pathname.endsWith('.json') || url.pathname.endsWith('/'))) {
     e.respondWith(
       fetch(e.request).then(res => {
