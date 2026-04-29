@@ -45,12 +45,29 @@
   <title>勤怠（管理者）</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg-image: none;
+      --card-alpha: 0.96;
+      --card-bg: rgba(255, 255, 255, var(--card-alpha));
+      --topbar-bg: rgba(37, 99, 235, 0.94);
+    }
     html, body {
       margin: 0; padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
       background: #F8FAFC; color: #0F172A;
       font-size: 16px; line-height: 1.5;
     }
+    body.has-bg {
+      background-color: #F8FAFC;
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+    }
+    body.has-bg .topbar { background: var(--topbar-bg); backdrop-filter: blur(4px); }
+    body.has-bg .card { background: var(--card-bg); backdrop-filter: blur(4px); }
+    body.has-bg .tabbar { background: rgba(255,255,255,0.94); backdrop-filter: blur(4px); }
     button { font-family: inherit; cursor: pointer; }
     input, select, textarea { font-family: inherit; font-size: 16px; }
 
@@ -218,6 +235,38 @@
       .calendar .cal-cell .leave { font-size: 9px; padding: 1px 3px; }
     }
 
+    /* 公休パターン */
+    .pattern-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+    .pattern-row select { padding: 6px 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 14px; }
+    .pattern-row .del-pat { color: #DC2626; background: #FEE2E2; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+
+    /* 月別公休調整カレンダー */
+    .month-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 8px; }
+    .month-cal .mc-head { background: #F1F5F9; color: #475569; text-align: center; font-size: 12px; padding: 6px 2px; font-weight: 600; }
+    .month-cal .mc-head.sun { color: #DC2626; }
+    .month-cal .mc-head.sat { color: #2563EB; }
+    .month-cal .mc-cell {
+      background: #fff; min-height: 44px; padding: 4px;
+      border: 1px solid #E2E8F0; font-size: 12px;
+      cursor: pointer; user-select: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: transform 0.05s;
+    }
+    .month-cal .mc-cell:active { transform: scale(0.95); }
+    .month-cal .mc-cell.empty { background: #F8FAFC; cursor: default; }
+    .month-cal .mc-cell.dft-holiday { background: #FEF2F2; color: #B91C1C; }
+    .month-cal .mc-cell.add-holiday { background: #FCA5A5; color: #fff; border: 2px solid #DC2626; }
+    .month-cal .mc-cell.cancel-holiday { background: #FEF3C7; color: #92400E; border: 2px solid #F59E0B; text-decoration: line-through; }
+    .month-cal .mc-cell .mc-mark { font-size: 10px; line-height: 1; }
+
+    /* 背景画像プレビュー */
+    .bg-preview {
+      width: 100%; height: 120px; border-radius: 10px;
+      border: 1px dashed #CBD5E1; background-size: cover; background-position: center;
+      display: flex; align-items: center; justify-content: center;
+      color: #94A3B8; font-size: 13px;
+    }
+
     /* 部署リストカード */
     .dept-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
     .dept-row .info .name { font-weight: 700; font-size: 15px; }
@@ -322,19 +371,13 @@
             <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptWorkMin" value="480" min="0" /></div>
           </div>
           <div class="form-group">
-            <label>定休曜日（複数選択可）</label>
-            <div id="deptRegHolidays" style="display:flex; gap:6px; flex-wrap:wrap;">
-              <label><input type="checkbox" data-dow="0" /> 日</label>
-              <label><input type="checkbox" data-dow="1" /> 月</label>
-              <label><input type="checkbox" data-dow="2" /> 火</label>
-              <label><input type="checkbox" data-dow="3" /> 水</label>
-              <label><input type="checkbox" data-dow="4" /> 木</label>
-              <label><input type="checkbox" data-dow="5" /> 金</label>
-              <label><input type="checkbox" data-dow="6" /> 土</label>
-            </div>
+            <label>定休パターン（毎月自動適用）</label>
+            <p style="font-size:12px; color:#64748B; margin:0 0 8px;">例: 「毎週 日曜」「第1 月曜」「第3 土曜」など。複数追加可能。</p>
+            <div id="deptPatternList"></div>
+            <button id="addPatternBtn" class="btn small secondary" type="button" style="margin-top:6px;">＋ パターンを追加</button>
           </div>
           <div class="form-group">
-            <label>部署独自の休日（1行1日付：YYYY-MM-DD）</label>
+            <label>固定休日（毎年同じ日：YYYY-MM-DD、1行1日付）</label>
             <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
           </div>
           <input type="hidden" id="deptEditId" value="" />
@@ -342,6 +385,25 @@
             <button id="deptSaveBtn" class="btn" type="button">保存</button>
             <button id="deptResetBtn" class="btn secondary" type="button">クリア</button>
           </div>
+        </div>
+
+        <!-- 月別公休の調整（編集中の部署に対して） -->
+        <div class="card" id="monthOvrCard" style="display:none;">
+          <h2>月別の公休調整</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 8px;">
+            編集中の部署「<strong id="monthOvrDeptName"></strong>」の月別の例外を設定します。<br>
+            セルをクリック: 平日↔休日 を切替（クリックで自動保存）。再度クリックで例外解除。
+          </p>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <input type="month" id="monthOvrPicker" />
+            <button id="monthOvrLoadBtn" class="btn small secondary" type="button">表示</button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:6px;">
+            <span style="background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:4px;">既定で休</span>
+            <span style="background:#FCA5A5; color:#fff; padding:2px 8px; border-radius:4px;">追加で休にした</span>
+            <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; text-decoration:line-through;">休→平日に取消</span>
+          </div>
+          <div id="monthOvrCalendar" class="month-cal"></div>
         </div>
       </div>
 
@@ -426,6 +488,48 @@
             <textarea id="settingHolidays" placeholder="2025-01-01&#10;2025-01-13"></textarea>
           </div>
           <button id="settingSaveBtn" class="btn" type="button">設定を保存</button>
+        </div>
+
+        <div class="card">
+          <h2>背景画像（このブラウザのみ）</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            管理者アプリの背景に好きな画像を表示できます。設定はこのブラウザにのみ保存され、他のスタッフには影響しません。
+          </p>
+          <div class="form-group">
+            <label>画像ファイル（JPG/PNG/WebP、推奨 2MB以下）</label>
+            <input type="file" id="bgFileInput" accept="image/*" />
+          </div>
+          <div class="form-group">
+            <label>または画像URL</label>
+            <input type="url" id="bgUrlInput" placeholder="https://example.com/image.jpg" />
+            <button id="bgUrlApplyBtn" class="btn small secondary" type="button" style="margin-top:6px;">URLを適用</button>
+          </div>
+          <div class="form-group">
+            <label>カードの不透明度: <span id="bgAlphaVal">96</span>%（低いと背景が透けます）</label>
+            <input type="range" id="bgAlphaInput" min="50" max="100" step="2" value="96" style="width:100%;" />
+          </div>
+          <div class="bg-preview" id="bgPreview">プレビュー（未設定）</div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="bgClearBtn" class="btn small danger" type="button">背景を解除</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>有給休暇 残数管理</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各スタッフの有給残数を編集できます。<br>
+            有給承認時は -1日、半休承認時は -0.5日 が自動的に差し引かれます。<br>
+            年初の付与など一括変更は <strong>「全員に付与」</strong> ボタンで行えます。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="number" id="grantAmount" placeholder="付与日数" step="0.5" style="flex:1; padding:8px; border:1px solid #CBD5E1; border-radius:6px; min-width:100px;" />
+            <select id="grantTarget" style="padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="add">残数に加算</option>
+              <option value="set">残数を上書き</option>
+            </select>
+            <button id="grantAllBtn" class="btn small" type="button">全員に適用</button>
+          </div>
+          <div id="leaveBalanceList"></div>
         </div>
       </div>
 
@@ -559,6 +663,16 @@
     })[type] || "leave-fix";
   }
 
+  // 旧データの defaultPatterns 互換変換（regularHolidays→ defaultPatterns）
+  function ensureDeptCompat(d) {
+    if (!d) return d;
+    if (!d.defaultPatterns) {
+      d.defaultPatterns = (d.regularHolidays || [0, 6]).map(dow => ({ kind: "weekly", dow }));
+    }
+    if (!d.monthOverrides) d.monthOverrides = {};
+    return d;
+  }
+
   // 部署設定を取得（フォールバックは会社デフォルト）
   function getDeptConfig(deptId) {
     const d = allDepartments[deptId];
@@ -566,28 +680,75 @@
       workStart: "09:00", workEnd: "18:00",
       breakMinutes: 60,
       workMinutesPerDay: settings.workMinutesPerDay || 480,
-      regularHolidays: [0, 6],
-      extraHolidays: []
+      defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
+      extraHolidays: [],
+      monthOverrides: {}
     };
     return {
       workStart: d.workStart || "09:00",
       workEnd: d.workEnd || "18:00",
       breakMinutes: d.breakMinutes != null ? d.breakMinutes : 60,
       workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
-      regularHolidays: d.regularHolidays || [0, 6],
-      extraHolidays: d.extraHolidays || []
+      defaultPatterns: d.defaultPatterns || [],
+      extraHolidays: d.extraHolidays || [],
+      monthOverrides: d.monthOverrides || {}
     };
+  }
+
+  // パターンが指定日にマッチするか
+  function patternMatchesDate(pat, year, month, day) {
+    const dateObj = new Date(year, month - 1, day);
+    if (pat.dow !== dateObj.getDay()) return false;
+    if (pat.kind === "weekly") return true;
+    if (pat.kind === "nth") {
+      const occurrence = Math.ceil(day / 7);
+      if (pat.nth === -1) {
+        // 最終: 同じ曜日が次週に存在しない
+        const daysInMonth = new Date(year, month, 0).getDate();
+        return day + 7 > daysInMonth;
+      }
+      return occurrence === pat.nth;
+    }
+    return false;
+  }
+
+  // 指定月の部署公休日付セットを計算（パターン＋固定休日＋月別調整）
+  function computeHolidaysForMonth(deptId, year, month) {
+    const cfg = getDeptConfig(deptId);
+    const set = new Set();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    // パターン適用
+    for (let d = 1; d <= daysInMonth; d++) {
+      for (const p of (cfg.defaultPatterns || [])) {
+        if (patternMatchesDate(p, year, month, d)) {
+          set.add(`${year}-${pad(month)}-${pad(d)}`);
+          break;
+        }
+      }
+    }
+    // 固定休日（毎年同じ日）
+    (cfg.extraHolidays || []).forEach(s => {
+      // YYYY-MM-DD と MM-DD 両対応
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        if (s.startsWith(`${year}-${pad(month)}-`)) set.add(s);
+      } else if (/^\d{2}-\d{2}$/.test(s)) {
+        if (s.startsWith(`${pad(month)}-`)) set.add(`${year}-${s}`);
+      }
+    });
+    // 月別調整
+    const ymKey = `${year}-${pad(month)}`;
+    const ov = cfg.monthOverrides[ymKey] || {};
+    (ov.add || []).forEach(d => set.add(d));
+    (ov.remove || []).forEach(d => set.delete(d));
+    return set;
   }
 
   // 指定日が休日かどうか（ユーザーの所属部署 + 会社祝日 を合算）
   function isHolidayForUser(uid, dateStr) {
     if ((settings.holidays || []).includes(dateStr)) return true;
     const u = allUsers[uid] || {};
-    const cfg = getDeptConfig(u.department);
-    if ((cfg.extraHolidays || []).includes(dateStr)) return true;
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const dow = new Date(y, m - 1, d).getDay();
-    return (cfg.regularHolidays || []).includes(dow);
+    const [y, m] = dateStr.split("-").map(Number);
+    return computeHolidaysForMonth(u.department, y, m).has(dateStr);
   }
 
   // ============================================================
@@ -647,6 +808,9 @@
         await loadAdminAttendance();
         await loadAdminRequests();
         renderCalLegend();
+        clearDeptForm(); // パターン初期表示
+        loadBackgroundFromStorage();
+        loadBgUI();
       } catch (e) {
         console.error(e);
         toast("データの取得に失敗しました: " + e.message, "error");
@@ -680,7 +844,7 @@
     try {
       const snap = await db.collection("departments").get();
       allDepartments = {};
-      snap.forEach(d => { allDepartments[d.id] = { id: d.id, ...d.data() }; });
+      snap.forEach(d => { allDepartments[d.id] = ensureDeptCompat({ id: d.id, ...d.data() }); });
       renderDeptList();
       // 部署セレクトを更新
       const opts = '<option value="">未所属</option>' +
@@ -696,12 +860,21 @@
     } catch (e) { console.warn("部署読み込み失敗:", e); }
   }
 
+  function patternsToText(patterns) {
+    const nthLabel = { "1":"第1","2":"第2","3":"第3","4":"第4","5":"第5","-1":"最終" };
+    return (patterns || []).map(p => {
+      const dow = weekdayJp[p.dow] + "曜";
+      if (p.kind === "weekly") return `毎週${dow}`;
+      if (p.kind === "nth") return `${nthLabel[String(p.nth)] || "第"+p.nth}${dow}`;
+      return "";
+    }).filter(Boolean).join(" / ") || "なし";
+  }
+
   function renderDeptList() {
     const list = Object.values(allDepartments).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
     const c = $("deptList");
     if (list.length === 0) { c.innerHTML = '<div class="empty">部署が登録されていません</div>'; return; }
     c.innerHTML = list.map(d => {
-      const dows = (d.regularHolidays || []).map(i => weekdayJp[i]).join("/") || "なし";
       const headUid = Object.keys(allUsers).find(uid => allUsers[uid].department === d.id && allUsers[uid].isDeptHead);
       const headName = headUid ? (allUsers[headUid].name || "") : "未設定";
       return `
@@ -710,7 +883,7 @@
             <div class="name">${escapeHtml(d.name || "")}</div>
             <div class="meta">
               ${d.workStart || "09:00"}〜${d.workEnd || "18:00"} / 休憩${d.breakMinutes != null ? d.breakMinutes : 60}分 / 所定${d.workMinutesPerDay || 480}分<br>
-              定休: ${dows} / 上長: ${escapeHtml(headName)}
+              定休: ${escapeHtml(patternsToText(d.defaultPatterns))} / 上長: ${escapeHtml(headName)}
             </div>
           </div>
           <div class="controls">
@@ -745,6 +918,49 @@
     });
   }
 
+  // パターンエディタ
+  function renderPatternList(patterns) {
+    const c = $("deptPatternList");
+    c.innerHTML = (patterns || []).map((p, i) => `
+      <div class="pattern-row" data-i="${i}">
+        <select class="pat-kind">
+          <option value="weekly" ${p.kind==="weekly"?"selected":""}>毎週</option>
+          <option value="nth-1"  ${p.kind==="nth"&&p.nth===1?"selected":""}>第1</option>
+          <option value="nth-2"  ${p.kind==="nth"&&p.nth===2?"selected":""}>第2</option>
+          <option value="nth-3"  ${p.kind==="nth"&&p.nth===3?"selected":""}>第3</option>
+          <option value="nth-4"  ${p.kind==="nth"&&p.nth===4?"selected":""}>第4</option>
+          <option value="nth-5"  ${p.kind==="nth"&&p.nth===5?"selected":""}>第5</option>
+          <option value="nth--1" ${p.kind==="nth"&&p.nth===-1?"selected":""}>最終</option>
+        </select>
+        <select class="pat-dow">
+          ${weekdayJp.map((w, j) => `<option value="${j}" ${p.dow===j?"selected":""}>${w}曜</option>`).join("")}
+        </select>
+        <button class="del-pat" type="button">削除</button>
+      </div>
+    `).join("");
+    c.querySelectorAll(".del-pat").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.target.closest(".pattern-row").remove();
+      });
+    });
+  }
+
+  function readPatternList() {
+    return Array.from(document.querySelectorAll("#deptPatternList .pattern-row")).map(row => {
+      const k = row.querySelector(".pat-kind").value;
+      const dow = parseInt(row.querySelector(".pat-dow").value, 10);
+      if (k === "weekly") return { kind: "weekly", dow };
+      const nth = parseInt(k.replace("nth-", ""), 10);
+      return { kind: "nth", dow, nth };
+    });
+  }
+
+  $("addPatternBtn").addEventListener("click", () => {
+    const cur = readPatternList();
+    cur.push({ kind: "weekly", dow: 0 });
+    renderPatternList(cur);
+  });
+
   function loadDeptForEdit(id) {
     const d = allDepartments[id];
     if (!d) return;
@@ -754,10 +970,13 @@
     $("deptWorkEnd").value = d.workEnd || "18:00";
     $("deptBreak").value = d.breakMinutes != null ? d.breakMinutes : 60;
     $("deptWorkMin").value = d.workMinutesPerDay || 480;
-    document.querySelectorAll("#deptRegHolidays input").forEach(cb => {
-      cb.checked = (d.regularHolidays || []).includes(parseInt(cb.dataset.dow, 10));
-    });
+    renderPatternList(d.defaultPatterns || []);
     $("deptExtraHolidays").value = (d.extraHolidays || []).join("\n");
+    // 月別調整カードを表示
+    $("monthOvrCard").style.display = "block";
+    $("monthOvrDeptName").textContent = d.name || "";
+    $("monthOvrPicker").value = currentMonthStr();
+    renderMonthOverrideCalendar(id, currentMonthStr());
     $("deptName").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -768,10 +987,9 @@
     $("deptWorkEnd").value = "18:00";
     $("deptBreak").value = 60;
     $("deptWorkMin").value = 480;
-    document.querySelectorAll("#deptRegHolidays input").forEach(cb => { cb.checked = false; });
-    document.querySelector('#deptRegHolidays input[data-dow="0"]').checked = true;
-    document.querySelector('#deptRegHolidays input[data-dow="6"]').checked = true;
+    renderPatternList([{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }]);
     $("deptExtraHolidays").value = "";
+    $("monthOvrCard").style.display = "none";
   }
 
   $("deptResetBtn").addEventListener("click", clearDeptForm);
@@ -780,23 +998,25 @@
     const name = $("deptName").value.trim();
     if (!name) { toast("部署名を入力してください", "error"); return; }
     const id = $("deptEditId").value;
-    const regularHolidays = Array.from(document.querySelectorAll("#deptRegHolidays input:checked"))
-      .map(cb => parseInt(cb.dataset.dow, 10));
+    const defaultPatterns = readPatternList();
     const extraHolidays = $("deptExtraHolidays").value.split("\n")
-      .map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
+      .map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{2}-\d{2}$/.test(s));
     const data = {
       name,
       workStart: $("deptWorkStart").value || "09:00",
       workEnd: $("deptWorkEnd").value || "18:00",
       breakMinutes: parseInt($("deptBreak").value, 10) || 0,
       workMinutesPerDay: parseInt($("deptWorkMin").value, 10) || 480,
-      regularHolidays,
+      defaultPatterns,
       extraHolidays
     };
     setLoading(btn, true);
     try {
       if (id) await db.collection("departments").doc(id).update(data);
-      else await db.collection("departments").add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      else {
+        data.monthOverrides = {};
+        await db.collection("departments").add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      }
       toast("部署を保存しました", "success");
       clearDeptForm();
       await loadDepartments();
@@ -804,6 +1024,100 @@
     } catch (e) { toast("保存失敗: " + e.message, "error"); }
     finally { setLoading(btn, false); }
   });
+
+  // 月別公休調整カレンダー
+  $("monthOvrLoadBtn").addEventListener("click", () => {
+    const id = $("deptEditId").value;
+    const ym = $("monthOvrPicker").value;
+    if (!id || !ym) return;
+    renderMonthOverrideCalendar(id, ym);
+  });
+
+  function renderMonthOverrideCalendar(deptId, ymStr) {
+    const dept = allDepartments[deptId];
+    if (!dept) return;
+    const [y, m] = ymStr.split("-").map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const firstDow = new Date(y, m - 1, 1).getDay();
+    const ymKey = ymStr;
+    const ov = (dept.monthOverrides || {})[ymKey] || { add: [], remove: [] };
+    const addSet = new Set(ov.add || []);
+    const removeSet = new Set(ov.remove || []);
+
+    const c = $("monthOvrCalendar");
+    const headers = ["日","月","火","水","木","金","土"];
+    let html = headers.map((h, i) =>
+      `<div class="mc-head ${i===0?"sun":i===6?"sat":""}">${h}</div>`
+    ).join("");
+    for (let i = 0; i < firstDow; i++) html += `<div class="mc-cell empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+      // パターン上での既定状態
+      let isDefaultHoliday = false;
+      for (const p of (dept.defaultPatterns || [])) {
+        if (patternMatchesDate(p, y, m, d)) { isDefaultHoliday = true; break; }
+      }
+      // 固定休日
+      if (!isDefaultHoliday && (dept.extraHolidays || []).some(s => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s === dateStr;
+        if (/^\d{2}-\d{2}$/.test(s)) return s === `${pad(m)}-${pad(d)}`;
+        return false;
+      })) isDefaultHoliday = true;
+
+      const isAdded = addSet.has(dateStr);
+      const isRemoved = removeSet.has(dateStr);
+      let cls = "mc-cell";
+      let mark = "";
+      if (isAdded) { cls += " add-holiday"; mark = "追加休"; }
+      else if (isRemoved) { cls += " cancel-holiday"; mark = "→平日"; }
+      else if (isDefaultHoliday) { cls += " dft-holiday"; mark = "休"; }
+      html += `<div class="${cls}" data-date="${dateStr}" data-default="${isDefaultHoliday?1:0}">
+        <div>${d}</div>
+        <div class="mc-mark">${mark}</div>
+      </div>`;
+    }
+    c.innerHTML = html;
+    c.querySelectorAll(".mc-cell:not(.empty)").forEach(cell => {
+      cell.addEventListener("click", () => onMonthOvrCellClick(deptId, ymKey, cell));
+    });
+  }
+
+  async function onMonthOvrCellClick(deptId, ymKey, cell) {
+    const dateStr = cell.dataset.date;
+    const isDefault = cell.dataset.default === "1";
+    const dept = allDepartments[deptId];
+    if (!dept) return;
+    const ov = (dept.monthOverrides || {})[ymKey] || { add: [], remove: [] };
+    let add = new Set(ov.add || []);
+    let remove = new Set(ov.remove || []);
+
+    // 状態遷移ロジック
+    // 既定: 平日 → 追加休 → 既定（クリア）
+    // 既定: 休  → 平日に取消 → 既定（クリア）
+    if (isDefault) {
+      if (remove.has(dateStr)) remove.delete(dateStr);
+      else remove.add(dateStr);
+    } else {
+      if (add.has(dateStr)) add.delete(dateStr);
+      else add.add(dateStr);
+    }
+    const newOv = { add: Array.from(add), remove: Array.from(remove) };
+    try {
+      // 該当月のオーバーライドが空ならフィールド削除
+      const path = `monthOverrides.${ymKey}`;
+      if (newOv.add.length === 0 && newOv.remove.length === 0) {
+        await db.collection("departments").doc(deptId).update({
+          [path]: firebase.firestore.FieldValue.delete()
+        });
+        delete dept.monthOverrides[ymKey];
+      } else {
+        await db.collection("departments").doc(deptId).update({ [path]: newOv });
+        dept.monthOverrides = dept.monthOverrides || {};
+        dept.monthOverrides[ymKey] = newOv;
+      }
+      renderMonthOverrideCalendar(deptId, ymKey);
+    } catch (e) { toast("保存失敗: " + e.message, "error"); }
+  }
 
   // ============================================================
   // タブ切替
@@ -853,6 +1167,7 @@
       container.innerHTML = filtered.map(u => {
         const deptName = u.department && allDepartments[u.department]
           ? allDepartments[u.department].name : "未所属";
+        const balance = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
         return `
         <div class="staff-row" data-uid="${u.uid}">
           <div class="info">
@@ -861,6 +1176,7 @@
               <span class="role-badge role-${u.role || "staff"}">${u.role === "admin" ? "管理者" : "スタッフ"}</span>
               <span class="dept-badge">${escapeHtml(deptName)}</span>
               ${u.isDeptHead ? '<span class="dept-badge dept-head-badge">部署上長</span>' : ''}
+              <span class="dept-badge" style="background:#FEF3C7; color:#92400E;">有給 ${balance}日</span>
             </div>
             <div class="email">${escapeHtml(u.email || "")}</div>
           </div>
@@ -1506,11 +1822,29 @@
     });
   }
 
+  // 有給/半休の差し引き量
+  function leaveDeduct(type) {
+    if (type === "有給") return 1;
+    if (type === "半休") return 0.5;
+    return 0;
+  }
+
+  async function adjustPaidLeaveBalance(uid, delta) {
+    if (delta === 0) return;
+    try {
+      await db.collection("users").doc(uid).update({
+        paidLeaveBalance: firebase.firestore.FieldValue.increment(delta)
+      });
+    } catch (e) { console.warn("有給残数更新失敗:", e); }
+  }
+
   async function reviewRequest(id, status, isRevert = false) {
     try {
       const r = allRequests.find(x => x.id === id);
       const update = {};
       const ts = firebase.firestore.FieldValue.serverTimestamp();
+      const wasApproved = r && (displayStatus(r) === "承認");
+      let willBeApproved = false;
       if (r && TWO_STAGE_TYPES.includes(r.type)) {
         // 管理者は最終承認段階を操作
         if (isRevert) {
@@ -1525,6 +1859,7 @@
           update.adminApproval = { status: "承認", by: currentUser.uid, at: ts };
           update.status = "承認";
           update.approvedBy = currentUser.uid;
+          willBeApproved = true;
         } else if (status === "却下") {
           update.adminApproval = { status: "却下", by: currentUser.uid, at: ts };
           update.status = "却下";
@@ -1533,11 +1868,22 @@
       } else {
         update.status = status;
         update.approvedBy = status === "申請中" ? null : currentUser.uid;
+        willBeApproved = (status === "承認");
       }
       await db.collection("requests").doc(id).update(update);
+      // 有給/半休の残数調整
+      if (r) {
+        const d = leaveDeduct(r.type);
+        if (d > 0) {
+          if (wasApproved && !willBeApproved) await adjustPaidLeaveBalance(r.uid, d);
+          else if (!wasApproved && willBeApproved) await adjustPaidLeaveBalance(r.uid, -d);
+        }
+      }
       toast(isRevert ? "申請中に戻しました" : `${status}しました`, "success");
       await loadAdminRequests();
+      await loadStaffList();
       await loadCalendar();
+      renderLeaveBalanceList();
     } catch (e) { toast("更新失敗: " + e.message, "error"); }
   }
 
@@ -1629,6 +1975,154 @@
   document.querySelector('[data-tab="tab-calendar"]').addEventListener("click", () => {
     if (!$("calMonth").value) $("calMonth").value = currentMonthStr();
     loadCalendar();
+  });
+
+  // ============================================================
+  // 有給残数 一覧管理
+  // ============================================================
+  function renderLeaveBalanceList() {
+    const list = Object.keys(allUsers).map(uid => ({ uid, ...allUsers[uid] }));
+    list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+    const c = $("leaveBalanceList");
+    if (list.length === 0) { c.innerHTML = '<div class="empty">スタッフがいません</div>'; return; }
+    c.innerHTML = list.map(u => {
+      const bal = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
+      const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      return `
+        <div class="staff-row" data-uid="${u.uid}">
+          <div class="info">
+            <div class="name">${escapeHtml(u.name || "")} <span class="dept-badge">${escapeHtml(dept)}</span></div>
+            <div class="email">残数: <strong>${bal}日</strong></div>
+          </div>
+          <div class="controls">
+            <input type="number" step="0.5" class="bal-input" value="${bal}" style="width:80px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <button class="btn small bal-save" type="button">更新</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    c.querySelectorAll(".staff-row").forEach(row => {
+      const uid = row.dataset.uid;
+      row.querySelector(".bal-save").addEventListener("click", async () => {
+        const v = parseFloat(row.querySelector(".bal-input").value);
+        if (isNaN(v)) { toast("数値を入力してください", "error"); return; }
+        try {
+          await db.collection("users").doc(uid).update({ paidLeaveBalance: v });
+          toast("残数を更新しました", "success");
+          await loadStaffList();
+          renderLeaveBalanceList();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  $("grantAllBtn").addEventListener("click", async () => {
+    const v = parseFloat($("grantAmount").value);
+    const target = $("grantTarget").value;
+    if (isNaN(v)) { toast("付与日数を入力してください", "error"); return; }
+    const action = target === "set" ? `全員の残数を ${v}日 に上書きします` : `全員の残数に ${v}日 を加算します`;
+    if (!confirm(action + "。よろしいですか？")) return;
+    try {
+      const batch = db.batch();
+      Object.keys(allUsers).forEach(uid => {
+        const ref = db.collection("users").doc(uid);
+        if (target === "set") batch.update(ref, { paidLeaveBalance: v });
+        else batch.update(ref, { paidLeaveBalance: firebase.firestore.FieldValue.increment(v) });
+      });
+      await batch.commit();
+      toast("一括更新しました", "success");
+      await loadStaffList();
+      renderLeaveBalanceList();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  });
+
+  // タブ切替時に有給リスト再描画
+  document.querySelector('[data-tab="tab-settings"]').addEventListener("click", renderLeaveBalanceList);
+
+  // ============================================================
+  // 背景画像（このブラウザのみ）
+  // ============================================================
+  const BG_KEY = "kintaiAdminBg";
+  const BG_ALPHA_KEY = "kintaiAdminBgAlpha";
+
+  function applyBackground(url, alphaPct) {
+    if (url) {
+      document.documentElement.style.setProperty("--bg-image", `url("${url}")`);
+      const a = (alphaPct == null ? 96 : alphaPct) / 100;
+      document.documentElement.style.setProperty("--card-alpha", a);
+      document.documentElement.style.setProperty("--card-bg", `rgba(255,255,255, ${a})`);
+      document.body.classList.add("has-bg");
+    } else {
+      document.documentElement.style.setProperty("--bg-image", "none");
+      document.body.classList.remove("has-bg");
+    }
+  }
+
+  function loadBackgroundFromStorage() {
+    const url = localStorage.getItem(BG_KEY) || "";
+    const alpha = parseInt(localStorage.getItem(BG_ALPHA_KEY) || "96", 10);
+    applyBackground(url, alpha);
+  }
+  // ログイン前にも適用（onAuthStateChanged 前）
+  loadBackgroundFromStorage();
+
+  function loadBgUI() {
+    const url = localStorage.getItem(BG_KEY) || "";
+    const alpha = parseInt(localStorage.getItem(BG_ALPHA_KEY) || "96", 10);
+    $("bgAlphaInput").value = alpha;
+    $("bgAlphaVal").textContent = alpha;
+    if (url) {
+      $("bgPreview").style.backgroundImage = `url("${url}")`;
+      $("bgPreview").textContent = "";
+    } else {
+      $("bgPreview").style.backgroundImage = "none";
+      $("bgPreview").textContent = "プレビュー（未設定）";
+    }
+  }
+
+  $("bgFileInput").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      if (!confirm("画像サイズが5MBを超えています。動作が重くなる可能性があります。続行しますか？")) return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      try {
+        localStorage.setItem(BG_KEY, dataUrl);
+        applyBackground(dataUrl, parseInt($("bgAlphaInput").value, 10));
+        loadBgUI();
+        toast("背景を設定しました", "success");
+      } catch (err) {
+        toast("画像が大きすぎて保存できません: " + err.message, "error");
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $("bgUrlApplyBtn").addEventListener("click", () => {
+    const url = $("bgUrlInput").value.trim();
+    if (!url) return;
+    localStorage.setItem(BG_KEY, url);
+    applyBackground(url, parseInt($("bgAlphaInput").value, 10));
+    loadBgUI();
+    toast("背景URLを設定しました", "success");
+  });
+
+  $("bgClearBtn").addEventListener("click", () => {
+    localStorage.removeItem(BG_KEY);
+    applyBackground("", 96);
+    loadBgUI();
+    toast("背景を解除しました", "success");
+  });
+
+  $("bgAlphaInput").addEventListener("input", (e) => {
+    const v = parseInt(e.target.value, 10);
+    $("bgAlphaVal").textContent = v;
+    localStorage.setItem(BG_ALPHA_KEY, v);
+    const url = localStorage.getItem(BG_KEY) || "";
+    if (url) applyBackground(url, v);
   });
 
   // ============================================================
