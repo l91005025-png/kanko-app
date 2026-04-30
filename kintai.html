@@ -550,6 +550,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 
   <script>
   // ============================================================
@@ -566,6 +567,8 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+  const functions = firebase.app().functions("asia-northeast1");
+  const callDeleteUser = functions.httpsCallable("deleteUser");
 
   // Service Worker登録（PWA用）
   if ('serviceWorker' in navigator) {
@@ -1248,12 +1251,18 @@
         row.querySelector(".view-btn").addEventListener("click", () => showStaffDetail(uid));
         row.querySelector(".del-btn").addEventListener("click", async () => {
           if (uid === currentUser.uid) { toast("自分自身は削除できません", "error"); return; }
-          if (!confirm("このスタッフのusersドキュメントを削除します。よろしいですか？\n※Firebase Authのアカウントは別途コンソールから削除してください。")) return;
+          if (!confirm("このスタッフを完全に削除します。\n（Authアカウント・社内データの両方を削除）\n\nよろしいですか？")) return;
+          const btn = row.querySelector(".del-btn");
+          setLoading(btn, true);
           try {
-            await db.collection("users").doc(uid).delete();
-            toast("削除しました", "success");
+            await callDeleteUser({ uid });
+            toast("削除しました（Authアカウント含む）", "success");
             await loadStaffList();
-          } catch (err) { toast("削除失敗: " + err.message, "error"); }
+          } catch (err) {
+            console.error(err);
+            const msg = err.message || (err.details && err.details.message) || "不明なエラー";
+            toast("削除失敗: " + msg, "error");
+          } finally { setLoading(btn, false); }
         });
       });
     } catch (e) { console.error(e); }
