@@ -367,6 +367,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
 
   <script>
   // ============================================================
@@ -383,6 +384,8 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+  const messaging = firebase.messaging.isSupported() ? firebase.messaging() : null;
+  const VAPID_KEY = "BE8kJcDDWwGW1-P_JGQdXXVBIqTeqHAGHBDdH3Vm8h0EDON-K71nNauS3-aG21RZYdg7usxqypAbwm89jgkRPzM";
 
   // Service Worker登録（PWA用）
   if ('serviceWorker' in navigator) {
@@ -638,7 +641,10 @@
 
         startClockTimer();
         updateNotifUI();
-        if (Notification && Notification.permission === "granted") startReminderCheck();
+        if (Notification && Notification.permission === "granted") {
+          startReminderCheck();
+          registerFcmToken();
+        }
         await refreshTodayRecord();
         $("listMonth").value = currentMonthStr();
         $("reqDate").value = todayStr();
@@ -889,8 +895,35 @@
     if (p === "granted") {
       new Notification("勤怠管理", { body: "通知を有効にしました", icon: "icon.png" });
       startReminderCheck();
+      registerFcmToken();
     }
   });
+
+  // FCM トークン登録（プッシュ通知の宛先として users/{uid}.fcmTokens に保存）
+  async function registerFcmToken() {
+    if (!messaging) return;
+    if (!currentUser) return;
+    if (!('Notification' in window) || Notification.permission !== "granted") return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+      if (!token) return;
+      await db.collection("users").doc(currentUser.uid).update({
+        fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+      });
+    } catch (e) {
+      console.warn("FCMトークン登録失敗:", e);
+    }
+  }
+
+  // フォアグラウンド時のメッセージ受信（アプリを開いている時）
+  if (messaging) {
+    messaging.onMessage((payload) => {
+      const title = (payload.notification && payload.notification.title) || '通知';
+      const body = (payload.notification && payload.notification.body) || '';
+      toast(title + (body ? ' / ' + body : ''), 'success');
+    });
+  }
 
   function notifyOnce(key, body) {
     if (Notification.permission !== "granted") return;
