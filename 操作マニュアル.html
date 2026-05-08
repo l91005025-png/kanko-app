@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>勤怠管理アプリ 操作マニュアル</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color: #1F2937; line-height: 1.7;
+    max-width: 880px; margin: 0 auto; padding: 24px; background: #fff;
+  }
+  h1 { font-size: 28px; color: #1E3A8A; border-bottom: 4px solid #2563EB; padding-bottom: 12px; }
+  h2 {
+    font-size: 22px; color: #fff; background: #2563EB;
+    padding: 10px 16px; border-radius: 4px;
+    margin-top: 40px; page-break-before: always;
+  }
+  h2:first-of-type { page-break-before: auto; }
+  h3 {
+    font-size: 17px; color: #1E40AF;
+    border-left: 5px solid #2563EB; padding-left: 12px;
+    margin-top: 28px; page-break-after: avoid;
+  }
+  h4 { font-size: 15px; color: #1E40AF; margin-top: 18px; }
+  ol, ul { padding-left: 24px; }
+  li { margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #F1F5F9; color: #1E3A8A; font-weight: 600; }
+  .tip { background: #FEF3C7; border-left: 6px solid #F59E0B; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 14px; }
+  .note { background: #DBEAFE; border-left: 6px solid #2563EB; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 14px; }
+  .warn { background: #FEE2E2; border-left: 6px solid #DC2626; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 14px; }
+  .new-feature { background: #D1FAE5; border-left: 6px solid #047857; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 14px; }
+  .toc { background: #F8FAFC; border: 1px solid #CBD5E1; padding: 20px 28px; border-radius: 8px; margin: 24px 0; }
+  .toc h3 { border: none; padding: 0; margin: 0 0 12px; }
+  .toc ol { columns: 2; column-gap: 32px; }
+  .toc li { break-inside: avoid; }
+  .cover {
+    text-align: center; padding: 60px 0 40px;
+    border-bottom: 1px dashed #94A3B8; margin-bottom: 32px;
+  }
+  .cover .title { font-size: 32px; font-weight: 700; color: #1E3A8A; }
+  .cover .sub   { font-size: 16px; color: #475569; margin-top: 12px; }
+  .cover .meta  { margin-top: 36px; font-size: 14px; color: #475569; }
+  /* スマホ画面モックアップ */
+  .phone {
+    width: 280px; margin: 16px auto;
+    border: 8px solid #1F2937; border-radius: 30px;
+    background: #F8FAFC; padding: 12px 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-size: 12px;
+  }
+  .phone .header { background: #2563EB; color: #fff; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; }
+  .phone .header .title { font-size: 13px; font-weight: 700; }
+  .phone .header .sub { font-size: 10px; opacity: 0.9; }
+  .phone .card { background: #fff; border-radius: 8px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .phone .card h5 { margin: 0 0 8px; font-size: 11px; color: #1E40AF; }
+  .phone .btn { background: #2563EB; color: #fff; border: none; padding: 10px; border-radius: 6px; width: 100%; font-weight: 600; font-size: 11px; margin-top: 4px; }
+  .phone .btn.secondary { background: #fff; color: #2563EB; border: 1px solid #2563EB; }
+  .phone .btn.danger { background: #DC2626; }
+  .phone .btn.success { background: #047857; }
+  .phone .btn.warn { background: #F59E0B; }
+  .phone .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+  .badge-blue   { background: #DBEAFE; color: #1E40AF; }
+  .badge-green  { background: #D1FAE5; color: #047857; }
+  .badge-yellow { background: #FEF3C7; color: #92400E; }
+  .badge-red    { background: #FEE2E2; color: #B91C1C; }
+  .badge-gray   { background: #E2E8F0; color: #475569; }
+  .badge-purple { background: #E9D5FF; color: #6B21A8; }
+  .phone .tabbar { display: flex; border-top: 1px solid #CBD5E1; margin-top: 8px; padding-top: 6px; font-size: 10px; }
+  .phone .tabbar .t { flex: 1; text-align: center; padding: 4px; color: #64748B; }
+  .phone .tabbar .t.active { color: #2563EB; font-weight: 700; border-top: 2px solid #2563EB; margin-top: -8px; padding-top: 10px; }
+  .phone .input { background: #F1F5F9; border: 1px solid #CBD5E1; padding: 6px; border-radius: 4px; margin-bottom: 6px; font-size: 11px; }
+  .phone .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #F1F5F9; font-size: 11px; }
+  .phone .row:last-child { border-bottom: none; }
+  /* ミニカレンダー */
+  .mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; font-size: 9px; }
+  .mini-cal .h { background: #F1F5F9; padding: 2px; text-align: center; font-weight: 600; }
+  .mini-cal .d { background: #fff; padding: 3px 1px; min-height: 24px; text-align: center; }
+  .mini-cal .d.h { background: #FEF2F2; color: #B91C1C; }
+  .mini-cal .d.s { background: #FEF3C7; color: #92400E; }
+  /* PCモックアップ */
+  .desktop {
+    border: 1px solid #CBD5E1; border-radius: 8px;
+    background: #F8FAFC; padding: 16px; margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 13px;
+  }
+  .desktop .head { background: #2563EB; color: #fff; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px; }
+  .desktop .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .desktop .panel { background: #fff; border-radius: 6px; padding: 12px; }
+  .caption { text-align: center; font-size: 12px; color: #64748B; margin-top: 4px; font-style: italic; }
+  .step {
+    background: #EFF6FF; border-left: 4px solid #2563EB;
+    padding: 10px 14px; margin: 8px 0; border-radius: 4px;
+  }
+  .step .num {
+    display: inline-block; background: #2563EB; color: #fff;
+    width: 24px; height: 24px; line-height: 24px; text-align: center;
+    border-radius: 50%; font-weight: 700; margin-right: 8px;
+  }
+  .row-fig { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .row-fig > div { flex: 1; min-width: 280px; }
+  kbd { background: #1F2937; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+  .url { background: #F1F5F9; padding: 6px 10px; border-radius: 4px; font-family: monospace; font-size: 13px; word-break: break-all; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #CBD5E1; font-size: 12px; color: #64748B; text-align: center; }
+  @media print { .no-print { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<div class="no-print note">
+  ※ ブラウザで「ファイル → プリント」→「PDFとして保存」でPDF化できます。
+</div>
+
+<div class="cover">
+  <div class="title">勤怠管理アプリ<br>操作マニュアル</div>
+  <div class="sub">― スタッフ用 / 部署上長用 / 管理者用 ―</div>
+  <div class="meta">2026年4月30日 版</div>
+</div>
+
+<div class="toc">
+  <h3>目次</h3>
+  <ol>
+    <li>はじめに</li>
+    <li>アプリのインストール</li>
+    <li>初回ログイン</li>
+    <li>【スタッフ】打刻する</li>
+    <li>【スタッフ】勤怠を確認する</li>
+    <li>【スタッフ】申請を出す</li>
+    <li>【スタッフ】有給残数を確認する</li>
+    <li>【スタッフ】通知を有効にする</li>
+    <li>【スタッフ】カレンダーで休暇を確認する</li>
+    <li>【部署上長】有給を一次承認する</li>
+    <li>【管理者】スタッフを管理する</li>
+    <li>【管理者】部署を設定する</li>
+    <li>【管理者】公休パターンと月別調整</li>
+    <li>【管理者】勤怠を管理する</li>
+    <li>【管理者】申請を承認する（二段階）</li>
+    <li>【管理者】有給残数を管理する</li>
+    <li>【管理者】カレンダーで全社の休暇を確認</li>
+    <li>【管理者】CSV出力する</li>
+    <li>【管理者】背景画像を変更する</li>
+    <li>【管理者】退職者を削除する</li>
+    <li>よくある質問</li>
+    <li>トラブルシューティング</li>
+  </ol>
+</div>
+
+<!-- ============================================== -->
+<h2>1. はじめに</h2>
+<p>
+本アプリは、スマートフォンまたはPCのブラウザから利用できる勤怠管理システムです。
+利用には以下の2つの URL があります。
+</p>
+<table>
+  <tr><th>用途</th><th>URL</th></tr>
+  <tr><td>スタッフ用（出退勤・申請・部署上長承認）</td><td class="url">https://l91005025-png.github.io/kanko-app/kintai-staff.html</td></tr>
+  <tr><td>管理者用（最終承認・集計・部署管理）</td><td class="url">https://l91005025-png.github.io/kanko-app/kintai.html</td></tr>
+</table>
+<div class="note">
+  推奨ブラウザ: <strong>Chrome / Safari / Edge の最新版</strong>。<br>
+  通信環境: インターネット接続が必要（社内Wi-Fi または モバイル回線）。
+</div>
+
+<h3>権限の3層構造</h3>
+<table>
+  <tr><th>権限</th><th>できること</th><th>使うアプリ</th></tr>
+  <tr><td>スタッフ</td><td>打刻・自分の勤怠閲覧・申請</td><td>スタッフ用</td></tr>
+  <tr><td>部署上長</td><td>上記＋自部署の有給を一次承認</td><td>スタッフ用</td></tr>
+  <tr><td>管理者（総務）</td><td>すべての操作・最終承認・部署設定・有給残数管理</td><td>両方</td></tr>
+</table>
+
+<!-- ============================================== -->
+<h2>2. アプリのインストール</h2>
+<p>
+本アプリは <strong>PWA（Progressive Web App）</strong>に対応しており、
+スマホのホーム画面に追加することで通常のアプリのように起動できます。
+</p>
+
+<div class="warn">
+  <strong>iPhoneユーザー必読:</strong> プッシュ通知を受信するには <strong>必ず「ホーム画面に追加」</strong> が必要です。<br>
+  Safariのタブで開いたままだと通知が届きません。
+</div>
+
+<h3>2.1 iPhone（Safari）の場合</h3>
+<div class="step"><span class="num">1</span>Safari でスタッフ用 URL を開く</div>
+<div class="step"><span class="num">2</span>下部メニューの <strong>共有ボタン</strong>（□に↑）をタップ</div>
+<div class="step"><span class="num">3</span>メニューから <strong>「ホーム画面に追加」</strong> をタップ</div>
+<div class="step"><span class="num">4</span>名前を確認して <strong>「追加」</strong></div>
+<div class="step"><span class="num">5</span>ホーム画面に追加されたアイコン（家＆人のロゴ）から起動</div>
+
+<h3>2.2 Android（Chrome）の場合</h3>
+<div class="step"><span class="num">1</span>Chrome で URL を開く</div>
+<div class="step"><span class="num">2</span>右上の <strong>⋮（3点メニュー）</strong> をタップ</div>
+<div class="step"><span class="num">3</span><strong>「ホーム画面に追加」</strong> または「アプリをインストール」を選択</div>
+
+<h3>2.3 PCの場合</h3>
+<p>ブックマークに登録するだけで使えます。Chrome / Edge ならアドレスバー右端の「インストール」アイコンからアプリ化することも可能。</p>
+
+<!-- ============================================== -->
+<h2>3. 初回ログイン</h2>
+<p>
+管理者から発行された <strong>メールアドレス</strong> と <strong>パスワード</strong> でログインします。
+</p>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">勤怠管理</div></div>
+      <div class="card">
+        <h5>ログイン</h5>
+        <div class="input">📧 your.name@company.co.jp</div>
+        <div class="input">🔒 ●●●●●●●●</div>
+        <button class="btn">ログイン</button>
+      </div>
+    </div>
+    <div class="caption">▲ ログイン画面</div>
+  </div>
+  <div>
+    <div class="step"><span class="num">1</span>アプリを起動</div>
+    <div class="step"><span class="num">2</span>メールアドレスを入力</div>
+    <div class="step"><span class="num">3</span>パスワードを入力</div>
+    <div class="step"><span class="num">4</span>「ログイン」ボタンをタップ</div>
+    <div class="warn">
+      <strong>注意:</strong> 管理者用URLにスタッフがログインしても、操作画面は表示されません（権限制限）。<br>
+      必ず <strong>スタッフ用URL</strong> を使用してください。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>4. 【スタッフ】打刻する</h2>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">勤怠管理（スタッフ）</div><div class="sub">山田 太郎 / 営業部</div></div>
+      <div class="card">
+        <h5>本日の打刻</h5>
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:28px; font-weight:700;">09:02</div>
+          <div style="font-size:10px; color:#64748B;">2026年5月7日（火）</div>
+        </div>
+        <button class="btn success">出勤</button>
+        <button class="btn warn" style="margin-top:6px;">退勤</button>
+      </div>
+      <div class="tabbar">
+        <div class="t active">打刻</div>
+        <div class="t">勤怠一覧</div>
+        <div class="t">申請</div>
+        <div class="t">カレンダー</div>
+      </div>
+    </div>
+    <div class="caption">▲ 打刻画面</div>
+  </div>
+  <div>
+    <h4>出勤時</h4>
+    <div class="step"><span class="num">1</span>「打刻」タブを開く</div>
+    <div class="step"><span class="num">2</span><strong>「出勤」</strong>ボタンをタップ</div>
+    <div class="step"><span class="num">3</span>時刻が記録され「出勤済み」と表示</div>
+    <h4>退勤時</h4>
+    <div class="step"><span class="num">1</span><strong>「退勤」</strong>ボタンをタップ</div>
+    <div class="warn">
+      打刻ボタンは <strong>1日1回ずつ</strong>のみ有効です。<br>
+      間違えた場合は「申請」タブから「打刻修正」申請を提出してください。
+    </div>
+    <div class="note">
+      勤務時間・休憩時間は <strong>所属部署の設定</strong> に従って自動計算されます。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>5. 【スタッフ】勤怠を確認する</h2>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">勤怠一覧</div></div>
+      <div class="card">
+        <h5>📅 2026年04月</h5>
+        <div class="row"><span>1日(水)</span><span>09:00 - 18:05</span></div>
+        <div class="row"><span>2日(木)</span><span>08:58 - 18:10</span></div>
+        <div class="row"><span>3日(金)</span><span><span class="badge badge-yellow">有給</span></span></div>
+        <div class="row"><span>6日(月)</span><span>09:02 - 18:00</span></div>
+        <div class="row"><span>7日(火)</span><span>09:00 - 19:30</span></div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #CBD5E1; font-size:11px;">
+          出勤 18日 / 労働 144:30 / 残業 6:30
+        </div>
+        <button class="btn secondary" style="margin-top:8px;">📥 CSV出力</button>
+      </div>
+      <div class="tabbar">
+        <div class="t">打刻</div>
+        <div class="t active">勤怠一覧</div>
+        <div class="t">申請</div>
+        <div class="t">カレンダー</div>
+      </div>
+    </div>
+    <div class="caption">▲ 勤怠一覧画面</div>
+  </div>
+  <div>
+    <h4>月の勤怠を見る</h4>
+    <ol>
+      <li>「勤怠一覧」タブを開く</li>
+      <li>上部の月選択で見たい月を指定</li>
+      <li>日別の出退勤時刻と、月計（出勤日数・労働時間・残業時間）が表示</li>
+    </ol>
+    <h4>CSV で書き出す</h4>
+    <ol>
+      <li>「📥 CSV出力」ボタンをタップ</li>
+      <li>ダウンロードフォルダに <code>勤怠_氏名_年月.csv</code> が保存</li>
+    </ol>
+    <div class="note">
+      色付き背景の日: <span class="badge badge-yellow">有給</span> <span class="badge badge-purple">シフト休</span> <span class="badge badge-red">日曜</span> <span class="badge badge-blue">土曜</span> <span class="badge badge-gray">公休</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>6. 【スタッフ】申請を出す</h2>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">申請</div></div>
+      <div class="card">
+        <h5>新規申請</h5>
+        <div class="input">種別: 有給休暇 ▼</div>
+        <div class="input">日付: 2026-05-10</div>
+        <div class="input">理由: 私用のため</div>
+        <button class="btn">申請する</button>
+      </div>
+      <div class="card">
+        <h5>申請履歴</h5>
+        <div class="row"><span>5/10 有給</span><span class="badge badge-yellow">部署上長承認待ち</span></div>
+        <div class="row"><span>5/3 シフト休</span><span class="badge badge-green">承認</span></div>
+        <div class="row"><span>4/20 残業</span><span class="badge badge-green">承認</span></div>
+      </div>
+      <div class="tabbar">
+        <div class="t">打刻</div>
+        <div class="t">勤怠一覧</div>
+        <div class="t active">申請</div>
+        <div class="t">カレンダー</div>
+      </div>
+    </div>
+    <div class="caption">▲ 申請画面</div>
+  </div>
+  <div>
+    <h4>申請手順</h4>
+    <div class="step"><span class="num">1</span>「申請」タブを開く</div>
+    <div class="step"><span class="num">2</span>種別を選ぶ</div>
+    <div class="step"><span class="num">3</span>日付・理由を入力</div>
+    <div class="step"><span class="num">4</span>「申請する」をタップ</div>
+
+    <h4>申請種別と承認ルート</h4>
+    <table>
+      <tr><th>種別</th><th>承認ルート</th></tr>
+      <tr><td><strong>有給</strong></td><td>部署上長 → 管理者（二段階）</td></tr>
+      <tr><td><strong>シフト休</strong></td><td>管理者のみ</td></tr>
+      <tr><td>半休／遅刻／早退／残業／休日出勤／打刻修正／直行／直帰</td><td>管理者のみ</td></tr>
+    </table>
+
+    <h4>ステータス表示</h4>
+    <table>
+      <tr><th>表示</th><th>意味</th></tr>
+      <tr><td><span class="badge badge-yellow">部署上長承認待ち</span></td><td>有給の一次承認待ち</td></tr>
+      <tr><td><span class="badge badge-yellow">総務承認待ち</span></td><td>有給の最終承認待ち</td></tr>
+      <tr><td><span class="badge badge-yellow">申請中</span></td><td>管理者の確認待ち</td></tr>
+      <tr><td><span class="badge badge-green">承認</span></td><td>承認済み</td></tr>
+      <tr><td><span class="badge badge-red">却下</span></td><td>却下された</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>7. 【スタッフ】有給残数を確認する</h2>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">有給残数</div></div>
+      <div class="card">
+        <h5>有給残数</h5>
+        <div style="display:flex; align-items:baseline; gap:8px; padding:8px 0;">
+          <div style="font-size:36px; font-weight:700; color:#2563EB;">12.5</div>
+          <div style="font-size:14px; color:#64748B;">日</div>
+        </div>
+        <div style="font-size:10px; color:#64748B;">
+          ※ 残数は管理者が管理。半休は0.5日として計算されます。
+        </div>
+      </div>
+    </div>
+    <div class="caption">▲ 有給残数表示（打刻タブ内）</div>
+  </div>
+  <div>
+    <h4>残数の確認方法</h4>
+    <p>「打刻」タブを開くと、上部に有給残数カードが表示されます。</p>
+
+    <h4>残数が増減するタイミング</h4>
+    <table>
+      <tr><th>イベント</th><th>残数変化</th></tr>
+      <tr><td>有給申請が最終承認された</td><td>-1日</td></tr>
+      <tr><td>半休申請が承認された</td><td>-0.5日</td></tr>
+      <tr><td>承認後の有給を管理者が「取消」した</td><td>+1日（自動で戻る）</td></tr>
+      <tr><td>年初に管理者が一括付与した</td><td>+付与日数</td></tr>
+    </table>
+
+    <div class="warn">
+      残数が不足している状態で有給を申請しようとすると警告が出ます。<br>
+      申請自体は可能ですが、原則として事前に管理者へ相談してください。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>8. 【スタッフ】通知を有効にする</h2>
+
+<div class="new-feature">
+  <strong>通知される内容:</strong><br>
+  ・打刻忘れ（朝10時/夜19時）<br>
+  ・自分の申請が承認/却下された時<br>
+  ・部署上長の方は、自部署の有給申請が出された時にも通知
+</div>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">通知設定</div></div>
+      <div class="card">
+        <h5>🔔 打刻忘れ通知</h5>
+        <p style="font-size:11px;">朝10時・夜19時に未打刻ならスマホに通知。</p>
+        <button class="btn">通知を許可する</button>
+      </div>
+    </div>
+    <div class="caption">▲ 通知許可画面</div>
+  </div>
+  <div>
+    <div class="step"><span class="num">1</span>「打刻」タブの「通知許可」カードを開く</div>
+    <div class="step"><span class="num">2</span>「通知を許可する」をタップ</div>
+    <div class="step"><span class="num">3</span>ブラウザのダイアログで「許可」を選択</div>
+    <div class="step"><span class="num">4</span>「通知を有効にしました」と表示されればOK</div>
+    <div class="warn">
+      <strong>iPhone Safari の重要な注意:</strong><br>
+      <strong>「ホーム画面に追加」したアプリから起動した状態</strong>でないと通知が届きません。<br>
+      （iOS 16.4 以降のみ対応）
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>9. 【スタッフ】カレンダーで休暇を確認する</h2>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">休暇カレンダー</div></div>
+      <div class="card">
+        <div style="display:flex; gap:4px; margin-bottom:6px;">
+          <div class="input" style="flex:1; margin:0;">📅 2026-05</div>
+          <div class="input" style="margin:0;">自部署 ▼</div>
+        </div>
+        <div class="mini-cal">
+          <div class="h">日</div><div class="h">月</div><div class="h">火</div><div class="h">水</div><div class="h">木</div><div class="h">金</div><div class="h">土</div>
+          <div class="d h">26</div><div class="d">27</div><div class="d">28</div><div class="d">29</div><div class="d">30</div><div class="d">1</div><div class="d">2</div>
+          <div class="d h">3</div><div class="d">4</div><div class="d">5</div><div class="d s">6<br>佐藤</div><div class="d">7</div><div class="d">8</div><div class="d">9</div>
+          <div class="d h">10</div><div class="d">11</div><div class="d">12</div><div class="d">13</div><div class="d s">14<br>山田</div><div class="d">15</div><div class="d">16</div>
+          <div class="d h">17</div><div class="d">18</div><div class="d">19</div><div class="d">20</div><div class="d">21</div><div class="d">22</div><div class="d">23</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="t">打刻</div>
+        <div class="t">勤怠一覧</div>
+        <div class="t">申請</div>
+        <div class="t active">カレンダー</div>
+      </div>
+    </div>
+    <div class="caption">▲ 休暇カレンダー</div>
+  </div>
+  <div>
+    <h4>確認できること</h4>
+    <ul>
+      <li>誰がいつ有給/シフト休/半休などを取得しているか月単位で一覧</li>
+      <li>承認済みの休暇＋申請中の休暇が見える（承認待ちは▲マーク）</li>
+      <li><strong>自部署</strong>と<strong>全社</strong>を切替可能</li>
+      <li>会社休日・自部署の公休は赤背景で表示</li>
+    </ul>
+    <h4>使い方</h4>
+    <ol>
+      <li>「カレンダー」タブを開く</li>
+      <li>月選択ボックスで対象月を変更</li>
+      <li>表示範囲（自部署 or 全社）を選択</li>
+    </ol>
+    <div class="tip">
+      休暇申請を出す前にこの画面で確認しておくと、同じ日に休む人が多いタイミングを避けやすくなります。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>10. 【部署上長】有給を一次承認する</h2>
+
+<div class="new-feature">
+  あなたが部署上長に設定されている場合、「申請」タブの上部に<strong>「部署上長として承認」</strong>セクションが表示されます。
+</div>
+
+<div class="row-fig">
+  <div>
+    <div class="phone">
+      <div class="header"><div class="title">申請</div></div>
+      <div class="card" style="background:#FFF7ED; border-left:4px solid #F59E0B;">
+        <h5>部署上長として承認</h5>
+        <p style="font-size:10px;">自部署の有給を一次承認してください。承認後、総務へ進みます。</p>
+        <div style="background:#fff; padding:6px; border-radius:4px; margin-top:6px;">
+          <div style="font-weight:600; font-size:11px;">山田 太郎 / 有給</div>
+          <div style="font-size:10px; color:#64748B;">対象日: 2026-05-10</div>
+          <div style="font-size:10px;">理由: 私用のため</div>
+          <div style="display:flex; gap:4px; margin-top:6px;">
+            <button class="btn success" style="flex:1;">承認</button>
+            <button class="btn secondary" style="flex:1;">却下</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">▲ 部署上長承認セクション</div>
+  </div>
+  <div>
+    <h4>承認の流れ</h4>
+    <div class="step"><span class="num">1</span>申請が出ると<strong>プッシュ通知</strong>が届く</div>
+    <div class="step"><span class="num">2</span>通知をタップしてアプリを開く</div>
+    <div class="step"><span class="num">3</span>「申請」タブの上部に承認待ちが並ぶ</div>
+    <div class="step"><span class="num">4</span>内容を確認して<strong>「承認」</strong>または<strong>「却下」</strong></div>
+    <div class="step"><span class="num">5</span>承認すると総務（管理者）へ自動で回る</div>
+
+    <div class="note">
+      <strong>あなた自身の有給申請</strong>は、自分で承認することはできず管理者が直接承認します。
+    </div>
+    <div class="warn">
+      却下した場合は、申請者本人にも自動でプッシュ通知が届きます。<br>
+      却下理由は別途口頭やチャットで伝えてあげると親切です。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<h2>11. 【管理者】スタッフを管理する</h2>
+
+<div class="desktop">
+  <div class="head"><strong>勤怠管理（管理者）</strong> / スタッフタブ</div>
+  <div class="panel">
+    <h4 style="margin-top:0;">スタッフ追加</h4>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <span style="background:#F1F5F9; padding:6px 10px; border-radius:4px;">氏名</span>
+      <span style="background:#F1F5F9; padding:6px 10px; border-radius:4px;">メール</span>
+      <span style="background:#F1F5F9; padding:6px 10px; border-radius:4px;">パスワード</span>
+      <span style="background:#F1F5F9; padding:6px 10px; border-radius:4px;">部署 ▼</span>
+      <span style="background:#F1F5F9; padding:6px 10px; border-radius:4px;">権限 ▼</span>
+      <span>☐ 部署上長</span>
+      <span style="background:#2563EB; color:#fff; padding:6px 14px; border-radius:4px;">追加</span>
+    </div>
+    <h4>スタッフ一覧</h4>
+    <table>
+      <tr><th>名前</th><th>権限/部署/上長</th><th>有給残数</th><th>操作</th></tr>
+      <tr><td>山田 太郎</td><td><span class="badge badge-yellow">管理者</span> <span class="badge badge-blue">営業部</span> <span class="badge badge-purple">部署上長</span></td><td>15日</td><td>編集／削除</td></tr>
+      <tr><td>佐藤 花子</td><td><span class="badge badge-gray">スタッフ</span> <span class="badge badge-blue">営業部</span></td><td>12.5日</td><td>編集／削除</td></tr>
+    </table>
+  </div>
+</div>
+
+<h3>11.1 スタッフを追加する</h3>
+<div class="step"><span class="num">1</span>「スタッフ」タブを開く</div>
+<div class="step"><span class="num">2</span>氏名・メール・初期パスワード・部署・権限を入力</div>
+<div class="step"><span class="num">3</span>必要なら「部署上長にする」にチェック</div>
+<div class="step"><span class="num">4</span>「追加」 → 本人にメール・パスワードを連絡</div>
+
+<h3>11.2 部署と権限の変更</h3>
+<ul>
+  <li><strong>所属部署のドロップダウン</strong>: 一覧から選んで切替（その場で保存）</li>
+  <li><strong>権限のドロップダウン</strong>: 管理者/スタッフ切替</li>
+  <li><strong>「上長」チェックボックス</strong>: 部署上長フラグの切替（同部署で1人のみ自動制御）</li>
+</ul>
+<div class="warn">
+  <strong>最後の管理者は降格できません。</strong> 必ず2名以上の管理者を維持してください。
+</div>
+
+<!-- ============================================== -->
+<h2>12. 【管理者】部署を設定する</h2>
+
+<div class="new-feature">
+  各部署ごとに <strong>勤務時間・休憩・所定労働時間・公休パターン</strong> を個別設定できます。スタッフは所属部署の設定に従って勤怠が計算されます。
+</div>
+
+<h3>12.1 部署を追加する</h3>
+<div class="step"><span class="num">1</span>「部署」タブを開く</div>
+<div class="step"><span class="num">2</span>「部署追加 / 編集」フォームに記入:
+  <ul>
+    <li>部署名（例: 営業部）</li>
+    <li>始業時刻・終業時刻</li>
+    <li>休憩（分）・所定労働時間（分）</li>
+    <li>定休パターン（次節）</li>
+    <li>固定休日（毎年同じ日付・任意）</li>
+  </ul>
+</div>
+<div class="step"><span class="num">3</span>「保存」</div>
+
+<h3>12.2 部署を編集する</h3>
+<p>一覧の各部署で「編集」 → フォームに値が入る → 修正して「保存」。</p>
+
+<h3>12.3 部署を削除する</h3>
+<p>所属スタッフがいる場合は確認ダイアログが出て、削除すると全員「未所属」に戻ります。</p>
+
+<!-- ============================================== -->
+<h2>13. 【管理者】公休パターンと月別調整</h2>
+
+<div class="new-feature">
+  会社の公休が「毎週日曜・第1月曜・第3土曜」のように複雑なパターンの部署にも対応。さらに「今月だけこの日を休みにする」といった月別の例外も設定できます。
+</div>
+
+<h3>13.1 定休パターンの設定</h3>
+<p>部署編集画面で「定休パターン」セクション:</p>
+<div class="step"><span class="num">1</span>「＋ パターン追加」をクリック</div>
+<div class="step"><span class="num">2</span>左のドロップダウンで頻度を選ぶ:
+  <ul>
+    <li>毎週 / 第1 / 第2 / 第3 / 第4 / 第5 / 最終</li>
+  </ul>
+</div>
+<div class="step"><span class="num">3</span>右のドロップダウンで曜日を選ぶ</div>
+<div class="step"><span class="num">4</span>必要な数だけ繰り返す（複数追加可）</div>
+<div class="step"><span class="num">5</span>「保存」</div>
+
+<div class="tip">
+  <strong>例:</strong><br>
+  ・毎週 日曜<br>
+  ・第1 月曜<br>
+  ・第3 土曜<br>
+  → これら全てが部署の公休になる
+</div>
+
+<h3>13.2 月別の調整（例外設定）</h3>
+<p>「今月の第1月曜は出勤、代わりに第2月曜を休みにする」等の臨時調整に使います。</p>
+<div class="step"><span class="num">1</span>部署を編集中にすると下に「月別の公休調整」カードが現れる</div>
+<div class="step"><span class="num">2</span>調整したい月を選択して「表示」</div>
+<div class="step"><span class="num">3</span>カレンダーで日付セルをクリック:
+  <ul>
+    <li><span style="background:#FEF2F2; color:#B91C1C; padding:1px 6px; border-radius:3px;">既定で休</span>セル → クリックで「平日に取消」（黄色＋取消線）</li>
+    <li>平日セル → クリックで「追加で休にする」（赤背景）</li>
+    <li>もう一度クリックで例外を解除し既定に戻る</li>
+  </ul>
+</div>
+<div class="step"><span class="num">4</span>クリックごとに自動保存されます</div>
+
+<div class="note">
+  月別調整はその月に対してだけ有効。翌月は再び元の定休パターンが適用されます。
+</div>
+
+<!-- ============================================== -->
+<h2>14. 【管理者】勤怠を管理する</h2>
+
+<div class="desktop">
+  <div class="head"><strong>勤怠管理（管理者）</strong> / 勤怠タブ</div>
+  <div class="grid">
+    <div class="panel">
+      <h4 style="margin-top:0;">本日の出勤状況</h4>
+      <div class="row"><span>山田 太郎</span><span class="badge badge-green">出勤中</span></div>
+      <div class="row"><span>佐藤 花子</span><span class="badge badge-blue">退勤済</span></div>
+      <div class="row"><span>鈴木 一郎</span><span class="badge badge-yellow">有給</span></div>
+      <div class="row"><span>高橋 二郎</span><span class="badge badge-purple">シフト休</span></div>
+      <div class="row"><span>田中 三郎</span><span class="badge badge-gray">未出勤</span></div>
+    </div>
+    <div class="panel">
+      <h4 style="margin-top:0;">月次サマリ (2026-04)</h4>
+      <div class="row"><span>山田 太郎</span><span>出勤18日 / 144:30</span></div>
+      <div class="row"><span>佐藤 花子</span><span>出勤17日 / 136:00</span></div>
+      <button style="background:#2563EB; color:#fff; border:none; padding:8px 14px; border-radius:4px; margin-top:10px;">📥 全員CSV出力</button>
+    </div>
+  </div>
+</div>
+
+<h3>14.1 個別スタッフの月次詳細</h3>
+<div class="step"><span class="num">1</span>月次サマリで該当スタッフの「詳細」をクリック</div>
+<div class="step"><span class="num">2</span>日別の打刻時刻・労働時間・残業時間が表示</div>
+<div class="step"><span class="num">3</span>修正したい日の「編集」で打刻時刻を直接変更可能</div>
+
+<h3>14.2 打刻を修正する</h3>
+<p>スタッフからの「打刻修正」申請を承認するか、または管理者が直接「編集」から修正できます。</p>
+
+<!-- ============================================== -->
+<h2>15. 【管理者】申請を承認する（二段階）</h2>
+
+<div class="desktop">
+  <div class="head"><strong>勤怠管理（管理者）</strong> / 申請タブ</div>
+  <div class="panel">
+    <h4 style="margin-top:0;">申請一覧</h4>
+    <table>
+      <tr><th>申請者/部署</th><th>種別</th><th>状態</th><th>ステージ</th><th>操作</th></tr>
+      <tr>
+        <td>山田 太郎<br><span class="badge badge-blue">営業部</span></td>
+        <td>有給<br>5/10</td>
+        <td><span class="badge badge-yellow">総務承認待ち</span></td>
+        <td>
+          <span class="badge badge-green">部署上長 ✓ 田中</span>
+          <span class="badge badge-yellow">総務 待ち</span>
+        </td>
+        <td>
+          <span style="background:#047857; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px;">総務として承認</span>
+          <span style="background:#DC2626; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px;">却下</span>
+        </td>
+      </tr>
+      <tr>
+        <td>佐藤 花子<br><span class="badge badge-blue">営業部</span></td>
+        <td>シフト休<br>5/14</td>
+        <td><span class="badge badge-yellow">申請中</span></td>
+        <td>―</td>
+        <td>
+          <span style="background:#047857; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px;">承認</span>
+          <span style="background:#DC2626; color:#fff; padding:3px 8px; border-radius:4px; font-size:11px;">却下</span>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<h3>15.1 二段階承認（有給）</h3>
+<p>有給申請は<strong>部署上長 → 管理者</strong>の順で承認されます。両方承認されて初めて「承認済み」になります。</p>
+<table>
+  <tr><th>段階</th><th>表示</th><th>あなた（管理者）の操作</th></tr>
+  <tr><td>1</td><td><span class="badge badge-yellow">部署上長承認待ち</span></td><td>原則として部署上長が処理。あなたが直接承認することも可能</td></tr>
+  <tr><td>2</td><td><span class="badge badge-yellow">総務承認待ち</span></td><td>「総務として承認」または「却下」をクリック</td></tr>
+  <tr><td>完了</td><td><span class="badge badge-green">承認</span></td><td>勤怠に反映、有給残数 -1日</td></tr>
+</table>
+
+<h3>15.2 単一承認（有給以外）</h3>
+<p>シフト休、半休、残業などは管理者の承認のみで完了します。</p>
+
+<h3>15.3 承認後の取消・編集・削除</h3>
+<table>
+  <tr><th>操作</th><th>動作</th></tr>
+  <tr><td>総務承認を取消</td><td>有給残数を自動で戻し、申請中に戻す</td></tr>
+  <tr><td>編集</td><td>日付・理由・種別を修正</td></tr>
+  <tr><td>削除</td><td>申請を完全削除（誤申請の場合に使用）</td></tr>
+</table>
+
+<!-- ============================================== -->
+<h2>16. 【管理者】有給残数を管理する</h2>
+
+<div class="new-feature">
+  有給残数は<strong>承認時に自動で差し引かれる</strong>ため、通常は手動操作不要。年初の付与や手動調整が必要な時だけ操作します。
+</div>
+
+<h3>16.1 全員に一括付与（年初など）</h3>
+<div class="step"><span class="num">1</span>「設定」タブの「有給休暇 残数管理」セクション</div>
+<div class="step"><span class="num">2</span>付与日数を入力（例: 10）</div>
+<div class="step"><span class="num">3</span>動作を選ぶ:
+  <ul>
+    <li><strong>残数に加算</strong>: 既存残数に追加（例: 5日残っていて 10付与 → 15日）</li>
+    <li><strong>残数を上書き</strong>: 全員を指定日数にリセット</li>
+  </ul>
+</div>
+<div class="step"><span class="num">4</span>「全員に適用」 → 確認ダイアログ → OK</div>
+
+<h3>16.2 個別に修正する</h3>
+<div class="step"><span class="num">1</span>同セクションのスタッフ一覧で対象者を探す</div>
+<div class="step"><span class="num">2</span>右の数値ボックスに新しい残数を入力</div>
+<div class="step"><span class="num">3</span>「更新」</div>
+
+<div class="warn">
+  「上書き」モードは全員の残数を一律にリセットします。中途入社者の調整等は個別修正で行ってください。
+</div>
+
+<!-- ============================================== -->
+<h2>17. 【管理者】カレンダーで全社の休暇を確認</h2>
+
+<p>「カレンダー」タブで全社の休暇予定を月単位で俯瞰できます。</p>
+<ul>
+  <li><strong>部署フィルタ</strong>で特定の部署だけ表示</li>
+  <li><strong>「承認済のみ」/「承認＋申請中」</strong>を切替</li>
+  <li>休暇種別ごとに色分け表示（有給=黄、シフト休=紫、残業=青、など）</li>
+</ul>
+<div class="tip">
+  <strong>使い時:</strong> シフト調整・人員配置の検討、申請承認前に他の人の予定を確認。
+</div>
+
+<!-- ============================================== -->
+<h2>18. 【管理者】CSV出力する</h2>
+
+<h3>18.1 月次勤怠 CSV</h3>
+<div class="step"><span class="num">1</span>「勤怠」タブで対象月を選択</div>
+<div class="step"><span class="num">2</span><strong>「📥 CSV出力」</strong>をクリック</div>
+<div class="step"><span class="num">3</span><code>勤怠_年月.csv</code> がダウンロード</div>
+<div class="note">
+  CSV項目: 氏名・メール・日付・曜日・出勤・退勤・労働時間（分）・残業時間（分）・備考
+</div>
+
+<h3>18.2 申請履歴 CSV</h3>
+<div class="step"><span class="num">1</span>「申請」タブで絞り込み（ステータス・スタッフ）</div>
+<div class="step"><span class="num">2</span><strong>「📥 CSV出力」</strong></div>
+<div class="step"><span class="num">3</span><code>申請_年月日.csv</code> がダウンロード</div>
+<div class="note">
+  CSV項目: 氏名・メール・部署・申請種別・対象日・ステータス・理由・部署上長・管理者・作成日時
+</div>
+
+<div class="tip">
+  CSVは UTF-8 BOM 付きで出力されるため Excel でそのまま開けます（文字化けなし）。
+</div>
+
+<!-- ============================================== -->
+<h2>19. 【管理者】背景画像を変更する</h2>
+
+<div class="new-feature">
+  管理者アプリの背景に好きな画像（社のロゴ、好きなキャラクター等）を設定できます。<br>
+  この設定は <strong>このブラウザにのみ保存</strong> され、他のスタッフには影響しません。
+</div>
+
+<h3>手順</h3>
+<div class="step"><span class="num">1</span>「設定」タブの「背景画像」セクション</div>
+<div class="step"><span class="num">2</span>画像ファイル（JPG/PNG/WebP、推奨2MB以下）を選択<br>または画像URLを入力して「URLを適用」</div>
+<div class="step"><span class="num">3</span>カードの不透明度スライダーで透け具合を調整（背景が透けすぎると文字が読みにくいので90%前後推奨）</div>
+<div class="step"><span class="num">4</span>不要になったら「背景を解除」</div>
+
+<!-- ============================================== -->
+<h2>20. 【管理者】退職者を削除する</h2>
+
+<div class="warn">
+  <strong>削除はワンクリックで実行されます。</strong> 取消できないため、本当に削除してよいか確認してから実行してください。
+</div>
+
+<h3>手順</h3>
+<div class="step"><span class="num">1</span>「スタッフ」タブで該当スタッフを探す</div>
+<div class="step"><span class="num">2</span>右端の <strong>「削除」</strong> ボタンをクリック</div>
+<div class="step"><span class="num">3</span>確認ダイアログで「OK」</div>
+<div class="step"><span class="num">4</span>「削除しました（Authアカウント含む）」と表示されれば完了</div>
+
+<div class="note">
+  この削除では:
+  <ul>
+    <li>Firebase Authentication のログインアカウントを削除（再ログイン不可に）</li>
+    <li>users ドキュメントを削除（社内データから消える）</li>
+  </ul>
+  過去の打刻・申請履歴は残ります（労務監査用）。完全削除したい場合はFirebase Consoleから手動で消してください。
+</div>
+
+<!-- ============================================== -->
+<h2>21. よくある質問</h2>
+
+<h3>Q1. パスワードを忘れたら？</h3>
+<p>管理者に連絡してください。Firebase Console からパスワードリセットメールを送信できます。</p>
+
+<h3>Q2. 打刻を間違えたら？</h3>
+<p>「申請」タブから「打刻修正」申請を出してください。急ぎは管理者に直接連絡。</p>
+
+<h3>Q3. 在宅勤務でも打刻できる？</h3>
+<p>はい、インターネット接続があればどこからでも可能です。</p>
+
+<h3>Q4. 通知が来ない</h3>
+<p>以下を確認:
+<ol>
+  <li>iPhone の場合「ホーム画面に追加」したアプリから起動しているか</li>
+  <li>「打刻」タブの通知許可カードで「✓ 通知が有効です」と出ているか</li>
+  <li>ブラウザ設定で通知がブロックされていないか</li>
+</ol></p>
+
+<h3>Q5. 部署が変更になったら？</h3>
+<p>管理者がスタッフタブで「部署」を変更してください。即座に新部署の勤務時間・公休パターンが適用されます。</p>
+
+<h3>Q6. 部署上長が退職した場合は？</h3>
+<p>管理者が新しい上長を立てるまで、その部署の有給申請は管理者が直接承認します（自動的にエスカレーション）。</p>
+
+<h3>Q7. 半休を取ったら有給残数は？</h3>
+<p>承認時に -0.5日 として自動計算されます。</p>
+
+<h3>Q8. 有給残数を超えて有給申請すると？</h3>
+<p>申請時に確認ダイアログが出ます。原則は事前に管理者へ相談してください。</p>
+
+<h3>Q9. 公休の調整がスタッフから見えない</h3>
+<p>強制リロード（<kbd>Cmd+Shift+R</kbd>）でデータが最新化されます。</p>
+
+<h3>Q10. データのバックアップは？</h3>
+<p>Firebase が自動でバックアップしています。加えて、月次でCSVを出力して保管することを推奨します。</p>
+
+<!-- ============================================== -->
+<h2>22. トラブルシューティング</h2>
+
+<table>
+  <tr><th>症状</th><th>対処</th></tr>
+  <tr><td>ログインできない</td><td>メール・パスワードの大文字小文字を確認。それでもダメなら管理者に連絡</td></tr>
+  <tr><td>「権限がありません」と表示</td><td>スタッフ用URLと管理者用URLを取り違えている可能性。正しいURLでアクセス</td></tr>
+  <tr><td>打刻ボタンが押せない</td><td>すでに打刻済みの可能性。「勤怠一覧」で当日の状態を確認</td></tr>
+  <tr><td>申請ボタンを押しても反応なし</td><td>必須項目（日付・理由）の入力漏れを確認</td></tr>
+  <tr><td>通知が来ない</td><td>Q4を参照。iPhoneは「ホーム画面に追加」が必須</td></tr>
+  <tr><td>画面が古いまま更新されない</td><td><kbd>Cmd+Shift+R</kbd>（Mac）/<kbd>Ctrl+Shift+R</kbd>（Win）で強制再読み込み</td></tr>
+  <tr><td>部署上長承認セクションが表示されない</td><td>管理者にあなたの「部署上長」フラグが立っているか確認してもらう</td></tr>
+  <tr><td>休暇カレンダーに自分の休暇が表示されない</td><td>申請が「承認済」かどうか確認。「承認＋申請中」表示に切替も試す</td></tr>
+  <tr><td>退職予定者の削除でエラー</td><td>その人が「最後の管理者」だと削除不可。先に別の管理者を設定</td></tr>
+</table>
+
+<div class="warn">
+  <strong>解決しない場合は管理者にご相談ください。</strong><br>
+  問合せ時は「いつ・どのページで・何をしたら・どうなった」を伝えていただくと早く解決できます。
+</div>
+
+<footer>
+  勤怠管理アプリ 操作マニュアル / 2026年4月30日 版
+</footer>
+
+</body>
+</html>
