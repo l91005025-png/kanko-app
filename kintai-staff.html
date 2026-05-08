@@ -570,14 +570,13 @@
     try {
       if (authMode === "signup") {
         const cred = await auth.createUserWithEmailAndPassword(email, password);
-        const usersSnap = await db.collection("users").limit(1).get();
-        const isFirst = usersSnap.empty;
+        // 新規登録は常に staff として作成（管理者は管理者画面から手動で昇格）
         await db.collection("users").doc(cred.user.uid).set({
           name, email,
-          role: isFirst ? "admin" : "staff",
+          role: "staff",
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        toast(isFirst ? "管理者として登録しました" : "登録しました", "success");
+        toast("登録しました", "success");
       } else {
         await auth.signInWithEmailAndPassword(email, password);
       }
@@ -615,12 +614,16 @@
         const ref = db.collection("users").doc(user.uid);
         let snap = await ref.get();
         if (!snap.exists) {
-          const usersSnap = await db.collection("users").limit(1).get();
-          const isFirst = usersSnap.empty;
+          // 新規登録の処理と競合しないよう少し待ってから再確認
+          await new Promise(r => setTimeout(r, 2500));
+          snap = await ref.get();
+        }
+        if (!snap.exists) {
+          // それでも未作成 = 既存Authのみのレガシーユーザー → 自動作成
           await ref.set({
             name: user.email.split("@")[0],
             email: user.email,
-            role: isFirst ? "admin" : "staff",
+            role: "staff",
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           });
           snap = await ref.get();
