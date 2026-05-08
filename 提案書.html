@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>勤怠管理システム導入のご提案</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color: #1F2937; line-height: 1.7;
+    max-width: 800px; margin: 0 auto; padding: 24px;
+    background: #fff;
+  }
+  h1 { font-size: 28px; color: #1E3A8A; border-bottom: 4px solid #2563EB; padding-bottom: 12px; margin-bottom: 8px; }
+  h2 {
+    font-size: 20px; color: #1E40AF;
+    border-left: 6px solid #2563EB;
+    padding: 6px 12px; background: #EFF6FF;
+    margin-top: 36px; page-break-after: avoid;
+  }
+  h3 { font-size: 16px; color: #1E40AF; margin-top: 24px; page-break-after: avoid; }
+  .cover {
+    text-align: center; padding: 60px 0 40px;
+    border-bottom: 1px dashed #94A3B8; margin-bottom: 32px;
+  }
+  .cover .title { font-size: 32px; font-weight: 700; color: #1E3A8A; }
+  .cover .sub   { font-size: 16px; color: #475569; margin-top: 12px; }
+  .cover .meta  { margin-top: 36px; font-size: 14px; color: #475569; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; }
+  th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #F1F5F9; font-weight: 600; color: #1E3A8A; }
+  .pos { color: #047857; font-weight: 600; }
+  .neg { color: #B91C1C; font-weight: 600; }
+  .new { display: inline-block; background: #DC2626; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+  .callout { background: #FEF3C7; border-left: 6px solid #F59E0B; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  .callout-blue { background: #EFF6FF; border-left: 6px solid #2563EB; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  .callout-green { background: #D1FAE5; border-left: 6px solid #047857; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; background: #F8FAFC; }
+  .card .num { font-size: 28px; color: #2563EB; font-weight: 700; }
+  .card .lbl { font-size: 13px; color: #475569; }
+  .pagebreak { page-break-before: always; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #CBD5E1; font-size: 12px; color: #64748B; text-align: center; }
+  @media print { .no-print { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<div class="no-print callout-blue">
+  ※ ブラウザで「ファイル → プリント」→「PDFとして保存」でPDF化できます。
+</div>
+
+<div class="cover">
+  <div class="title">勤怠管理システム 導入のご提案</div>
+  <div class="sub">― タイムカードからクラウド型勤怠管理への移行 ―</div>
+  <div class="meta">
+    提出日: 2026年4月30日<br>
+    提出先: 役員 / 総務部 御中
+  </div>
+</div>
+
+<h2>1. 提案概要</h2>
+<p>
+現在、当社では紙のタイムカードで全社員の出退勤を管理しております。
+本提案は、社内開発済みのクラウド型勤怠管理システム「<strong>勤怠管理アプリ</strong>」を導入することで、
+集計工数の削減・人為的ミスの排除・申請業務のペーパーレス化・部署別運用の柔軟化を実現するものです。
+</p>
+<div class="callout">
+  <strong>導入効果（試算）:</strong> 月次の勤怠集計工数を <span class="pos">約 8時間 → 1時間</span>（約87%削減）。
+  追加コスト <span class="pos">¥0/月</span>（クラウド無料枠で30名規模は十分対応可能）。
+</div>
+
+<h2>2. 現状の課題</h2>
+<table>
+  <tr><th>課題</th><th>影響</th></tr>
+  <tr><td>紙のタイムカードを月末に手集計</td><td>総務担当者が月8時間程度を費やす</td></tr>
+  <tr><td>残業時間・遅刻早退の手計算</td><td>計算ミス・記入漏れの発生リスク</td></tr>
+  <tr><td>有給・シフト変更などの申請が紙ベース</td><td>承認フローが追えない・紛失リスク</td></tr>
+  <tr><td>有給残数の手作業管理</td><td>個別ファイルでの管理、ミスが起きやすい</td></tr>
+  <tr><td>出勤状況・休暇予定がリアルタイムで把握できない</td><td>急な欠勤対応・人員調整が後手</td></tr>
+  <tr><td>部署ごとに異なる勤務時間・休日の管理が煩雑</td><td>部署別ルールの一元管理ができない</td></tr>
+  <tr><td>在宅勤務・直行直帰での打刻が困難</td><td>柔軟な働き方への対応が困難</td></tr>
+</table>
+
+<h2>3. 提案システム概要</h2>
+<p>
+スマートフォン・PCのブラウザから利用できる、シンプルで実用的な勤怠管理 Web アプリです。
+役割により2つの画面を提供し、それぞれを必要な人にだけ公開します。
+</p>
+<div class="grid2">
+  <div class="card">
+    <div class="num">①</div>
+    <strong>スタッフ用アプリ</strong>
+    <ul>
+      <li>出退勤の打刻</li>
+      <li>自分の月次勤怠の確認</li>
+      <li>有給・シフト休等の申請</li>
+      <li>有給残数の確認</li>
+      <li>休暇カレンダー閲覧</li>
+      <li>打刻忘れ通知＋申請通知</li>
+      <li>部署上長は一次承認も実施</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="num">②</div>
+    <strong>管理者用アプリ</strong>
+    <ul>
+      <li>全スタッフの勤怠管理</li>
+      <li>本日の出勤状況確認</li>
+      <li>申請の最終承認・差戻し</li>
+      <li>部署設定（勤務時間・公休）</li>
+      <li>有給残数の一括管理</li>
+      <li>休暇カレンダーの全社俯瞰</li>
+      <li>給与計算用 CSV 出力</li>
+    </ul>
+  </div>
+</div>
+
+<h2>4. 主な機能</h2>
+<table>
+  <tr><th>分類</th><th>機能</th><th>説明</th></tr>
+  <tr><td rowspan="3">打刻</td><td>出勤・退勤打刻</td><td>ボタン1タップで時刻を自動記録</td></tr>
+  <tr><td>打刻忘れ通知</td><td>朝10時/夜19時に未打刻ならスマホに通知</td></tr>
+  <tr><td>休憩時間管理</td><td>所定休憩時間を自動控除</td></tr>
+  <tr><td rowspan="3">勤怠</td><td>月次サマリ</td><td>出勤日数・労働時間・残業時間を自動集計</td></tr>
+  <tr><td>本日の出勤状況</td><td>全スタッフの出勤/退勤/休暇をリアルタイム表示</td></tr>
+  <tr><td>勤怠詳細編集</td><td>管理者が個別の打刻を修正可能</td></tr>
+  <tr><td rowspan="4">申請</td><td>申請種別</td><td>有給／シフト休／半休／遅刻／早退／残業／休日出勤／打刻修正／直行／直帰</td></tr>
+  <tr><td>有給の二段階承認 <span class="new">NEW</span></td><td>部署上長の一次承認 → 総務（管理者）の最終承認</td></tr>
+  <tr><td>シフト休 <span class="new">NEW</span></td><td>シフト調整用の休暇申請（管理者承認）</td></tr>
+  <tr><td>承認済申請の取消・編集</td><td>誤承認・記載ミスの修正に対応</td></tr>
+  <tr><td rowspan="2">有給残数管理 <span class="new">NEW</span></td><td>残数自動差引</td><td>承認時に自動で -1日（半休は -0.5日）</td></tr>
+  <tr><td>一括付与</td><td>年初付与など、全員へ一括加算/上書き可能</td></tr>
+  <tr><td rowspan="3">部署管理 <span class="new">NEW</span></td><td>部署別の勤務時間・休憩</td><td>部署ごとに始業/終業/休憩/所定労働を設定</td></tr>
+  <tr><td>公休パターン編集</td><td>「毎週日曜」「第1月曜」「第3土曜」などを組合せ可能</td></tr>
+  <tr><td>月別の例外調整</td><td>その月だけの追加休/取消をカレンダーから1クリック</td></tr>
+  <tr><td>休暇カレンダー <span class="new">NEW</span></td><td>誰がいつ休むかを月単位で可視化</td><td>部署フィルタ/全社表示を切替</td></tr>
+  <tr><td>プッシュ通知 <span class="new">NEW</span></td><td>申請・承認の即時通知</td><td>スマホがロック中でも届く（PWA環境）</td></tr>
+  <tr><td rowspan="2">出力</td><td>勤怠 CSV 出力</td><td>月次の全スタッフ勤怠をCSV化（給与ソフト取込用）</td></tr>
+  <tr><td>申請 CSV 出力</td><td>申請履歴をCSV化（部署・承認者付き）</td></tr>
+  <tr><td rowspan="3">運用</td><td>退職者削除</td><td>1クリックで認証アカウントとデータを一括削除</td></tr>
+  <tr><td>権限管理</td><td>管理者/スタッフ/部署上長の3層構造</td></tr>
+  <tr><td>背景画像カスタマイズ <span class="new">NEW</span></td><td>管理者画面の背景に好きな画像を設定可能（個人設定）</td></tr>
+  <tr><td>PWA対応</td><td>その他</td><td>スマホのホーム画面にアプリのように追加可能</td></tr>
+</table>
+
+<h2>5. 導入メリット</h2>
+
+<h3>5.1 定量的メリット</h3>
+<div class="grid2">
+  <div class="card"><div class="num">月7時間</div><div class="lbl">集計工数の削減（試算）</div></div>
+  <div class="card"><div class="num">¥0</div><div class="lbl">月額追加コスト</div></div>
+  <div class="card"><div class="num">100%</div><div class="lbl">ペーパーレス化</div></div>
+  <div class="card"><div class="num">即時</div><div class="lbl">出勤状況・休暇予定の把握</div></div>
+</div>
+
+<h3>5.2 定性的メリット</h3>
+<ul>
+  <li>計算ミスがゼロに（自動集計＋自動差引）</li>
+  <li>有給残数を本人と管理者が常に同じ数値で把握できる</li>
+  <li>残業時間・遅刻早退の見える化により労務管理が改善</li>
+  <li>部署別の勤務時間・公休に柔軟に対応（営業部は土日休、製造部は日曜＋第3土など）</li>
+  <li>月単位での公休調整が簡単（カレンダーから1クリック）</li>
+  <li>申請がスマホで完結＋管理者は外出先からも承認可能</li>
+  <li>休暇カレンダーで人員不足日を事前に把握、シフト調整が容易</li>
+  <li>過去データの検索が瞬時に可能（監査対応の工数削減）</li>
+  <li>紙ベースの保管スペース・廃棄コストの削減</li>
+</ul>
+
+<h2>6. コスト試算</h2>
+<table>
+  <tr><th>項目</th><th>初期費用</th><th>月額</th><th>備考</th></tr>
+  <tr><td>システム開発費</td><td class="pos">¥0</td><td class="pos">¥0</td><td>社内で開発済み</td></tr>
+  <tr><td>サーバー利用料 (Firebase)</td><td class="pos">¥0</td><td class="pos">¥0</td><td>従量制Blazeプランの無料枠で30名規模は対応可能 ※</td></tr>
+  <tr><td>ホスティング (GitHub Pages)</td><td class="pos">¥0</td><td class="pos">¥0</td><td>無料サービス</td></tr>
+  <tr><td>運用保守</td><td>―</td><td>社内対応</td><td>担当者の指定が必要</td></tr>
+  <tr><th>合計</th><th class="pos">¥0</th><th class="pos">¥0</th><th></th></tr>
+</table>
+<p style="font-size:13px; color:#475569;">
+  ※ 内訳: Firestore 1日 50,000読取 / 20,000書込 まで無料。Cloud Functions 月200万呼出まで無料。Authentication 月50,000ユーザーまで無料。Cloud Messaging（プッシュ通知）完全無料。<br>
+  ※ 30名×1日10打刻でも300書込/日と十分余裕あり。プッシュ通知も日数十回程度で無料枠内。<br>
+  ※ 念のため予算アラート¥1,000/月を設定済み。超えた場合はメール通知。
+</p>
+
+<h2>7. セキュリティ</h2>
+<ul>
+  <li><strong>通信</strong>: 全通信を HTTPS で暗号化</li>
+  <li><strong>認証</strong>: Firebase Authentication（Google が提供する認証基盤）</li>
+  <li><strong>データベース権限制御</strong>: Firestoreセキュリティルールにより、本人/部署上長/管理者で操作範囲を厳格に制限。ブラウザ開発者ツールからの不正な権限昇格を防止</li>
+  <li><strong>権限の分離</strong>:
+    <ul>
+      <li>スタッフ: 自分のデータのみ作成/閲覧</li>
+      <li>部署上長: 自部署の有給申請を一次承認</li>
+      <li>管理者: 全データ操作可能</li>
+    </ul>
+  </li>
+  <li><strong>有給残数の改ざん防止</strong>: 残数は管理者のみ変更可能。スタッフは閲覧のみ</li>
+  <li><strong>退職者対応</strong>: 管理者画面の削除ボタン1回で認証アカウントとデータを一括削除</li>
+  <li><strong>データ保管</strong>: Google Cloud（東京リージョン）。バックアップは Firebase が自動管理</li>
+</ul>
+
+<h2>8. 導入スケジュール案</h2>
+<table>
+  <tr><th>時期</th><th>内容</th><th>担当</th></tr>
+  <tr><td>第1週</td><td>役員・総務向け説明会、運用ルール策定</td><td>提案者・総務</td></tr>
+  <tr><td>第2週</td><td>初期管理者設定、部署登録、公休パターン入力、スタッフのアカウント発行</td><td>総務</td></tr>
+  <tr><td>第3週</td><td>各部署の上長設定、有給残数の初期登録</td><td>総務</td></tr>
+  <tr><td>第4週</td><td>スタッフ向け操作説明会（部署単位）、PWAインストール手順案内</td><td>提案者・総務</td></tr>
+  <tr><td>第5-6週</td><td>並行運用（タイムカード＋アプリ）、操作問合せ対応</td><td>全社</td></tr>
+  <tr><td>第7週〜</td><td>アプリ本格運用、タイムカード廃止</td><td>全社</td></tr>
+</table>
+
+<h2>9. 想定リスクと対策</h2>
+<table>
+  <tr><th>リスク</th><th>対策</th></tr>
+  <tr><td>スマホを持っていないスタッフがいる</td><td>事務所のPCからもブラウザでアクセス可能（共用PC1台で運用可）</td></tr>
+  <tr><td>iPhoneで通知が届かない</td><td>「ホーム画面に追加」を必須として案内（マニュアル参照）</td></tr>
+  <tr><td>通信障害・サーバー障害で打刻できない</td><td>紙の予備フォームを用意、復旧後に管理者が打刻修正で入力</td></tr>
+  <tr><td>スタッフが操作に不慣れ</td><td>操作マニュアル配布＋部署単位の説明会を実施</td></tr>
+  <tr><td>パスワードを忘れる</td><td>管理者がパスワード再設定可能（Firebase 標準機能）</td></tr>
+  <tr><td>誤った打刻・申請</td><td>管理者が後から修正・削除可能</td></tr>
+  <tr><td>有給残数を巡るトラブル</td><td>承認時の自動差引でリアルタイム反映、本人もアプリで確認可能</td></tr>
+  <tr><td>データ消失</td><td>Firebase の自動バックアップ＋月次CSVを総務が保管</td></tr>
+  <tr><td>クラウド料金の急増</td><td>予算アラート¥1,000/月を設定済み。超えればメール通知</td></tr>
+</table>
+
+<h2>10. まとめ</h2>
+<div class="callout-blue">
+  本システムは <strong>追加コストゼロ</strong> で、現状のタイムカード運用で発生している
+  <strong>集計工数・人為的ミス・紙ベース申請・部署別ルール管理・有給残数管理</strong> の課題をまとめて解決できます。<br><br>
+  プッシュ通知・休暇カレンダー・公休パターン編集など、<strong>実運用で「あったら助かる」機能</strong> を網羅しており、
+  導入後すぐに業務フローに溶け込みます。<br><br>
+  まずは <strong>1〜2部署での試験運用</strong> から始め、問題がなければ全社展開という段階的な導入も可能です。
+  ご検討のほどよろしくお願いいたします。
+</div>
+
+<footer>
+  勤怠管理システム導入提案書 / 2026年4月30日版
+</footer>
+
+</body>
+</html>
