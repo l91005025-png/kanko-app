@@ -538,30 +538,6 @@
         </div>
 
         <div class="card">
-          <h2>背景画像（このブラウザのみ）</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
-            管理者アプリの背景に好きな画像を表示できます。設定はこのブラウザにのみ保存され、他のスタッフには影響しません。
-          </p>
-          <div class="form-group">
-            <label>画像ファイル（JPG/PNG/WebP、推奨 2MB以下）</label>
-            <input type="file" id="bgFileInput" accept="image/*" />
-          </div>
-          <div class="form-group">
-            <label>または画像URL</label>
-            <input type="url" id="bgUrlInput" placeholder="https://example.com/image.jpg" />
-            <button id="bgUrlApplyBtn" class="btn small secondary" type="button" style="margin-top:6px;">URLを適用</button>
-          </div>
-          <div class="form-group">
-            <label>カードの不透明度: <span id="bgAlphaVal">96</span>%（低いと背景が透けます）</label>
-            <input type="range" id="bgAlphaInput" min="50" max="100" step="2" value="96" style="width:100%;" />
-          </div>
-          <div class="bg-preview" id="bgPreview">プレビュー（未設定）</div>
-          <div style="display:flex; gap:8px; margin-top:10px;">
-            <button id="bgClearBtn" class="btn small danger" type="button">背景を解除</button>
-          </div>
-        </div>
-
-        <div class="card">
           <h2>監査ログ</h2>
           <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
             勤怠・申請・有給残数等の変更履歴（最新50件）。労務監査や紛争対応用。
@@ -595,6 +571,30 @@
             <button id="grantAllBtn" class="btn small" type="button">全員に適用</button>
           </div>
           <div id="leaveBalanceList"></div>
+        </div>
+
+        <div class="card">
+          <h2>背景画像（このブラウザのみ）</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            管理者アプリの背景に好きな画像を表示できます。設定はこのブラウザにのみ保存され、他のスタッフには影響しません。
+          </p>
+          <div class="form-group">
+            <label>画像ファイル（JPG/PNG/WebP、推奨 2MB以下）</label>
+            <input type="file" id="bgFileInput" accept="image/*" />
+          </div>
+          <div class="form-group">
+            <label>または画像URL</label>
+            <input type="url" id="bgUrlInput" placeholder="https://example.com/image.jpg" />
+            <button id="bgUrlApplyBtn" class="btn small secondary" type="button" style="margin-top:6px;">URLを適用</button>
+          </div>
+          <div class="form-group">
+            <label>カードの不透明度: <span id="bgAlphaVal">96</span>%（低いと背景が透けます）</label>
+            <input type="range" id="bgAlphaInput" min="50" max="100" step="2" value="96" style="width:100%;" />
+          </div>
+          <div class="bg-preview" id="bgPreview">プレビュー（未設定）</div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="bgClearBtn" class="btn small danger" type="button">背景を解除</button>
+          </div>
         </div>
       </div>
 
