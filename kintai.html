@@ -126,7 +126,15 @@
     .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 10; box-shadow: 0 -2px 10px rgba(15,23,42,0.04); }
     .tabbar button { padding: 10px 4px 14px; border: none; background: transparent; color: #64748B; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; }
     .tabbar button.active { color: #2563EB; }
-    .tabbar button .ico { font-size: 20px; line-height: 1; }
+    .tabbar button .ico { font-size: 20px; line-height: 1; position: relative; }
+    .tabbar button .pending-badge {
+      position: absolute; top: -4px; right: -10px;
+      background: #DC2626; color: #fff;
+      font-size: 10px; font-weight: 700;
+      min-width: 16px; height: 16px; line-height: 16px;
+      border-radius: 10px; padding: 0 4px;
+      border: 2px solid #fff;
+    }
 
     .month-selector { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
     .month-selector input { flex: 1; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 10px; }
@@ -183,6 +191,40 @@
     table.attendance tr.holiday td:first-child, table.attendance tr.holiday td:nth-child(2) { color: #DC2626; }
 
     .staff-link { color: #2563EB; cursor: pointer; text-decoration: underline; }
+
+    /* ===== スマホ最適化 ===== */
+    @media (max-width: 600px) {
+      .container { padding: 12px; }
+      .card { padding: 14px; }
+      .topbar h1 { font-size: 16px; }
+      .filter-row { gap: 6px; }
+      .filter-row select, .filter-row input { font-size: 13px; padding: 8px; }
+      .staff-row {
+        flex-wrap: wrap; gap: 6px;
+      }
+      .staff-row .info { flex: 1 1 100%; min-width: 0; }
+      .staff-row .info .name { font-size: 14px; word-break: break-word; }
+      .staff-row .info .email { font-size: 11px; }
+      .staff-row .controls {
+        flex: 1 1 100%; justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .staff-row .controls select { font-size: 12px; padding: 4px 6px; }
+      .staff-row .controls .btn.small { font-size: 12px; min-height: 32px; padding: 0 8px; }
+      .req-item .actions { flex-wrap: wrap; }
+      .req-item .actions .btn.small { font-size: 12px; min-height: 36px; padding: 0 10px; }
+      .month-selector { flex-wrap: wrap; }
+      .dept-row { flex-direction: column; align-items: stretch; }
+      .dept-row .controls { justify-content: flex-end; }
+      .table-wrap { margin: 0 -14px; padding: 0 14px; }
+      table.attendance { font-size: 12px; }
+      table.attendance th, table.attendance td { padding: 6px 4px; }
+      .tabbar.tabs-6 button { font-size: 10px; padding: 6px 1px 10px; }
+      .tabbar.tabs-6 button .ico { font-size: 16px; }
+      .dept-badge, .role-badge, .pl-pill, .ot-pill { font-size: 10px; }
+      .login-card { padding: 20px; }
+      h2 { font-size: 14px; }
+    }
 
     /* 部署バッジ */
     .dept-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; background: #DBEAFE; color: #1E40AF; }
@@ -443,10 +485,22 @@
         </div>
 
         <div class="card">
+          <h2>部署別サマリ</h2>
+          <div id="deptSummary"></div>
+        </div>
+
+        <div class="card">
           <h2>全スタッフの月次勤怠サマリ</h2>
           <div class="month-selector">
             <input type="month" id="adminMonth" />
             <button id="adminReloadBtn" class="btn small secondary" type="button">更新</button>
+            <select id="csvFormat" style="padding:8px; border:1px solid #CBD5E1; border-radius:8px;">
+              <option value="standard">標準（日別）</option>
+              <option value="summary">月度集計（給与ソフト用）</option>
+              <option value="mf">マネーフォワード給与</option>
+              <option value="yayoi">弥生給与</option>
+              <option value="freee">freee人事労務</option>
+            </select>
             <button id="csvExportAttendanceBtn" class="btn small secondary" type="button">CSV出力</button>
           </div>
           <div id="adminAttendance"></div>
@@ -477,10 +531,16 @@
               <option value="承認">承認</option>
               <option value="却下">却下</option>
             </select>
+            <select id="reqFilterType"><option value="all">全種別</option></select>
+            <select id="reqFilterDept"><option value="all">全部署</option></select>
             <select id="reqFilterUser"><option value="all">全スタッフ</option></select>
+            <input type="date" id="reqFilterFrom" title="開始日" />
+            <input type="date" id="reqFilterTo" title="終了日" />
+            <button id="reqFilterClearBtn" class="btn small secondary" type="button">条件クリア</button>
             <button id="reqReloadBtn" class="btn small secondary" type="button">更新</button>
             <button id="csvExportRequestsBtn" class="btn small secondary" type="button">CSV出力</button>
           </div>
+          <div id="reqFilterSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
           <div id="adminRequests"></div>
         </div>
       </div>
@@ -623,7 +683,7 @@
       <button data-tab="tab-staff" class="active" type="button"><span class="ico">👥</span>スタッフ</button>
       <button data-tab="tab-departments" type="button"><span class="ico">🏢</span>部署</button>
       <button data-tab="tab-attendance" type="button"><span class="ico">▤</span>勤怠</button>
-      <button data-tab="tab-requests" type="button"><span class="ico">✎</span>申請</button>
+      <button data-tab="tab-requests" type="button"><span class="ico">✎<span class="pending-badge" id="reqPendingBadge" style="display:none;">0</span></span>申請</button>
       <button data-tab="tab-calendar" type="button"><span class="ico">📅</span>カレンダー</button>
       <button data-tab="tab-settings" type="button"><span class="ico">⚙</span>設定</button>
     </nav>
@@ -1567,9 +1627,10 @@
     }
   }
 
-  // 全スタッフの月次勤怠CSV出力
+  // 全スタッフの月次勤怠CSV出力（給与ソフト形式対応）
   async function exportAttendanceCSV() {
     const btn = $("csvExportAttendanceBtn");
+    const format = $("csvFormat").value;
     setLoading(btn, true);
     try {
       const month = $("adminMonth").value || `${new Date().getFullYear()}-${pad(new Date().getMonth()+1)}`;
@@ -1580,29 +1641,107 @@
       const snap = await db.collection("attendance")
         .where("date", ">=", startStr).where("date", "<=", endStr).get();
 
-      const rows = [["氏名", "メール", "日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
       const records = [];
       snap.forEach(d => records.push(d.data()));
-      records.sort((a, b) => (a.date || "").localeCompare(b.date || "") || ((allUsers[a.uid]?.name||"").localeCompare(allUsers[b.uid]?.name||"", "ja")));
-      records.forEach(r => {
-        const u = allUsers[r.uid] || {};
-        const dow = (() => {
-          const [yy, mm, dd] = r.date.split("-").map(Number);
-          return weekdayJp[new Date(yy, mm-1, dd).getDay()];
-        })();
-        rows.push([
-          u.name || "",
-          u.email || "",
-          r.date || "",
-          dow,
-          r.clockIn ? formatHM(r.clockIn) : "",
-          r.clockOut ? formatHM(r.clockOut) : "",
-          r.workMinutes || 0,
-          r.overtimeMinutes || 0,
-          r.note || ""
-        ]);
+
+      // 承認済み有給/シフト休/半休の集計用
+      const leaveByUidDate = {};
+      allRequests.forEach(r => {
+        if (displayStatus(r) !== "承認") return;
+        if (!r.date || r.date < startStr || r.date > endStr) return;
+        if (!leaveByUidDate[r.uid]) leaveByUidDate[r.uid] = {};
+        leaveByUidDate[r.uid][r.date] = r.type;
       });
-      downloadCSV(`勤怠_${month}.csv`, rows);
+
+      if (format === "standard") {
+        // 日別の詳細
+        const rows = [["氏名", "メール", "部署", "日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
+        records.sort((a, b) => (a.date || "").localeCompare(b.date || "") || ((allUsers[a.uid]?.name||"").localeCompare(allUsers[b.uid]?.name||"", "ja")));
+        records.forEach(r => {
+          const u = allUsers[r.uid] || {};
+          const deptName = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "";
+          const [yy, mm, dd] = r.date.split("-").map(Number);
+          const dow = weekdayJp[new Date(yy, mm-1, dd).getDay()];
+          rows.push([
+            u.name || "", u.email || "", deptName, r.date || "", dow,
+            r.clockIn ? formatHM(r.clockIn) : "",
+            r.clockOut ? formatHM(r.clockOut) : "",
+            r.workMinutes || 0, r.overtimeMinutes || 0, r.note || ""
+          ]);
+        });
+        downloadCSV(`勤怠_${month}.csv`, rows);
+      } else {
+        // 月度集計（スタッフ単位）
+        const perUser = {};
+        Object.keys(allUsers).forEach(uid => {
+          perUser[uid] = {
+            user: allUsers[uid],
+            days: 0, workMinutes: 0, overtimeMinutes: 0,
+            yukyu: 0, han: 0, shift: 0, late: 0, early: 0, holidayWork: 0
+          };
+        });
+        records.forEach(r => {
+          if (!perUser[r.uid]) return;
+          if (r.clockIn) perUser[r.uid].days += 1;
+          perUser[r.uid].workMinutes += r.workMinutes || 0;
+          perUser[r.uid].overtimeMinutes += r.overtimeMinutes || 0;
+        });
+        allRequests.forEach(r => {
+          if (displayStatus(r) !== "承認") return;
+          if (!r.date || r.date < startStr || r.date > endStr) return;
+          if (!perUser[r.uid]) return;
+          if (r.type === "有給") perUser[r.uid].yukyu += 1;
+          else if (r.type === "半休") perUser[r.uid].han += 1;
+          else if (r.type === "シフト休") perUser[r.uid].shift += 1;
+          else if (r.type === "遅刻") perUser[r.uid].late += 1;
+          else if (r.type === "早退") perUser[r.uid].early += 1;
+          else if (r.type === "休日出勤") perUser[r.uid].holidayWork += 1;
+        });
+
+        const minutesToHour = (min) => (Math.round((min || 0) / 6) / 10).toFixed(1);
+        let rows;
+        let fname = `勤怠集計_${month}.csv`;
+
+        if (format === "mf") {
+          // マネーフォワード給与: 社員番号, 氏名, 出勤日数, 労働時間, 残業時間, 深夜残業, 休日労働, 有給日数
+          rows = [["社員番号", "氏名", "出勤日数", "労働時間", "残業時間", "深夜残業", "休日労働", "有給日数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              "0.0", p.holidayWork, p.yukyu + p.han * 0.5]);
+          });
+          fname = `MF給与_勤怠_${month}.csv`;
+        } else if (format === "yayoi") {
+          // 弥生給与: 社員コード, 氏名, 出勤日数, 普通残業時間, 休日労働日数, 有給日数, 欠勤日数
+          rows = [["社員コード", "氏名", "出勤日数", "労働時間", "普通残業時間", "休日労働日数", "有給日数", "遅刻早退回数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              p.holidayWork, p.yukyu + p.han * 0.5, p.late + p.early]);
+          });
+          fname = `弥生給与_勤怠_${month}.csv`;
+        } else if (format === "freee") {
+          // freee人事労務: 従業員番号, 氏名, 勤務日数, 労働時間(時), 残業時間(時), 有給休暇(日), 特別休暇(日)
+          rows = [["従業員番号", "氏名", "勤務日数", "労働時間", "残業時間", "有給休暇", "特別休暇", "遅刻早退回数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              p.yukyu + p.han * 0.5, p.shift, p.late + p.early]);
+          });
+          fname = `freee_勤怠_${month}.csv`;
+        } else {
+          // summary: 汎用月度集計
+          rows = [["氏名", "メール", "部署", "出勤日数", "労働時間(分)", "残業時間(分)", "有給(日)", "半休(回)", "シフト休(日)", "遅刻(回)", "早退(回)", "休日出勤(日)"]];
+          Object.values(perUser).forEach(p => {
+            const deptName = p.user.department && allDepartments[p.user.department] ? allDepartments[p.user.department].name : "";
+            rows.push([p.user.name || "", p.user.email || "", deptName,
+              p.days, p.workMinutes, p.overtimeMinutes,
+              p.yukyu, p.han, p.shift, p.late, p.early, p.holidayWork]);
+          });
+        }
+        downloadCSV(fname, rows);
+      }
+      await audit("create", "csv_export", "", `${format}形式で勤怠CSVを出力（${month}）`, null, null);
       toast("CSVを出力しました", "success");
     } catch (e) {
       console.error(e);
@@ -1636,6 +1775,48 @@
           if (data.clockIn) perUser[data.uid].days += 1;
         }
       });
+
+      // 部署別集計
+      const perDept = {};
+      users.forEach(u => {
+        const did = u.department || "_none";
+        if (!perDept[did]) perDept[did] = {
+          id: did,
+          name: did === "_none" ? "未所属" : (allDepartments[did]?.name || did),
+          count: 0, work: 0, over: 0, days: 0,
+          warnCount: 0, dangerCount: 0
+        };
+        const p = perUser[u.uid];
+        perDept[did].count += 1;
+        perDept[did].work += p.work;
+        perDept[did].over += p.over;
+        perDept[did].days += p.days;
+        const lvl = overtimeAlertLevel(p.over);
+        if (lvl === 1) perDept[did].warnCount += 1;
+        if (lvl === 2) perDept[did].dangerCount += 1;
+      });
+      const deptList = Object.values(perDept)
+        .filter(d => d.count > 0)
+        .sort((a, b) => b.over - a.over);  // 残業多い部署順
+      $("deptSummary").innerHTML = deptList.length === 0
+        ? '<div class="empty">データがありません</div>'
+        : deptList.map(d => {
+            const avgWork = d.count > 0 ? Math.round(d.work / d.count) : 0;
+            const avgOver = d.count > 0 ? Math.round(d.over / d.count) : 0;
+            const warn = d.warnCount > 0 ? `<span class="ot-pill warn">⚠ 警告${d.warnCount}名</span>` : "";
+            const danger = d.dangerCount > 0 ? `<span class="ot-pill danger">⚠ 上限超${d.dangerCount}名</span>` : "";
+            return `
+              <div class="staff-row">
+                <div class="info">
+                  <div class="name">${escapeHtml(d.name)} <span class="dept-badge">${d.count}名</span></div>
+                  <div class="email">
+                    総労働 ${minutesToHM(d.work)} / 平均 ${minutesToHM(avgWork)}/人 ／
+                    総残業 <span class="${overtimeAlertLevel(avgOver)===2?'ot-danger':overtimeAlertLevel(avgOver)===1?'ot-warn':''}">${minutesToHM(d.over)}</span>
+                    （平均 ${minutesToHM(avgOver)}/人）${warn}${danger}
+                  </div>
+                </div>
+              </div>`;
+          }).join("");
 
       const rows = users.map(u => {
         const p = perUser[u.uid];
@@ -1802,6 +1983,23 @@
   $("reqReloadBtn").addEventListener("click", loadAdminRequests);
   $("reqFilterStatus").addEventListener("change", renderAdminRequests);
   $("reqFilterUser").addEventListener("change", renderAdminRequests);
+  $("reqFilterType").addEventListener("change", renderAdminRequests);
+  $("reqFilterDept").addEventListener("change", (e) => {
+    e.target.dataset.cur = e.target.value;
+    renderAdminRequests();
+  });
+  $("reqFilterFrom").addEventListener("change", renderAdminRequests);
+  $("reqFilterTo").addEventListener("change", renderAdminRequests);
+  $("reqFilterClearBtn").addEventListener("click", () => {
+    $("reqFilterStatus").value = "all";
+    $("reqFilterUser").value = "all";
+    $("reqFilterType").value = "all";
+    $("reqFilterDept").value = "all";
+    $("reqFilterDept").dataset.cur = "all";
+    $("reqFilterFrom").value = "";
+    $("reqFilterTo").value = "";
+    renderAdminRequests();
+  });
   $("csvExportRequestsBtn").addEventListener("click", exportRequestsCSV);
 
   // 申請の表示用ステータス（二段階承認の途中段階を表現）
@@ -1854,17 +2052,74 @@
         return (b.date || "").localeCompare(a.date || "");
       });
       renderAdminRequests();
+      updatePendingBadge();
     } catch (e) { console.error(e); toast("申請取得失敗: " + e.message, "error"); }
   }
 
+  // 管理者が処理すべき申請件数バッジ更新
+  function updatePendingBadge() {
+    const badge = $("reqPendingBadge");
+    if (!badge) return;
+    let count = 0;
+    allRequests.forEach(r => {
+      const ds = displayStatus(r);
+      if (ds === "承認" || ds === "却下") return;
+      if (TWO_STAGE_TYPES.includes(r.type)) {
+        // 管理者は最終承認段階を処理
+        if (!r.adminApproval || r.adminApproval.status === "申請中") count++;
+      } else {
+        count++;
+      }
+    });
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
   function renderAdminRequests() {
+    // 種別フィルタのオプションを最新化
+    const typeSel = $("reqFilterType");
+    if (typeSel.options.length <= 1) {
+      typeSel.innerHTML = '<option value="all">全種別</option>' +
+        REQ_TYPES.map(t => `<option value="${t}">${t}</option>`).join("");
+    }
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("reqFilterDept");
+    deptSel.innerHTML = '<option value="all">全部署</option>' +
+      '<option value="_none">未所属</option>' +
+      Object.values(allDepartments)
+        .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+        .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+    // 直前の選択を維持
+    if (deptSel.dataset.cur) deptSel.value = deptSel.dataset.cur;
+    deptSel.dataset.cur = deptSel.value;
+
     const statusFilter = $("reqFilterStatus").value;
     const userFilter = $("reqFilterUser").value;
+    const typeFilter = $("reqFilterType").value;
+    const deptFilter = $("reqFilterDept").value;
+    const fromFilter = $("reqFilterFrom").value;
+    const toFilter = $("reqFilterTo").value;
     const list = allRequests.filter(r => {
       if (statusFilter !== "all" && displayStatus(r) !== statusFilter) return false;
       if (userFilter !== "all" && r.uid !== userFilter) return false;
+      if (typeFilter !== "all" && r.type !== typeFilter) return false;
+      if (deptFilter !== "all") {
+        const u = allUsers[r.uid] || {};
+        const userDept = u.department || "";
+        if (deptFilter === "_none") { if (userDept) return false; }
+        else if (userDept !== deptFilter) return false;
+      }
+      if (fromFilter && r.date && r.date < fromFilter) return false;
+      if (toFilter && r.date && r.date > toFilter) return false;
       return true;
     });
+
+    // サマリ
+    $("reqFilterSummary").textContent = `表示 ${list.length}件 / 全 ${allRequests.length}件`;
 
     const container = $("adminRequests");
     if (list.length === 0) { container.innerHTML = '<div class="empty">申請はありません</div>'; return; }
@@ -1974,7 +2229,11 @@
       const cancelBtn = item.querySelector(".ef-cancel");
 
       if (approve) approve.addEventListener("click", () => reviewRequest(id, "承認"));
-      if (reject) reject.addEventListener("click", () => reviewRequest(id, "却下"));
+      if (reject) reject.addEventListener("click", () => {
+        const comment = prompt("却下理由をスタッフに伝えてください（任意）:", "");
+        if (comment === null) return; // キャンセル
+        reviewRequest(id, "却下", false, comment);
+      });
       if (revert) revert.addEventListener("click", () => {
         if (!confirm("この申請を「申請中」に戻します。よろしいですか？")) return;
         reviewRequest(id, "申請中", true);
@@ -2053,7 +2312,7 @@
     } catch (e) { console.warn("有給残数更新失敗:", e); }
   }
 
-  async function reviewRequest(id, status, isRevert = false) {
+  async function reviewRequest(id, status, isRevert = false, comment = "") {
     try {
       const r = allRequests.find(x => x.id === id);
       const update = {};
@@ -2066,6 +2325,7 @@
           update.adminApproval = { status: "申請中", by: null, at: null };
           update.status = "申請中";
           update.approvedBy = null;
+          update.rejectionComment = null;
         } else if (status === "承認") {
           // 部署上長未承認の場合も管理者が最終承認可能（本人が部署上長と兼任など）
           if (!r.deptApproval || r.deptApproval.status !== "承認") {
@@ -2079,11 +2339,14 @@
           update.adminApproval = { status: "却下", by: currentUser.uid, at: ts };
           update.status = "却下";
           update.approvedBy = currentUser.uid;
+          if (comment) update.rejectionComment = comment;
         }
       } else {
         update.status = status;
         update.approvedBy = status === "申請中" ? null : currentUser.uid;
         willBeApproved = (status === "承認");
+        if (status === "却下" && comment) update.rejectionComment = comment;
+        if (status === "申請中") update.rejectionComment = null;
       }
       await db.collection("requests").doc(id).update(update);
       // 有給/半休の残数調整
