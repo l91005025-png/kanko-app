@@ -570,6 +570,25 @@
             </select>
             <button id="grantAllBtn" class="btn small" type="button">全員に適用</button>
           </div>
+
+          <!-- 絞り込みコントロール -->
+          <div style="display:flex; gap:8px; margin: 14px 0 6px; flex-wrap: wrap; align-items: center; padding: 10px; background:#F8FAFC; border-radius:8px;">
+            <input type="search" id="leaveSearch" placeholder="🔍 氏名で検索" style="flex:2; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <select id="leaveFilterDept" style="flex:1; min-width:120px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全部署</option>
+            </select>
+            <select id="leaveSort" style="flex:1; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="name">並び: 氏名順</option>
+              <option value="bal_asc">並び: 残数少ない順</option>
+              <option value="taken_asc">並び: 取得日数少ない順</option>
+              <option value="dept">並び: 部署順</option>
+            </select>
+            <label style="display:flex; align-items:center; gap:4px; font-size:13px; white-space:nowrap;">
+              <input type="checkbox" id="leaveRiskOnly" />
+              5日未達のみ
+            </label>
+          </div>
+          <div id="leaveBalanceSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
           <div id="leaveBalanceList"></div>
         </div>
 
@@ -2181,24 +2200,81 @@
   });
 
   // ============================================================
-  // 有給残数 一覧管理
+  // 有給残数 一覧管理（検索・フィルタ・並び替え対応）
   // ============================================================
   function renderLeaveBalanceList() {
-    const list = Object.keys(allUsers).map(uid => ({ uid, ...allUsers[uid] }));
-    list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
-    const c = $("leaveBalanceList");
-    if (list.length === 0) { c.innerHTML = '<div class="empty">スタッフがいません</div>'; return; }
-    c.innerHTML = list.map(u => {
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("leaveFilterDept");
+    if (deptSel) {
+      const cur = deptSel.value || "all";
+      deptSel.innerHTML = '<option value="all">全部署</option>' +
+        '<option value="_none">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      deptSel.value = cur;
+    }
+
+    const minDays = settings.paidLeaveMinDays || 5;
+    const search = ($("leaveSearch") && $("leaveSearch").value || "").toLowerCase();
+    const deptFilter = $("leaveFilterDept") ? $("leaveFilterDept").value : "all";
+    const sortKey = $("leaveSort") ? $("leaveSort").value : "name";
+    const riskOnly = $("leaveRiskOnly") ? $("leaveRiskOnly").checked : false;
+
+    let list = Object.keys(allUsers).map(uid => {
+      const u = allUsers[uid];
       const bal = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
+      const taken = countPaidLeaveTakenThisFY(uid);
       const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      return { uid, ...u, _bal: bal, _taken: taken, _deptName: dept };
+    });
+
+    // 検索フィルタ
+    if (search) list = list.filter(u => (u.name || "").toLowerCase().includes(search));
+    // 部署フィルタ
+    if (deptFilter !== "all") {
+      list = list.filter(u => deptFilter === "_none" ? !u.department : u.department === deptFilter);
+    }
+    // リスクのみ
+    if (riskOnly) list = list.filter(u => u._taken < minDays);
+
+    // 並び替え
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case "bal_asc": return a._bal - b._bal || (a.name || "").localeCompare(b.name || "", "ja");
+        case "taken_asc": return a._taken - b._taken || (a.name || "").localeCompare(b.name || "", "ja");
+        case "dept": return (a._deptName || "").localeCompare(b._deptName || "", "ja") || (a.name || "").localeCompare(b.name || "", "ja");
+        default: return (a.name || "").localeCompare(b.name || "", "ja");
+      }
+    });
+
+    // サマリ
+    const total = Object.keys(allUsers).length;
+    const riskCount = Object.keys(allUsers).filter(uid => countPaidLeaveTakenThisFY(uid) < minDays).length;
+    $("leaveBalanceSummary").innerHTML =
+      `表示 <strong>${list.length}</strong> / 全 ${total}名 / ` +
+      `<span style="color:${riskCount>0?'#B45309':'#047857'}; font-weight:600;">${minDays}日未達 ${riskCount}名</span>`;
+
+    const c = $("leaveBalanceList");
+    if (list.length === 0) {
+      c.innerHTML = '<div class="empty">該当するスタッフがいません</div>';
+      return;
+    }
+    c.innerHTML = list.map(u => {
+      const bal = u._bal;
+      const plClass = u._taken >= minDays ? "ok" : "warn";
       return `
         <div class="staff-row" data-uid="${u.uid}">
           <div class="info">
-            <div class="name">${escapeHtml(u.name || "")} <span class="dept-badge">${escapeHtml(dept)}</span></div>
+            <div class="name">
+              ${escapeHtml(u.name || "")}
+              <span class="dept-badge">${escapeHtml(u._deptName)}</span>
+              <span class="pl-pill ${plClass}">取得 ${u._taken}/${minDays}日</span>
+            </div>
             <div class="email">残数: <strong>${bal}日</strong></div>
           </div>
           <div class="controls">
-            <input type="number" step="0.5" class="bal-input" value="${bal}" style="width:80px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <input type="number" step="0.5" class="bal-input" value="${bal}" style="width:70px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
             <button class="btn small bal-save" type="button">更新</button>
           </div>
         </div>
@@ -2251,6 +2327,14 @@
   document.querySelector('[data-tab="tab-settings"]').addEventListener("click", () => {
     renderLeaveBalanceList();
     loadAuditLogs();
+  });
+
+  // 有給残数の検索・フィルタ・並び替え（入力でリアルタイム反映）
+  ["leaveSearch", "leaveFilterDept", "leaveSort", "leaveRiskOnly"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = (id === "leaveSearch") ? "input" : "change";
+    el.addEventListener(evt, renderLeaveBalanceList);
   });
 
   // ============================================================
