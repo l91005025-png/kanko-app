@@ -567,55 +567,6 @@
       <!-- 設定 -->
       <div id="tab-settings" class="tab-content">
         <div class="card">
-          <h2>会社共通のデフォルト設定</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">未所属スタッフ・未設定の部署はこの値を使用します。</p>
-          <div class="form-group"><label>所定労働時間（分）</label><input type="number" id="settingWorkMin" min="0" step="1" /></div>
-          <div class="form-group">
-            <label>会社全体の祝日リスト（1行1日付：YYYY-MM-DD）</label>
-            <textarea id="settingHolidays" placeholder="2025-01-01&#10;2025-01-13"></textarea>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <div class="form-group"><label>会計年度開始月（1-12）</label><input type="number" id="settingFiscalStart" min="1" max="12" /></div>
-            <div class="form-group"><label>有給最低取得義務（日）</label><input type="number" id="settingPaidLeaveMin" min="0" step="0.5" /></div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <div class="form-group"><label>残業 注意ライン（h/月）</label><input type="number" id="settingOTWarn" min="0" /></div>
-            <div class="form-group"><label>残業 上限ライン（h/月）</label><input type="number" id="settingOTMax" min="0" /></div>
-          </div>
-          <button id="settingSaveBtn" class="btn" type="button">設定を保存</button>
-        </div>
-
-        <div class="card">
-          <h2>月締めロック</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
-            締めた月の勤怠・申請を編集しようとすると警告が出ます（強制編集は監査ログに記録）。
-          </p>
-          <div class="form-group">
-            <label>締済の月（1行1月：YYYY-MM）</label>
-            <textarea id="settingClosedMonths" placeholder="2026-03&#10;2026-04"></textarea>
-          </div>
-          <button id="settingClosedSaveBtn" class="btn small secondary" type="button">月締めを保存</button>
-        </div>
-
-        <div class="card">
-          <h2>監査ログ</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
-            勤怠・申請・有給残数等の変更履歴（最新50件）。労務監査や紛争対応用。
-          </p>
-          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-            <select id="auditFilterCollection" style="padding:6px; border:1px solid #CBD5E1; border-radius:6px;">
-              <option value="all">全コレクション</option>
-              <option value="attendance">勤怠</option>
-              <option value="requests">申請</option>
-              <option value="users">スタッフ/有給</option>
-            </select>
-            <button id="auditReloadBtn" class="btn small secondary" type="button">更新</button>
-            <button id="auditCsvBtn" class="btn small secondary" type="button">CSV出力</button>
-          </div>
-          <div id="auditList"></div>
-        </div>
-
-        <div class="card">
           <h2>有給休暇 残数管理</h2>
           <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
             各スタッフの有給残数を編集できます。<br>
@@ -650,6 +601,55 @@
           </div>
           <div id="leaveBalanceSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
           <div id="leaveBalanceList"></div>
+        </div>
+
+        <div class="card">
+          <h2>月締めロック</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            締めた月の勤怠・申請を編集しようとすると警告が出ます（強制編集は監査ログに記録）。
+          </p>
+          <div class="form-group">
+            <label>締済の月（1行1月：YYYY-MM）</label>
+            <textarea id="settingClosedMonths" placeholder="2026-03&#10;2026-04"></textarea>
+          </div>
+          <button id="settingClosedSaveBtn" class="btn small secondary" type="button">月締めを保存</button>
+        </div>
+
+        <div class="card">
+          <h2>監査ログ</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            勤怠・申請・有給残数等の変更履歴（最新50件）。労務監査や紛争対応用。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <select id="auditFilterCollection" style="padding:6px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全コレクション</option>
+              <option value="attendance">勤怠</option>
+              <option value="requests">申請</option>
+              <option value="users">スタッフ/有給</option>
+            </select>
+            <button id="auditReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="auditCsvBtn" class="btn small secondary" type="button">CSV出力</button>
+          </div>
+          <div id="auditList"></div>
+        </div>
+
+        <div class="card">
+          <h2>会社共通のデフォルト設定</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">未所属スタッフ・未設定の部署はこの値を使用します。</p>
+          <div class="form-group"><label>所定労働時間（分）</label><input type="number" id="settingWorkMin" min="0" step="1" /></div>
+          <div class="form-group">
+            <label>会社全体の祝日リスト（1行1日付：YYYY-MM-DD）</label>
+            <textarea id="settingHolidays" placeholder="2025-01-01&#10;2025-01-13"></textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>会計年度開始月（1-12）</label><input type="number" id="settingFiscalStart" min="1" max="12" /></div>
+            <div class="form-group"><label>有給最低取得義務（日）</label><input type="number" id="settingPaidLeaveMin" min="0" step="0.5" /></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>残業 注意ライン（h/月）</label><input type="number" id="settingOTWarn" min="0" /></div>
+            <div class="form-group"><label>残業 上限ライン（h/月）</label><input type="number" id="settingOTMax" min="0" /></div>
+          </div>
+          <button id="settingSaveBtn" class="btn" type="button">設定を保存</button>
         </div>
 
         <div class="card">
