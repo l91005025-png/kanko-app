@@ -219,8 +219,8 @@
       .table-wrap { margin: 0 -14px; padding: 0 14px; }
       table.attendance { font-size: 12px; }
       table.attendance th, table.attendance td { padding: 6px 4px; }
-      .tabbar.tabs-6 button { font-size: 10px; padding: 6px 1px 10px; }
-      .tabbar.tabs-6 button .ico { font-size: 16px; }
+      .tabbar.tabs-5 button { font-size: 10px; padding: 6px 1px 10px; }
+      .tabbar.tabs-5 button .ico { font-size: 16px; }
       .dept-badge, .role-badge, .pl-pill, .ot-pill { font-size: 10px; }
       .login-card { padding: 20px; }
       h2 { font-size: 14px; }
@@ -238,10 +238,10 @@
     .stage-row .stage.ng { background: #FEE2E2; color: #B91C1C; }
     .stage-row .stage.pending { background: #FEF3C7; color: #B45309; }
 
-    /* タブバー: 6タブ用に調整 */
-    .tabbar.tabs-6 { grid-template-columns: repeat(6, 1fr); }
-    .tabbar.tabs-6 button { font-size: 11px; padding: 8px 2px 12px; }
-    .tabbar.tabs-6 button .ico { font-size: 18px; }
+    /* タブバー: 5タブ用に調整 */
+    .tabbar.tabs-5 { grid-template-columns: repeat(5, 1fr); }
+    .tabbar.tabs-5 button { font-size: 11px; padding: 8px 2px 12px; }
+    .tabbar.tabs-5 button .ico { font-size: 18px; }
 
     /* カレンダー */
     .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 12px; }
@@ -419,63 +419,6 @@
         </div>
       </div>
 
-      <!-- 部署管理 -->
-      <div id="tab-departments" class="tab-content">
-        <div class="card">
-          <h2>部署一覧</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
-            各部署の勤務時間・定休日を設定できます。所属スタッフはここで設定された値を優先して使用します。
-          </p>
-          <div id="deptList"></div>
-        </div>
-        <div class="card">
-          <h2>部署追加 / 編集</h2>
-          <div class="form-group"><label>部署名</label><input type="text" id="deptName" placeholder="例: 営業部" /></div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <div class="form-group"><label>始業</label><input type="time" id="deptWorkStart" value="09:00" /></div>
-            <div class="form-group"><label>終業</label><input type="time" id="deptWorkEnd" value="18:00" /></div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <div class="form-group"><label>休憩(分)</label><input type="number" id="deptBreak" value="60" min="0" /></div>
-            <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptWorkMin" value="480" min="0" /></div>
-          </div>
-          <div class="form-group">
-            <label>定休パターン（毎月自動適用）</label>
-            <p style="font-size:12px; color:#64748B; margin:0 0 8px;">例: 「毎週 日曜」「第1 月曜」「第3 土曜」など。複数追加可能。</p>
-            <div id="deptPatternList"></div>
-            <button id="addPatternBtn" class="btn small secondary" type="button" style="margin-top:6px;">＋ パターンを追加</button>
-          </div>
-          <div class="form-group">
-            <label>固定休日（毎年同じ日：YYYY-MM-DD、1行1日付）</label>
-            <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
-          </div>
-          <input type="hidden" id="deptEditId" value="" />
-          <div style="display:flex; gap:8px;">
-            <button id="deptSaveBtn" class="btn" type="button">保存</button>
-            <button id="deptResetBtn" class="btn secondary" type="button">クリア</button>
-          </div>
-        </div>
-
-        <!-- 月別公休の調整（編集中の部署に対して） -->
-        <div class="card" id="monthOvrCard" style="display:none;">
-          <h2>月別の公休調整</h2>
-          <p style="font-size:13px; color:#64748B; margin:0 0 8px;">
-            編集中の部署「<strong id="monthOvrDeptName"></strong>」の月別の例外を設定します。<br>
-            セルをクリック: 平日↔休日 を切替（クリックで自動保存）。再度クリックで例外解除。
-          </p>
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-            <input type="month" id="monthOvrPicker" />
-            <button id="monthOvrLoadBtn" class="btn small secondary" type="button">表示</button>
-          </div>
-          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:6px;">
-            <span style="background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:4px;">既定で休</span>
-            <span style="background:#FCA5A5; color:#fff; padding:2px 8px; border-radius:4px;">追加で休にした</span>
-            <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; text-decoration:line-through;">休→平日に取消</span>
-          </div>
-          <div id="monthOvrCalendar" class="month-cal"></div>
-        </div>
-      </div>
-
       <!-- 勤怠管理 -->
       <div id="tab-attendance" class="tab-content">
         <div class="card">
@@ -616,6 +559,60 @@
         </div>
 
         <div class="card">
+          <h2>部署一覧</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各部署の勤務時間・定休日を設定できます。所属スタッフはここで設定された値を優先して使用します。
+          </p>
+          <div id="deptList"></div>
+        </div>
+        <div class="card">
+          <h2>部署追加 / 編集</h2>
+          <div class="form-group"><label>部署名</label><input type="text" id="deptName" placeholder="例: 営業部" /></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>始業</label><input type="time" id="deptWorkStart" value="09:00" /></div>
+            <div class="form-group"><label>終業</label><input type="time" id="deptWorkEnd" value="18:00" /></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>休憩(分)</label><input type="number" id="deptBreak" value="60" min="0" /></div>
+            <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptWorkMin" value="480" min="0" /></div>
+          </div>
+          <div class="form-group">
+            <label>定休パターン（毎月自動適用）</label>
+            <p style="font-size:12px; color:#64748B; margin:0 0 8px;">例: 「毎週 日曜」「第1 月曜」「第3 土曜」など。複数追加可能。</p>
+            <div id="deptPatternList"></div>
+            <button id="addPatternBtn" class="btn small secondary" type="button" style="margin-top:6px;">＋ パターンを追加</button>
+          </div>
+          <div class="form-group">
+            <label>固定休日（毎年同じ日：YYYY-MM-DD、1行1日付）</label>
+            <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
+          </div>
+          <input type="hidden" id="deptEditId" value="" />
+          <div style="display:flex; gap:8px;">
+            <button id="deptSaveBtn" class="btn" type="button">保存</button>
+            <button id="deptResetBtn" class="btn secondary" type="button">クリア</button>
+          </div>
+        </div>
+
+        <!-- 月別公休の調整（編集中の部署に対して） -->
+        <div class="card" id="monthOvrCard" style="display:none;">
+          <h2>月別の公休調整</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 8px;">
+            編集中の部署「<strong id="monthOvrDeptName"></strong>」の月別の例外を設定します。<br>
+            セルをクリック: 平日↔休日 を切替（クリックで自動保存）。再度クリックで例外解除。
+          </p>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <input type="month" id="monthOvrPicker" />
+            <button id="monthOvrLoadBtn" class="btn small secondary" type="button">表示</button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:6px;">
+            <span style="background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:4px;">既定で休</span>
+            <span style="background:#FCA5A5; color:#fff; padding:2px 8px; border-radius:4px;">追加で休にした</span>
+            <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; text-decoration:line-through;">休→平日に取消</span>
+          </div>
+          <div id="monthOvrCalendar" class="month-cal"></div>
+        </div>
+
+        <div class="card">
           <h2>監査ログ</h2>
           <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
             勤怠・申請・有給残数等の変更履歴（最新50件）。労務監査や紛争対応用。
@@ -679,9 +676,8 @@
 
     </div>
 
-    <nav class="tabbar tabs-6">
+    <nav class="tabbar tabs-5">
       <button data-tab="tab-staff" class="active" type="button"><span class="ico">👥</span>スタッフ</button>
-      <button data-tab="tab-departments" type="button"><span class="ico">🏢</span>部署</button>
       <button data-tab="tab-attendance" type="button"><span class="ico">▤</span>勤怠</button>
       <button data-tab="tab-requests" type="button"><span class="ico">✎<span class="pending-badge" id="reqPendingBadge" style="display:none;">0</span></span>申請</button>
       <button data-tab="tab-calendar" type="button"><span class="ico">📅</span>カレンダー</button>
