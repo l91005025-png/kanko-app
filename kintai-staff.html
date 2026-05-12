@@ -54,6 +54,10 @@
     .form-group input, .form-group select, .form-group textarea {
       width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #fff; transition: border-color 0.15s;
     }
+    .form-group input[type="radio"], .form-group input[type="checkbox"] {
+      width: auto; padding: 0; margin: 0; border: 0; transition: none;
+      accent-color: #2563EB; flex-shrink: 0;
+    }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
       outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
     }
