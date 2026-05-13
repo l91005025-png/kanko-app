@@ -393,9 +393,8 @@
               <input type="date" id="reqDateEnd" style="flex:1; min-width:120px;" />
             </div>
             <div id="reqRangePreview" style="font-size:12px; color:#64748B; margin-top:6px;"></div>
-            <div id="reqCurrentRecord" style="display:none; font-size:12px; margin-top:8px; padding:8px 10px; background:#F1F5F9; border-radius:6px; color:#334155;"></div>
           </div>
-          <div class="form-group"><label>理由</label><textarea id="reqReason" placeholder="理由を入力（例: 9:15→9:00 に修正お願いします）"></textarea></div>
+          <div class="form-group"><label>理由</label><textarea id="reqReason" placeholder="理由を入力"></textarea></div>
           <button id="reqSubmitBtn" class="btn" type="button">申請する</button>
         </div>
 
@@ -1270,40 +1269,7 @@
   }
 
   // 申請種別が変わったらプレビューも更新（公休除外/有給消費の表示）
-  $("reqType").addEventListener("change", () => { updateRangePreview(); refreshCurrentRecord(); });
-  $("reqDate").addEventListener("change", refreshCurrentRecord);
-  document.querySelectorAll('input[name="reqDateMode"]').forEach(r =>
-    r.addEventListener("change", refreshCurrentRecord)
-  );
-
-  // 打刻修正申請時、選択日の現在の打刻時刻を表示
-  async function refreshCurrentRecord() {
-    const box = $("reqCurrentRecord");
-    const type = $("reqType").value;
-    const mode = document.querySelector('input[name="reqDateMode"]:checked').value;
-    const date = $("reqDate").value;
-    if (type !== "打刻修正" || mode !== "single" || !date) {
-      box.style.display = "none";
-      return;
-    }
-    try {
-      const snap = await db.collection("attendance")
-        .where("uid", "==", currentUser.uid)
-        .where("date", "==", date).limit(1).get();
-      if (snap.empty) {
-        box.innerHTML = `📋 ${date} の現在の記録: <strong>記録なし</strong>`;
-      } else {
-        const rec = snap.docs[0].data();
-        const inStr = rec.clockIn ? formatHM(rec.clockIn) : "未打刻";
-        const outStr = rec.clockOut ? formatHM(rec.clockOut) : "未打刻";
-        box.innerHTML = `📋 ${date} の現在の記録: 出勤 <strong>${inStr}</strong> / 退勤 <strong>${outStr}</strong>`;
-      }
-      box.style.display = "block";
-    } catch (e) {
-      console.warn("現在の記録取得失敗:", e);
-      box.style.display = "none";
-    }
-  }
+  $("reqType").addEventListener("change", updateRangePreview);
 
   $("reqSubmitBtn").addEventListener("click", async () => {
     const btn = $("reqSubmitBtn");
