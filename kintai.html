@@ -343,6 +343,18 @@
     .dept-row .info .name { font-weight: 700; font-size: 15px; }
     .dept-row .info .meta { font-size: 12px; color: #64748B; margin-top: 2px; }
     .dept-row .controls { display: flex; gap: 6px; }
+
+    /* モーダル */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-card { background: #fff; border-radius: 12px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #E2E8F0; }
+    .modal-head h3 { margin: 0; font-size: 16px; }
+    .modal-x { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748B; padding: 0 6px; line-height: 1; }
+    .modal-body { padding: 16px; }
+    .modal-body input[type="time"] { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #CBD5E1; border-radius: 8px; }
+    .modal-body input[type="text"] { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #CBD5E1; border-radius: 8px; }
+    .modal-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; justify-content: flex-end; }
+    .modal-actions .btn.danger { margin-right: auto; }
   </style>
 </head>
 <body>
@@ -688,6 +700,39 @@
   </div>
 
   <div id="toast"></div>
+
+  <!-- 勤怠編集モーダル -->
+  <div id="attEditModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="attEditTitle">勤怠を編集</h3>
+        <button id="attEditClose" class="modal-x" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="attEditMeta" style="font-size:13px; color:#64748B; margin-bottom:12px;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>出勤時刻</label>
+            <input type="time" id="attEditIn" />
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>退勤時刻</label>
+            <input type="time" id="attEditOut" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>備考</label>
+          <input type="text" id="attEditNote" placeholder="任意" />
+        </div>
+        <div id="attEditCalc" style="font-size:12px; color:#475569; padding:8px 10px; background:#F8FAFC; border-radius:6px;"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="attEditClear" class="btn small danger" type="button">記録を削除</button>
+        <button id="attEditCancel" class="btn small secondary" type="button">キャンセル</button>
+        <button id="attEditSave" class="btn small" type="button">保存</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -1911,68 +1956,129 @@
     }
   }
 
-  // 勤怠レコードの編集（プロンプトベース・シンプル）
+  // 勤怠レコードの編集（モーダル）
+  function updateAttEditCalc(uid) {
+    const inStr = $("attEditIn").value;
+    const outStr = $("attEditOut").value;
+    const box = $("attEditCalc");
+    if (!inStr || !outStr) {
+      box.textContent = "出勤と退勤を入力すると労働時間を自動計算します";
+      return;
+    }
+    const [ih, im] = inStr.split(":").map(Number);
+    const [oh, om] = outStr.split(":").map(Number);
+    let mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins < 0) mins += 24 * 60;
+    const cfg = getDeptConfig((allUsers[uid] || {}).department);
+    const work = Math.max(0, mins - (cfg.breakMinutes || 0));
+    const over = Math.max(0, work - (cfg.workMinutesPerDay || 480));
+    box.innerHTML = `労働 <strong>${minutesToHM(work)}</strong> / 残業 <strong>${minutesToHM(over)}</strong>（休憩 ${cfg.breakMinutes}分 控除後）`;
+  }
+
   async function editAttendance(uid, dateStr, recId) {
     if (isMonthClosed(dateStr)) {
       if (!confirm(`${dateStr.slice(0,7)} は月締めロック済みです。\nそれでも編集しますか？（強制編集は監査ログに記録されます）`)) return;
     }
-    const inStr = prompt(`${dateStr} の出勤時刻（HH:MM、空欄で削除）`, "");
-    if (inStr === null) return;
-    const outStr = prompt(`${dateStr} の退勤時刻（HH:MM、空欄で削除）`, "");
-    if (outStr === null) return;
-    const note = prompt("備考（任意）", "") || "";
-    try {
-      const makeDate = (hhmm) => {
-        if (!hhmm) return null;
-        const parts = hhmm.split(":");
-        if (parts.length < 2) return null;
-        const [h, m] = parts.map(Number);
-        if (isNaN(h) || isNaN(m)) return null;
-        const [y, mo, dd] = dateStr.split("-").map(Number);
-        return new Date(y, mo-1, dd, h, m, 0, 0);
-      };
-      const clockIn = makeDate(inStr);
-      const clockOut = makeDate(outStr);
-      let workMinutes = 0, overtimeMinutes = 0;
-      if (clockIn && clockOut) {
-        const cfg = getDeptConfig((allUsers[uid] || {}).department);
-        workMinutes = Math.max(0, Math.round((clockOut.getTime() - clockIn.getTime()) / 60000));
-        // 休憩控除
-        workMinutes = Math.max(0, workMinutes - (cfg.breakMinutes || 0));
-        overtimeMinutes = Math.max(0, workMinutes - (cfg.workMinutesPerDay || 480));
-      }
-      const payload = { uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note };
-      // 監査ログ用に編集前データを取得
-      let beforeRec = null;
-      if (recId) {
-        try {
-          const s = await db.collection("attendance").doc(recId).get();
-          if (s.exists) {
-            const d = s.data();
-            beforeRec = {
-              clockIn: d.clockIn ? formatHM(d.clockIn) : "",
-              clockOut: d.clockOut ? formatHM(d.clockOut) : "",
-              workMinutes: d.workMinutes || 0,
-              overtimeMinutes: d.overtimeMinutes || 0,
-              note: d.note || ""
-            };
-          }
-        } catch (_) {}
-      }
-      if (recId) await db.collection("attendance").doc(recId).update(payload);
-      else await db.collection("attendance").add(payload);
-      const userName = (allUsers[uid] && allUsers[uid].name) || uid;
-      await audit(recId ? "update" : "create", "attendance", recId || dateStr,
-        `${userName}の${dateStr}の勤怠を${recId ? "編集" : "追加"}`,
-        beforeRec,
-        { clockIn: inStr, clockOut: outStr, workMinutes, overtimeMinutes, note });
-      toast("勤怠を更新しました", "success");
-      await showStaffDetail(uid);
-      await loadAdminAttendance();
-    } catch (e) {
-      console.error(e);
-      toast("更新失敗: " + e.message, "error");
+    const userName = (allUsers[uid] && allUsers[uid].name) || uid;
+
+    // 既存レコード取得
+    let existing = null;
+    if (recId) {
+      try {
+        const s = await db.collection("attendance").doc(recId).get();
+        if (s.exists) existing = s.data();
+      } catch (_) {}
     }
+
+    $("attEditTitle").textContent = `勤怠を編集`;
+    $("attEditMeta").innerHTML = `<strong>${escapeHtml(userName)}</strong> / ${dateStr}`;
+    $("attEditIn").value = existing && existing.clockIn ? formatHM(existing.clockIn) : "";
+    $("attEditOut").value = existing && existing.clockOut ? formatHM(existing.clockOut) : "";
+    $("attEditNote").value = existing && existing.note ? existing.note : "";
+    $("attEditClear").style.display = recId ? "" : "none";
+    updateAttEditCalc(uid);
+    $("attEditModal").style.display = "flex";
+
+    const close = () => {
+      $("attEditModal").style.display = "none";
+      $("attEditSave").onclick = null;
+      $("attEditCancel").onclick = null;
+      $("attEditClose").onclick = null;
+      $("attEditClear").onclick = null;
+      $("attEditIn").oninput = null;
+      $("attEditOut").oninput = null;
+    };
+
+    $("attEditIn").oninput = () => updateAttEditCalc(uid);
+    $("attEditOut").oninput = () => updateAttEditCalc(uid);
+    $("attEditCancel").onclick = close;
+    $("attEditClose").onclick = close;
+
+    $("attEditClear").onclick = async () => {
+      if (!recId) return;
+      if (!confirm(`${dateStr} の勤怠記録を削除します。よろしいですか？`)) return;
+      try {
+        const beforeRec = existing ? {
+          clockIn: existing.clockIn ? formatHM(existing.clockIn) : "",
+          clockOut: existing.clockOut ? formatHM(existing.clockOut) : "",
+          workMinutes: existing.workMinutes || 0,
+          overtimeMinutes: existing.overtimeMinutes || 0,
+          note: existing.note || ""
+        } : null;
+        await db.collection("attendance").doc(recId).delete();
+        await audit("delete", "attendance", recId,
+          `${userName}の${dateStr}の勤怠を削除`, beforeRec, null);
+        toast("勤怠記録を削除しました", "success");
+        close();
+        await showStaffDetail(uid);
+        await loadAdminAttendance();
+      } catch (e) { toast("削除失敗: " + e.message, "error"); }
+    };
+
+    $("attEditSave").onclick = async () => {
+      const inStr = $("attEditIn").value;
+      const outStr = $("attEditOut").value;
+      const note = $("attEditNote").value || "";
+      try {
+        const makeDate = (hhmm) => {
+          if (!hhmm) return null;
+          const [h, m] = hhmm.split(":").map(Number);
+          if (isNaN(h) || isNaN(m)) return null;
+          const [y, mo, dd] = dateStr.split("-").map(Number);
+          return new Date(y, mo-1, dd, h, m, 0, 0);
+        };
+        const clockIn = makeDate(inStr);
+        const clockOut = makeDate(outStr);
+        let workMinutes = 0, overtimeMinutes = 0;
+        if (clockIn && clockOut) {
+          const cfg = getDeptConfig((allUsers[uid] || {}).department);
+          workMinutes = Math.max(0, Math.round((clockOut.getTime() - clockIn.getTime()) / 60000));
+          workMinutes = Math.max(0, workMinutes - (cfg.breakMinutes || 0));
+          overtimeMinutes = Math.max(0, workMinutes - (cfg.workMinutesPerDay || 480));
+        }
+        const payload = { uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note };
+        const beforeRec = existing ? {
+          clockIn: existing.clockIn ? formatHM(existing.clockIn) : "",
+          clockOut: existing.clockOut ? formatHM(existing.clockOut) : "",
+          workMinutes: existing.workMinutes || 0,
+          overtimeMinutes: existing.overtimeMinutes || 0,
+          note: existing.note || ""
+        } : null;
+        if (recId) await db.collection("attendance").doc(recId).update(payload);
+        else await db.collection("attendance").add(payload);
+        await audit(recId ? "update" : "create", "attendance", recId || dateStr,
+          `${userName}の${dateStr}の勤怠を${recId ? "編集" : "追加"}`,
+          beforeRec,
+          { clockIn: inStr, clockOut: outStr, workMinutes, overtimeMinutes, note });
+        toast("勤怠を更新しました", "success");
+        close();
+        await showStaffDetail(uid);
+        await loadAdminAttendance();
+      } catch (e) {
+        console.error(e);
+        toast("更新失敗: " + e.message, "error");
+      }
+    };
   }
 
   // ============================================================
