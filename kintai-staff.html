@@ -250,11 +250,11 @@
         </div>
 
         <div class="card">
-          <h2>打刻を間違えたら</h2>
-          <p style="font-size:13px; color:#64748B; margin:0;">
-            打刻時刻を変更するには、<strong>「申請」タブ → 種別「打刻修正」</strong> で管理者に申請してください。<br>
-            （改ざん防止のため、自分で直接書き換えることはできません）
-          </p>
+          <h2>手動修正（本日分）</h2>
+          <div class="form-group"><label>出勤時刻</label><input type="time" id="manualIn" /></div>
+          <div class="form-group"><label>退勤時刻</label><input type="time" id="manualOut" /></div>
+          <div class="form-group"><label>備考</label><input type="text" id="manualNote" placeholder="任意" /></div>
+          <button id="manualSaveBtn" class="btn secondary" type="button">修正を保存</button>
         </div>
 
         <div class="card">
@@ -803,8 +803,12 @@
         $("todayIn").textContent = rec.clockIn ? formatHM(rec.clockIn) : "--:--";
         $("todayOut").textContent = rec.clockOut ? formatHM(rec.clockOut) : "--:--";
         $("todayWork").textContent = rec.workMinutes ? minutesToHM(rec.workMinutes) : "--:--";
+        if (rec.clockIn) $("manualIn").value = formatHM(rec.clockIn);
+        if (rec.clockOut) $("manualOut").value = formatHM(rec.clockOut);
+        $("manualNote").value = rec.note || "";
       } else {
         $("todayIn").textContent = "--:--"; $("todayOut").textContent = "--:--"; $("todayWork").textContent = "--:--";
+        $("manualIn").value = ""; $("manualOut").value = ""; $("manualNote").value = "";
       }
     } catch (e) { console.error(e); toast("本日の記録を取得できませんでした", "error"); }
   }
@@ -878,6 +882,31 @@
       await refreshTodayRecord();
       updateMyDashboard();
     } catch (e) { console.error(e); toast("退勤の記録に失敗しました: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  $("manualSaveBtn").addEventListener("click", async () => {
+    const btn = $("manualSaveBtn");
+    const inVal = $("manualIn").value, outVal = $("manualOut").value, note = $("manualNote").value;
+    if (!inVal && !outVal) { toast("時刻を入力してください", "error"); return; }
+    setLoading(btn, true);
+    try {
+      const dateStr = todayStr();
+      const makeDate = (hhmm) => {
+        if (!hhmm) return null;
+        const [h, m] = hhmm.split(":").map(Number);
+        const d = new Date(); d.setHours(h, m, 0, 0);
+        return d;
+      };
+      const clockIn = makeDate(inVal), clockOut = makeDate(outVal);
+      const { workMinutes, overtimeMinutes } = (clockIn && clockOut) ? calcMinutes(clockIn, clockOut) : { workMinutes: 0, overtimeMinutes: 0 };
+      const existing = await getTodayAttendance();
+      const payload = { uid: currentUser.uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note: note || "" };
+      if (existing) await db.collection("attendance").doc(existing.id).update(payload);
+      else await db.collection("attendance").add(payload);
+      toast("修正を保存しました", "success");
+      await refreshTodayRecord();
+    } catch (e) { console.error(e); toast("保存に失敗しました: " + e.message, "error"); }
     finally { setLoading(btn, false); }
   });
 
