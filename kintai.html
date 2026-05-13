@@ -335,6 +335,8 @@
     .audit-row .meta { font-size: 11px; color: #64748B; }
     .audit-row .desc { margin-top: 4px; }
     .audit-row .diff { margin-top: 4px; font-size: 11px; color: #475569; font-family: monospace; white-space: pre-wrap; word-break: break-all; }
+    .audit-row details > summary { cursor: pointer; font-size: 11px; color: #2563EB; margin-top: 4px; user-select: none; }
+    .audit-row details[open] > summary { margin-bottom: 2px; }
 
     /* 部署リストカード */
     .dept-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
@@ -2740,6 +2742,19 @@
 
   let _auditCache = [];
 
+  // 監査ログの JSON に含まれる UID を名前に置換
+  function humanizeAuditJson(value) {
+    if (value === null || value === undefined) return "(なし)";
+    let s = JSON.stringify(value);
+    Object.keys(allUsers).forEach(uid => {
+      const name = allUsers[uid] && allUsers[uid].name;
+      if (!name) return;
+      const escapedUid = uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      s = s.replace(new RegExp(`"${escapedUid}"`, 'g'), `"${name}"`);
+    });
+    return s;
+  }
+
   async function loadAuditLogs() {
     try {
       const filter = $("auditFilterCollection").value;
@@ -2756,7 +2771,7 @@
         const dt = a.at && a.at.toDate ? a.at.toDate() : null;
         const dtStr = dt ? `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}` : "";
         const diff = (a.before || a.after)
-          ? `<div class="diff">前: ${escapeHtml(JSON.stringify(a.before))}\n後: ${escapeHtml(JSON.stringify(a.after))}</div>` : "";
+          ? `<details><summary>▼ 詳細</summary><div class="diff">前: ${escapeHtml(humanizeAuditJson(a.before))}\n後: ${escapeHtml(humanizeAuditJson(a.after))}</div></details>` : "";
         return `
           <div class="audit-row">
             <div class="head">
