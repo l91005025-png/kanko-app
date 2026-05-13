@@ -2546,11 +2546,12 @@
       row.querySelector(".bal-save").addEventListener("click", async () => {
         const v = parseFloat(row.querySelector(".bal-input").value);
         if (isNaN(v)) { toast("数値を入力してください", "error"); return; }
-        const oldBal = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
+        const user = allUsers[uid] || {};
+        const oldBal = user.paidLeaveBalance != null ? user.paidLeaveBalance : 0;
         try {
           await db.collection("users").doc(uid).update({ paidLeaveBalance: v });
           await audit("update", "users", uid,
-            `${u.name || uid} の有給残数を ${oldBal} → ${v} 日に変更`,
+            `${user.name || uid} の有給残数を ${oldBal} → ${v} 日に変更`,
             { paidLeaveBalance: oldBal },
             { paidLeaveBalance: v });
           toast("残数を更新しました", "success");
