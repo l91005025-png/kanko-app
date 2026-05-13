@@ -852,10 +852,10 @@
     try {
       const existing = await getTodayAttendance();
       if (existing && existing.clockIn) { toast("本日は既に出勤済みです", "error"); return; }
-      const now = new Date();
-      if (existing) await db.collection("attendance").doc(existing.id).update({ clockIn: now });
+      const stamp = firebase.firestore.FieldValue.serverTimestamp();
+      if (existing) await db.collection("attendance").doc(existing.id).update({ clockIn: stamp });
       else await db.collection("attendance").add({
-        uid: currentUser.uid, date: todayStr(), clockIn: now, clockOut: null, workMinutes: 0, overtimeMinutes: 0, note: ""
+        uid: currentUser.uid, date: todayStr(), clockIn: stamp, clockOut: null, workMinutes: 0, overtimeMinutes: 0, note: ""
       });
       toast("出勤を記録しました", "success");
       await refreshTodayRecord();
@@ -872,9 +872,11 @@
       const existing = await getTodayAttendance();
       if (!existing || !existing.clockIn) { toast("出勤が記録されていません", "error"); return; }
       if (existing.clockOut) { toast("本日は既に退勤済みです", "error"); return; }
-      const now = new Date();
-      const { workMinutes, overtimeMinutes } = calcMinutes(existing.clockIn, now);
-      await db.collection("attendance").doc(existing.id).update({ clockOut: now, workMinutes, overtimeMinutes });
+      const { workMinutes, overtimeMinutes } = calcMinutes(existing.clockIn, new Date());
+      await db.collection("attendance").doc(existing.id).update({
+        clockOut: firebase.firestore.FieldValue.serverTimestamp(),
+        workMinutes, overtimeMinutes
+      });
       toast("退勤を記録しました", "success");
       await refreshTodayRecord();
       updateMyDashboard();
