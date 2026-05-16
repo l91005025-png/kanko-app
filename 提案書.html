@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>勤怠管理システム導入のご提案</title>
+<title>勤怠管理システム 導入のご提案</title>
 <style>
   @page { size: A4; margin: 18mm 16mm; }
   * { box-sizing: border-box; }
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
-    color: #1F2937; line-height: 1.7;
-    max-width: 800px; margin: 0 auto; padding: 24px;
+    color: #1F2937; line-height: 1.75;
+    max-width: 820px; margin: 0 auto; padding: 24px;
     background: #fff;
   }
   h1 { font-size: 28px; color: #1E3A8A; border-bottom: 4px solid #2563EB; padding-bottom: 12px; margin-bottom: 8px; }
@@ -32,13 +32,13 @@
   th { background: #F1F5F9; font-weight: 600; color: #1E3A8A; }
   .pos { color: #047857; font-weight: 600; }
   .neg { color: #B91C1C; font-weight: 600; }
-  .new { display: inline-block; background: #DC2626; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
   .callout { background: #FEF3C7; border-left: 6px solid #F59E0B; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
   .callout-blue { background: #EFF6FF; border-left: 6px solid #2563EB; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
   .callout-green { background: #D1FAE5; border-left: 6px solid #047857; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
   ul, ol { padding-left: 22px; }
   li { margin-bottom: 6px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .card { border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 16px; background: #F8FAFC; }
   .card .num { font-size: 28px; color: #2563EB; font-weight: 700; }
   .card .lbl { font-size: 13px; color: #475569; }
@@ -55,198 +55,241 @@
 
 <div class="cover">
   <div class="title">勤怠管理システム 導入のご提案</div>
-  <div class="sub">― タイムカードからクラウド型勤怠管理への移行 ―</div>
+  <div class="sub">― 紙のタイムカードからクラウド勤怠への移行 ―</div>
   <div class="meta">
-    提出日: 2026年5月16日（改訂版）<br>
+    提出日: 2026年5月16日<br>
     提出先: 役員 / 総務部 御中
   </div>
 </div>
 
 <h2>1. 提案概要</h2>
 <p>
-現在、当社では紙のタイムカードで全社員の出退勤を管理しております。
-本提案は、社内開発済みのクラウド型勤怠管理システム「<strong>勤怠管理アプリ</strong>」を導入することで、
-集計工数の削減・人為的ミスの排除・申請業務のペーパーレス化・部署別運用の柔軟化を実現するものです。
+現在、当社では紙のタイムカードを使って全社員の出退勤を管理しています。
+本提案は、社内開発済みのクラウド型勤怠管理 Web アプリを導入し、
+<strong>集計工数の削減・人為的ミスの排除・申請業務のペーパーレス化・労務コンプライアンスの強化</strong>
+を一括で実現するものです。
 </p>
 <div class="callout">
-  <strong>導入効果（試算）:</strong> 月次の勤怠集計工数を <span class="pos">約 8時間 → 1時間</span>（約87%削減）。
-  追加コスト <span class="pos">¥0/月</span>（クラウド無料枠で30名規模は十分対応可能）。
+  <strong>導入効果（試算）:</strong> 月次の勤怠集計工数を
+  <span class="pos">約8時間 → 約1時間</span>（約87%削減）。
+  追加コストは <span class="pos">¥0/月</span>（Firebase 無料枠で 30 名規模は十分対応可）。
 </div>
 
 <h2>2. 現状の課題</h2>
 <table>
   <tr><th>課題</th><th>影響</th></tr>
-  <tr><td>紙のタイムカードを月末に手集計</td><td>総務担当者が月8時間程度を費やす</td></tr>
+  <tr><td>紙のタイムカードを月末に手集計</td><td>総務担当者が月8時間程度を費やしている</td></tr>
   <tr><td>残業時間・遅刻早退の手計算</td><td>計算ミス・記入漏れの発生リスク</td></tr>
-  <tr><td>有給・シフト変更などの申請が紙ベース</td><td>承認フローが追えない・紛失リスク</td></tr>
-  <tr><td>有給残数の手作業管理</td><td>個別ファイルでの管理、ミスが起きやすい</td></tr>
-  <tr><td>出勤状況・休暇予定がリアルタイムで把握できない</td><td>急な欠勤対応・人員調整が後手</td></tr>
-  <tr><td>部署ごとに異なる勤務時間・休日の管理が煩雑</td><td>部署別ルールの一元管理ができない</td></tr>
-  <tr><td>在宅勤務・直行直帰での打刻が困難</td><td>柔軟な働き方への対応が困難</td></tr>
+  <tr><td>有給・シフト変更などの申請が紙ベース</td><td>承認フローが追えない、紛失リスク</td></tr>
+  <tr><td>有給残数を個別ファイルで手作業管理</td><td>残数不一致・年5日取得義務の管理が困難</td></tr>
+  <tr><td>出勤状況・休暇予定がリアルタイムで把握できない</td><td>急な欠勤・人員調整が後手になる</td></tr>
+  <tr><td>部署ごとに異なる勤務時間・公休の管理が煩雑</td><td>部署別ルールの一元管理ができない</td></tr>
+  <tr><td>在宅勤務・直行直帰での打刻が困難</td><td>柔軟な働き方への対応が遅れる</td></tr>
+  <tr><td>過去データの検索・監査対応に時間がかかる</td><td>労務監査・労基署対応の負担増</td></tr>
 </table>
 
 <h2>3. 提案システム概要</h2>
 <p>
-スマートフォン・PCのブラウザから利用できる、シンプルで実用的な勤怠管理 Web アプリです。
-役割により2つの画面を提供し、それぞれを必要な人にだけ公開します。
+スマートフォンと PC のブラウザから利用できる、シンプルで実用的な勤怠管理 Web アプリです。
+役割に応じて 2 つの画面を提供し、それぞれを必要な人にだけ公開します。
 </p>
 <div class="grid2">
   <div class="card">
     <div class="num">①</div>
-    <strong>スタッフ用アプリ</strong>
+    <strong>スタッフ用アプリ（4タブ構成）</strong>
     <ul>
-      <li>出退勤の打刻</li>
-      <li>自分の月次勤怠の確認</li>
-      <li>有給・シフト休等の申請</li>
-      <li>有給残数の確認</li>
-      <li>休暇カレンダー閲覧</li>
-      <li>打刻忘れ通知＋申請通知</li>
-      <li>部署上長は一次承認も実施</li>
+      <li>出退勤の打刻（サーバー時刻で確定）</li>
+      <li>自分の月次勤怠・有給残数の確認</li>
+      <li>10種類の申請提出</li>
+      <li>休暇カレンダー閲覧（自部署 / 全社）</li>
+      <li>打刻忘れ通知 + 申請通知</li>
+      <li>部署上長は自部署の有給を一次承認</li>
     </ul>
   </div>
   <div class="card">
     <div class="num">②</div>
-    <strong>管理者用アプリ</strong>
+    <strong>管理者用アプリ（5タブ構成）</strong>
     <ul>
       <li>全スタッフの勤怠管理（モーダル編集）</li>
-      <li>本日の出勤状況確認</li>
-      <li>申請の最終承認・差戻し</li>
-      <li>設定タブから部署設定・有給残数管理・月締めロック・監査ログ・会社共通設定を一元管理</li>
-      <li>休暇カレンダーの全社俯瞰</li>
-      <li>給与計算用 CSV 出力</li>
-      <li>監査ログ（操作履歴の追跡）</li>
+      <li>本日の出勤状況をリアルタイム表示</li>
+      <li>申請の最終承認・差戻し・編集</li>
+      <li>給与計算用 CSV 出力（5形式）</li>
+      <li>設定タブから部署管理・有給残数・月締めロック・監査ログ・会社共通設定を一元管理</li>
     </ul>
   </div>
 </div>
 
-<h2>4. 主な機能</h2>
+<h2>4. 機能一覧</h2>
 <table>
   <tr><th>分類</th><th>機能</th><th>説明</th></tr>
-  <tr><td rowspan="4">打刻</td><td>出勤・退勤打刻</td><td>ボタン1タップで時刻を自動記録</td></tr>
-  <tr><td>サーバー時刻で記録 <span class="new">NEW</span></td><td>打刻はGoogleサーバーの時刻で確定。端末時刻を変えても改ざん不可</td></tr>
-  <tr><td>打刻忘れ通知</td><td>朝10時/夜19時に未打刻ならスマホに通知</td></tr>
-  <tr><td>休憩時間管理</td><td>所定休憩時間を自動控除</td></tr>
-  <tr><td rowspan="3">勤怠</td><td>月次サマリ</td><td>出勤日数・労働時間・残業時間を自動集計</td></tr>
+
+  <tr><td rowspan="4">打刻</td>
+      <td>出勤・退勤打刻</td><td>ボタン1タップで時刻を記録</td></tr>
+  <tr><td>サーバー時刻で確定</td><td>打刻時刻はGoogleサーバーの時刻で記録され、端末時計を変えても改ざん不可</td></tr>
+  <tr><td>打刻忘れ通知</td><td>朝10時・夜19時に未打刻ならスマホへプッシュ通知</td></tr>
+  <tr><td>所属部署別の休憩自動控除</td><td>部署ごとの所定休憩時間を自動差引</td></tr>
+
+  <tr><td rowspan="3">勤怠</td>
+      <td>月次サマリ</td><td>出勤日数・労働時間・残業時間を自動集計</td></tr>
   <tr><td>本日の出勤状況</td><td>全スタッフの出勤/退勤/休暇をリアルタイム表示</td></tr>
-  <tr><td>勤怠詳細編集 <span class="new">NEW</span></td><td>管理者がモーダルダイアログで時刻入力（時刻ピッカー + 労働時間プレビュー + ワンクリック削除）</td></tr>
-  <tr><td rowspan="4">申請</td><td>申請種別</td><td>有給／シフト休／半休／遅刻／早退／残業／休日出勤／打刻修正／直行／直帰</td></tr>
-  <tr><td>有給の二段階承認 <span class="new">NEW</span></td><td>部署上長の一次承認 → 総務（管理者）の最終承認</td></tr>
-  <tr><td>シフト休 <span class="new">NEW</span></td><td>シフト調整用の休暇申請（管理者承認）</td></tr>
-  <tr><td>承認済申請の取消・編集</td><td>誤承認・記載ミスの修正に対応</td></tr>
-  <tr><td rowspan="2">有給残数管理 <span class="new">NEW</span></td><td>残数自動差引</td><td>承認時に自動で -1日（半休は -0.5日）</td></tr>
-  <tr><td>一括付与</td><td>年初付与など、全員へ一括加算/上書き可能</td></tr>
-  <tr><td rowspan="3">部署管理 <span class="new">NEW</span></td><td>部署別の勤務時間・休憩</td><td>部署ごとに始業/終業/休憩/所定労働を設定</td></tr>
-  <tr><td>公休パターン編集</td><td>「毎週日曜」「第1月曜」「第3土曜」などを組合せ可能</td></tr>
-  <tr><td>月別の例外調整</td><td>その月だけの追加休/取消をカレンダーから1クリック</td></tr>
-  <tr><td>休暇カレンダー <span class="new">NEW</span></td><td>誰がいつ休むかを月単位で可視化</td><td>部署フィルタ/全社表示を切替</td></tr>
-  <tr><td>プッシュ通知 <span class="new">NEW</span></td><td>申請・承認の即時通知</td><td>スマホがロック中でも届く（PWA環境）</td></tr>
-  <tr><td rowspan="2">出力</td><td>勤怠 CSV 出力（5形式）</td><td>標準・月度集計・マネーフォワード・弥生・freeeに対応</td></tr>
-  <tr><td>申請 CSV 出力</td><td>申請履歴をCSV化（部署・承認者付き）</td></tr>
-  <tr><td rowspan="5">運用・監査</td><td>退職者削除</td><td>1クリックで認証アカウントとデータを一括削除</td></tr>
-  <tr><td>権限管理</td><td>管理者/スタッフ/部署上長の3層構造</td></tr>
-  <tr><td>監査ログ <span class="new">NEW</span></td><td>勤怠・申請・有給残数の全変更履歴を記録。誰が・いつ・何をしたか追跡可能（労務監査・紛争対応用）</td></tr>
-  <tr><td>月締めロック <span class="new">NEW</span></td><td>締めた月の変更を警告＋監査ログ記録</td></tr>
-  <tr><td>背景画像カスタマイズ</td><td>管理者画面の背景に好きな画像を設定可能（個人設定）</td></tr>
-  <tr><td>その他</td><td>PWA対応</td><td>スマホのホーム画面にアプリのように追加可能</td></tr>
-  <tr><td>データ保護 <span class="new">NEW</span></td><td>日次自動バックアップ</td><td>毎日深夜3時に全データをGoogleクラウド上にJSONで自動保存（90日間保持）</td></tr>
+  <tr><td>勤怠詳細編集（モーダル）</td><td>管理者が時刻ピッカーで直感的に修正。労働時間・残業を自動プレビュー。記録削除も1クリック</td></tr>
+
+  <tr><td rowspan="5">申請</td>
+      <td>10種別</td><td>有給・シフト休・半休・直行・直帰・遅刻・早退・残業・休日出勤・打刻修正</td></tr>
+  <tr><td>有給の二段階承認</td><td>部署上長の一次承認 → 総務（管理者）の最終承認</td></tr>
+  <tr><td>単一承認</td><td>有給以外は管理者承認のみ</td></tr>
+  <tr><td>連続日申請</td><td>期間を指定して複数日分を一括申請（最大31日、公休除外）</td></tr>
+  <tr><td>承認後の取消・編集・削除</td><td>誤承認や記載ミスを管理者が修正可</td></tr>
+
+  <tr><td rowspan="2">有給管理</td>
+      <td>残数自動差引</td><td>承認時に -1日（半休は -0.5日）。取消時は自動で戻る</td></tr>
+  <tr><td>一括付与・個別調整</td><td>年初付与は全員一括加算/上書き。中途入社等は個別に編集可</td></tr>
+
+  <tr><td rowspan="3">部署管理</td>
+      <td>部署別の勤務時間・休憩</td><td>始業・終業・休憩・所定労働を部署単位で設定</td></tr>
+  <tr><td>公休パターン</td><td>「毎週日曜」「第1月曜」「第3土曜」など組合せ可</td></tr>
+  <tr><td>月別の例外調整</td><td>その月だけの追加休・取消をカレンダーから1クリック</td></tr>
+
+  <tr><td rowspan="2">可視化</td>
+      <td>休暇カレンダー</td><td>誰がいつ休むかを月単位で表示（自部署/全社切替）</td></tr>
+  <tr><td>プッシュ通知</td><td>申請・承認・打刻忘れの即時通知（PWA対応）</td></tr>
+
+  <tr><td rowspan="2">出力</td>
+      <td>勤怠CSV（5形式）</td><td>標準・月度集計・マネーフォワード給与・弥生給与・freee人事労務に対応</td></tr>
+  <tr><td>申請CSV</td><td>申請履歴を部署・承認者付きで出力</td></tr>
+
+  <tr><td rowspan="5">運用・監査</td>
+      <td>監査ログ</td><td>勤怠・申請・有給残数・会社設定の全変更履歴を記録。誰が・いつ・何を変えたか追跡可能</td></tr>
+  <tr><td>月締めロック</td><td>締めた月の変更を警告＋強制編集は監査ログに記録</td></tr>
+  <tr><td>36協定アラート</td><td>残業注意/上限ライン超過を画面で警告</td></tr>
+  <tr><td>退職者削除</td><td>1クリックで認証アカウントと社内データを一括削除</td></tr>
+  <tr><td>権限管理</td><td>管理者 / 部署上長 / スタッフの3層構造</td></tr>
+
+  <tr><td rowspan="2">データ保護</td>
+      <td>日次自動バックアップ</td><td>毎日深夜3時に全データをJSONでクラウド保存（90日保持）</td></tr>
+  <tr><td>HTTPS・権限制御</td><td>全通信暗号化＋Firestoreセキュリティルールで権限昇格を防止</td></tr>
+
+  <tr><td rowspan="2">その他</td>
+      <td>PWA対応</td><td>スマホのホーム画面にアプリのように追加可能</td></tr>
+  <tr><td>背景画像カスタマイズ</td><td>管理者画面の背景に画像を設定可（個人設定）</td></tr>
 </table>
 
 <h2>5. 導入メリット</h2>
 
 <h3>5.1 定量的メリット</h3>
-<div class="grid2">
-  <div class="card"><div class="num">月7時間</div><div class="lbl">集計工数の削減（試算）</div></div>
+<div class="grid4">
+  <div class="card"><div class="num">月7h</div><div class="lbl">集計工数削減（試算）</div></div>
   <div class="card"><div class="num">¥0</div><div class="lbl">月額追加コスト</div></div>
   <div class="card"><div class="num">100%</div><div class="lbl">ペーパーレス化</div></div>
-  <div class="card"><div class="num">即時</div><div class="lbl">出勤状況・休暇予定の把握</div></div>
+  <div class="card"><div class="num">90日</div><div class="lbl">自動バックアップ保持</div></div>
 </div>
 
 <h3>5.2 定性的メリット</h3>
 <ul>
-  <li>計算ミスがゼロに（自動集計＋自動差引）</li>
-  <li>有給残数を本人と管理者が常に同じ数値で把握できる</li>
-  <li>残業時間・遅刻早退の見える化により労務管理が改善</li>
-  <li>部署別の勤務時間・公休に柔軟に対応（営業部は土日休、製造部は日曜＋第3土など）</li>
-  <li>月単位での公休調整が簡単（カレンダーから1クリック）</li>
-  <li>申請がスマホで完結＋管理者は外出先からも承認可能</li>
-  <li>休暇カレンダーで人員不足日を事前に把握、シフト調整が容易</li>
-  <li>過去データの検索が瞬時に可能（監査対応の工数削減）</li>
-  <li>紙ベースの保管スペース・廃棄コストの削減</li>
+  <li>計算ミスがゼロに（自動集計＋有給残数の自動差引）</li>
+  <li>残数・残業時間を本人と管理者が常に同じ数値で把握可</li>
+  <li>部署別の勤務時間・公休に柔軟対応（営業は土日休、製造は日曜＋第3土など）</li>
+  <li>スマホ申請＋管理者は外出先からも承認可</li>
+  <li>休暇カレンダーで人員不足日を事前に把握しシフト調整しやすい</li>
+  <li>過去データ検索が瞬時（労務監査・労基署対応の工数削減）</li>
+  <li>打刻時刻がサーバー側で確定するため労務紛争時の証拠力が高い</li>
+  <li>監査ログで全操作履歴が追える</li>
+  <li>紙の保管スペース・廃棄コスト削減</li>
 </ul>
 
 <h2>6. コスト試算</h2>
 <table>
   <tr><th>項目</th><th>初期費用</th><th>月額</th><th>備考</th></tr>
   <tr><td>システム開発費</td><td class="pos">¥0</td><td class="pos">¥0</td><td>社内で開発済み</td></tr>
-  <tr><td>サーバー利用料 (Firebase)</td><td class="pos">¥0</td><td class="pos">¥0</td><td>従量制Blazeプランの無料枠で30名規模は対応可能 ※</td></tr>
+  <tr><td>サーバー利用料 (Firebase Blaze)</td><td class="pos">¥0</td><td class="pos">¥0</td><td>無料枠で30名規模は十分 ※1</td></tr>
   <tr><td>ホスティング (GitHub Pages)</td><td class="pos">¥0</td><td class="pos">¥0</td><td>無料サービス</td></tr>
+  <tr><td>バックアップ用ストレージ</td><td class="pos">¥0</td><td class="pos">¥0</td><td>Firebase Storage 無料枠5GB（90日分でも数MB）</td></tr>
   <tr><td>運用保守</td><td>―</td><td>社内対応</td><td>担当者の指定が必要</td></tr>
   <tr><th>合計</th><th class="pos">¥0</th><th class="pos">¥0</th><th></th></tr>
 </table>
 <p style="font-size:13px; color:#475569;">
-  ※ 内訳: Firestore 1日 50,000読取 / 20,000書込 まで無料。Cloud Functions 月200万呼出まで無料。Authentication 月50,000ユーザーまで無料。Cloud Messaging（プッシュ通知）完全無料。<br>
-  ※ 30名×1日10打刻でも300書込/日と十分余裕あり。プッシュ通知も日数十回程度で無料枠内。<br>
-  ※ 念のため予算アラート¥1,000/月を設定済み。超えた場合はメール通知。
+  ※1 内訳: Firestore 1日50,000読取/20,000書込まで無料、Cloud Functions 月200万呼出まで無料、Authentication 月50,000ユーザーまで無料、Cloud Messaging（プッシュ通知）完全無料。<br>
+  ※2 30名×1日10打刻でも300書込/日で十分余裕あり。100名規模に拡大しても無料枠内に収まる見込み。<br>
+  ※3 念のため Firebase 予算アラートを ¥1,000/月で設定済み。超えた場合はメール通知。
 </p>
 
-<h2>7. セキュリティ</h2>
+<h2>7. セキュリティ・データ保護</h2>
+
+<h3>7.1 通信・認証</h3>
 <ul>
-  <li><strong>通信</strong>: 全通信を HTTPS で暗号化</li>
-  <li><strong>認証</strong>: Firebase Authentication（Google が提供する認証基盤）</li>
-  <li><strong>データベース権限制御</strong>: Firestoreセキュリティルールにより、本人/部署上長/管理者で操作範囲を厳格に制限。ブラウザ開発者ツールからの不正な権限昇格を防止</li>
-  <li><strong>権限の分離</strong>:
-    <ul>
-      <li>スタッフ: 自分のデータのみ作成/閲覧</li>
-      <li>部署上長: 自部署の有給申請を一次承認</li>
-      <li>管理者: 全データ操作可能</li>
-    </ul>
-  </li>
-  <li><strong>有給残数の改ざん防止</strong>: 残数は管理者のみ変更可能。スタッフは閲覧のみ</li>
-  <li><strong>打刻時刻の改ざん防止</strong>: 出勤・退勤の自動打刻時刻は Google サーバーの時刻で確定。端末の時計を変えても改ざん不可</li>
-  <li><strong>監査ログ</strong>: 勤怠・申請・有給残数のすべての変更が「誰が・いつ・何をしたか」記録される。労務紛争・労基署対応時の証跡として利用可</li>
-  <li><strong>退職者対応</strong>: 管理者画面の削除ボタン1回で認証アカウントとデータを一括削除</li>
-  <li><strong>データ保管</strong>: Google Cloud（東京リージョン）。労務関連データの法定保管期間（5年）を満たす運用が可能</li>
-  <li><strong>日次バックアップ</strong>: 毎日 03:00 に全データを自動バックアップ。90日間保持で誤削除や障害時の復元に対応</li>
+  <li><strong>HTTPS暗号化</strong>: 全通信を暗号化（GitHub Pages の標準仕様）</li>
+  <li><strong>認証基盤</strong>: Firebase Authentication（Google が提供）</li>
+  <li><strong>Firestoreセキュリティルール</strong>: 本人/部署上長/管理者で操作範囲を厳格に制限。ブラウザの開発者ツールからの不正な権限昇格も防止</li>
+</ul>
+
+<h3>7.2 権限の3層構造</h3>
+<table>
+  <tr><th>権限</th><th>できること</th></tr>
+  <tr><td>スタッフ</td><td>自分のデータの作成・閲覧のみ</td></tr>
+  <tr><td>部署上長</td><td>上記＋自部署の有給を一次承認</td></tr>
+  <tr><td>管理者（総務）</td><td>全データ操作・設定変更・最終承認</td></tr>
+</table>
+
+<h3>7.3 改ざん防止</h3>
+<ul>
+  <li><strong>打刻時刻</strong>: 出勤・退勤の自動打刻は Google サーバーの時刻で確定。端末の時計を変更しても改ざんできない（労務紛争時の証拠力あり）</li>
+  <li><strong>有給残数</strong>: 残数の変更は管理者のみ。スタッフは閲覧のみ</li>
+  <li><strong>権限昇格</strong>: Firestoreルールで「自分の role を変更不可」を強制</li>
+</ul>
+
+<h3>7.4 監査トレーサビリティ</h3>
+<ul>
+  <li>勤怠・申請・有給残数・会社共通設定のすべての変更が <strong>監査ログ</strong> に「誰が・いつ・何を・何から何に変えたか」記録される</li>
+  <li>監査ログは管理者画面の「設定」タブから閲覧・CSV出力可能</li>
+  <li>月締めロックを破る編集も監査ログに記録される</li>
+</ul>
+
+<h3>7.5 データ保管とバックアップ</h3>
+<ul>
+  <li><strong>保管場所</strong>: Google Cloud（東京リージョン）</li>
+  <li><strong>日次自動バックアップ</strong>: 毎日 03:00 JST に全コレクション（勤怠・申請・スタッフ・部署・設定・監査ログ）を JSON 形式でクラウドストレージに保存</li>
+  <li><strong>保持期間</strong>: 90日（自動ローテーション）</li>
+  <li><strong>法定保管</strong>: 労務関連の法定保管期間（5年）を満たす運用が可能。月次CSVを総務側でも保管することで二重防護</li>
 </ul>
 
 <h2>8. 導入スケジュール案</h2>
 <table>
   <tr><th>時期</th><th>内容</th><th>担当</th></tr>
-  <tr><td>第1週</td><td>役員・総務向け説明会、運用ルール策定</td><td>提案者・総務</td></tr>
+  <tr><td>第1週</td><td>役員・総務向け説明会、運用ルール策定（就業規則との整合確認）</td><td>提案者・総務</td></tr>
   <tr><td>第2週</td><td>初期管理者設定、部署登録、公休パターン入力、スタッフのアカウント発行</td><td>総務</td></tr>
-  <tr><td>第3週</td><td>各部署の上長設定、有給残数の初期登録</td><td>総務</td></tr>
+  <tr><td>第3週</td><td>各部署の上長設定、有給残数の初期登録（一括付与）</td><td>総務</td></tr>
   <tr><td>第4週</td><td>スタッフ向け操作説明会（部署単位）、PWAインストール手順案内</td><td>提案者・総務</td></tr>
-  <tr><td>第5-6週</td><td>並行運用（タイムカード＋アプリ）、操作問合せ対応</td><td>全社</td></tr>
-  <tr><td>第7週〜</td><td>アプリ本格運用、タイムカード廃止</td><td>全社</td></tr>
+  <tr><td>第5〜6週</td><td>1〜2部署で先行運用（紙併用で差分検証）</td><td>該当部署</td></tr>
+  <tr><td>第7週〜</td><td>全社展開、紙のタイムカード廃止</td><td>全社</td></tr>
 </table>
 
 <h2>9. 想定リスクと対策</h2>
 <table>
   <tr><th>リスク</th><th>対策</th></tr>
-  <tr><td>スマホを持っていないスタッフがいる</td><td>事務所のPCからもブラウザでアクセス可能（共用PC1台で運用可）</td></tr>
-  <tr><td>iPhoneで通知が届かない</td><td>「ホーム画面に追加」を必須として案内（マニュアル参照）</td></tr>
+  <tr><td>スマホを持っていないスタッフがいる</td><td>事務所のPCからブラウザで利用可能（共用PC1台で運用可）</td></tr>
+  <tr><td>iPhoneで通知が届かない</td><td>「ホーム画面に追加」を必須として案内（iOS 16.4以降必須・マニュアル参照）</td></tr>
   <tr><td>通信障害・サーバー障害で打刻できない</td><td>紙の予備フォームを用意、復旧後に管理者が打刻修正で入力</td></tr>
-  <tr><td>スタッフが操作に不慣れ</td><td>操作マニュアル配布＋部署単位の説明会を実施</td></tr>
-  <tr><td>パスワードを忘れる</td><td>管理者がパスワード再設定可能（Firebase 標準機能）</td></tr>
-  <tr><td>誤った打刻・申請</td><td>管理者が後から修正・削除可能</td></tr>
-  <tr><td>有給残数を巡るトラブル</td><td>承認時の自動差引でリアルタイム反映、本人もアプリで確認可能</td></tr>
-  <tr><td>データ消失</td><td>日次自動バックアップ（深夜3時、90日保持）＋月次CSVを総務が保管</td></tr>
-  <tr><td>打刻時刻の改ざん疑義</td><td>打刻はGoogleサーバー時刻で確定するため、端末時計を変えても操作不可。労務紛争時に証拠力あり</td></tr>
-  <tr><td>クラウド料金の急増</td><td>予算アラート¥1,000/月を設定済み。超えればメール通知</td></tr>
+  <tr><td>スタッフが操作に不慣れ</td><td>操作マニュアル配布＋部署単位の説明会、並行運用期間で慣れる</td></tr>
+  <tr><td>パスワードを忘れる</td><td>管理者が Firebase Console からパスワードリセット可</td></tr>
+  <tr><td>誤った打刻・申請</td><td>管理者がモーダル編集で修正・削除可能（操作は監査ログに記録）</td></tr>
+  <tr><td>打刻時刻の改ざん疑義</td><td>自動打刻は Google サーバー時刻で確定。端末時計を変えても改ざん不可</td></tr>
+  <tr><td>データ消失</td><td>日次自動バックアップ（90日保持）＋月次CSVを総務が保管</td></tr>
+  <tr><td>クラウド料金の急増</td><td>予算アラート ¥1,000/月を設定済み。超えればメール通知</td></tr>
+  <tr><td>管理者が1人で休めない</td><td>総務上長＋もう1名を管理者として登録し冗長化</td></tr>
 </table>
 
 <h2>10. まとめ</h2>
 <div class="callout-blue">
   本システムは <strong>追加コストゼロ</strong> で、現状のタイムカード運用で発生している
-  <strong>集計工数・人為的ミス・紙ベース申請・部署別ルール管理・有給残数管理</strong> の課題をまとめて解決できます。<br><br>
-  プッシュ通知・休暇カレンダー・公休パターン編集など、<strong>実運用で「あったら助かる」機能</strong> を網羅しており、
-  導入後すぐに業務フローに溶け込みます。<br><br>
-  まずは <strong>1〜2部署での試験運用</strong> から始め、問題がなければ全社展開という段階的な導入も可能です。
+  <strong>集計工数・人為的ミス・紙ベース申請・部署別ルール管理・有給残数管理</strong> の課題を一括解決できます。<br><br>
+  さらに <strong>打刻時刻の改ざん防止・監査ログ・日次自動バックアップ</strong> を備え、
+  労務コンプライアンスと労基署・労務紛争対応への備えも確保しています。<br><br>
+  まずは <strong>1〜2 部署での先行運用</strong> から始め、問題がなければ全社展開という段階導入も可能です。
   ご検討のほどよろしくお願いいたします。
 </div>
 
 <footer>
-  勤怠管理システム導入提案書 / 2026年5月16日 改訂版
+  勤怠管理システム導入提案書 / 2026年5月16日 版
 </footer>
 
 </body>
