@@ -561,6 +561,38 @@
         </div>
 
         <div class="card">
+          <h2>シフト休 残数管理</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各スタッフのシフト休残数を編集できます。<br>
+            シフト休申請が承認されると -1日 が自動的に差し引かれます（取消で +1日 戻り）。<br>
+            一括変更は <strong>「全員に付与」</strong> ボタンで行えます（有給とは別管理）。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="number" id="grantShiftAmount" placeholder="付与日数" step="1" style="flex:1; padding:8px; border:1px solid #CBD5E1; border-radius:6px; min-width:100px;" />
+            <select id="grantShiftTarget" style="padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="add">残数に加算</option>
+              <option value="set">残数を上書き</option>
+            </select>
+            <button id="grantShiftAllBtn" class="btn small" type="button">全員に適用</button>
+          </div>
+
+          <!-- 絞り込みコントロール -->
+          <div style="display:flex; gap:8px; margin: 14px 0 6px; flex-wrap: wrap; align-items: center; padding: 10px; background:#F8FAFC; border-radius:8px;">
+            <input type="search" id="shiftSearch" placeholder="🔍 氏名で検索" style="flex:2; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <select id="shiftFilterDept" style="flex:1; min-width:120px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全部署</option>
+            </select>
+            <select id="shiftSort" style="flex:1; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="name">並び: 氏名順</option>
+              <option value="bal_asc">並び: 残数少ない順</option>
+              <option value="dept">並び: 部署順</option>
+            </select>
+          </div>
+          <div id="shiftBalanceSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
+          <div id="shiftBalanceList"></div>
+        </div>
+
+        <div class="card">
           <h2>月締めロック</h2>
           <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
             締めた月の勤怠・申請を編集しようとすると警告が出ます（強制編集は監査ログに記録）。
@@ -1457,6 +1489,7 @@
               <span class="dept-badge">${escapeHtml(deptName)}</span>
               ${u.isDeptHead ? '<span class="dept-badge dept-head-badge">部署上長</span>' : ''}
               <span class="dept-badge" style="background:#FEF3C7; color:#92400E;">有給残 ${balance}日</span>
+              <span class="dept-badge" style="background:#E9D5FF; color:#6B21A8;">シフト休残 ${u.shiftLeaveBalance != null ? u.shiftLeaveBalance : 0}日</span>
               <span class="pl-pill ${plClass}">${plLabel}</span>
             </div>
             <div class="email">${escapeHtml(u.email || "")}</div>
@@ -2400,20 +2433,21 @@
     });
   }
 
-  // 有給/半休の差し引き量
+  // 申請種別ごとの差し引き量と残数フィールド
   function leaveDeduct(type) {
-    if (type === "有給") return 1;
-    if (type === "半休") return 0.5;
-    return 0;
+    if (type === "有給") return { amount: 1, field: "paidLeaveBalance" };
+    if (type === "半休") return { amount: 0.5, field: "paidLeaveBalance" };
+    if (type === "シフト休") return { amount: 1, field: "shiftLeaveBalance" };
+    return { amount: 0, field: null };
   }
 
-  async function adjustPaidLeaveBalance(uid, delta) {
-    if (delta === 0) return;
+  async function adjustBalance(uid, field, delta) {
+    if (!field || delta === 0) return;
     try {
       await db.collection("users").doc(uid).update({
-        paidLeaveBalance: firebase.firestore.FieldValue.increment(delta)
+        [field]: firebase.firestore.FieldValue.increment(delta)
       });
-    } catch (e) { console.warn("有給残数更新失敗:", e); }
+    } catch (e) { console.warn(`${field} 更新失敗:`, e); }
   }
 
   async function reviewRequest(id, status, isRevert = false, comment = "") {
@@ -2453,12 +2487,12 @@
         if (status === "申請中") update.rejectionComment = null;
       }
       await db.collection("requests").doc(id).update(update);
-      // 有給/半休の残数調整
+      // 有給/半休/シフト休の残数調整
       if (r) {
         const d = leaveDeduct(r.type);
-        if (d > 0) {
-          if (wasApproved && !willBeApproved) await adjustPaidLeaveBalance(r.uid, d);
-          else if (!wasApproved && willBeApproved) await adjustPaidLeaveBalance(r.uid, -d);
+        if (d.amount > 0) {
+          if (wasApproved && !willBeApproved) await adjustBalance(r.uid, d.field, d.amount);
+          else if (!wasApproved && willBeApproved) await adjustBalance(r.uid, d.field, -d.amount);
         }
         // 監査ログ
         const targetName = (allUsers[r.uid] && allUsers[r.uid].name) || r.uid;
@@ -2691,9 +2725,120 @@
     } catch (e) { toast("更新失敗: " + e.message, "error"); }
   });
 
-  // タブ切替時に有給リスト再描画＋監査ログを最新化
+  // ============================================================
+  // シフト休 残数 一覧管理（有給と並行・別フィールド）
+  // ============================================================
+  function renderShiftBalanceList() {
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("shiftFilterDept");
+    if (deptSel) {
+      const cur = deptSel.value || "all";
+      deptSel.innerHTML = '<option value="all">全部署</option>' +
+        '<option value="_none">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      deptSel.value = cur;
+    }
+
+    const search = ($("shiftSearch") && $("shiftSearch").value || "").toLowerCase();
+    const deptFilter = $("shiftFilterDept") ? $("shiftFilterDept").value : "all";
+    const sortKey = $("shiftSort") ? $("shiftSort").value : "name";
+
+    let list = Object.keys(allUsers).map(uid => {
+      const u = allUsers[uid];
+      const bal = u.shiftLeaveBalance != null ? u.shiftLeaveBalance : 0;
+      const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      return { uid, ...u, _bal: bal, _deptName: dept };
+    });
+
+    if (search) list = list.filter(u => (u.name || "").toLowerCase().includes(search));
+    if (deptFilter !== "all") {
+      list = list.filter(u => deptFilter === "_none" ? !u.department : u.department === deptFilter);
+    }
+
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case "bal_asc": return a._bal - b._bal || (a.name || "").localeCompare(b.name || "", "ja");
+        case "dept": return (a._deptName || "").localeCompare(b._deptName || "", "ja") || (a.name || "").localeCompare(b.name || "", "ja");
+        default: return (a.name || "").localeCompare(b.name || "", "ja");
+      }
+    });
+
+    const total = Object.keys(allUsers).length;
+    const zeroCount = list.filter(u => u._bal <= 0).length;
+    $("shiftBalanceSummary").innerHTML =
+      `表示 <strong>${list.length}</strong> / 全 ${total}名 / ` +
+      `<span style="color:${zeroCount>0?'#B45309':'#047857'}; font-weight:600;">残0日 ${zeroCount}名</span>`;
+
+    const c = $("shiftBalanceList");
+    if (list.length === 0) {
+      c.innerHTML = '<div class="empty">該当するスタッフがいません</div>';
+      return;
+    }
+    c.innerHTML = list.map(u => `
+      <div class="staff-row" data-uid="${u.uid}">
+        <div class="info">
+          <div class="name">
+            ${escapeHtml(u.name || "")}
+            <span class="dept-badge">${escapeHtml(u._deptName)}</span>
+          </div>
+          <div class="email">シフト休残: <strong>${u._bal}日</strong></div>
+        </div>
+        <div class="controls">
+          <input type="number" step="1" class="shift-bal-input" value="${u._bal}" style="width:70px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
+          <button class="btn small shift-bal-save" type="button">更新</button>
+        </div>
+      </div>
+    `).join("");
+    c.querySelectorAll(".staff-row").forEach(row => {
+      const uid = row.dataset.uid;
+      row.querySelector(".shift-bal-save").addEventListener("click", async () => {
+        const v = parseFloat(row.querySelector(".shift-bal-input").value);
+        if (isNaN(v)) { toast("数値を入力してください", "error"); return; }
+        const user = allUsers[uid] || {};
+        const oldBal = user.shiftLeaveBalance != null ? user.shiftLeaveBalance : 0;
+        try {
+          await db.collection("users").doc(uid).update({ shiftLeaveBalance: v });
+          await audit("update", "users", uid,
+            `${user.name || uid} のシフト休残数を ${oldBal} → ${v} 日に変更`,
+            { shiftLeaveBalance: oldBal },
+            { shiftLeaveBalance: v });
+          toast("残数を更新しました", "success");
+          await loadStaffList();
+          renderShiftBalanceList();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  $("grantShiftAllBtn").addEventListener("click", async () => {
+    const v = parseFloat($("grantShiftAmount").value);
+    const target = $("grantShiftTarget").value;
+    if (isNaN(v)) { toast("付与日数を入力してください", "error"); return; }
+    const action = target === "set" ? `全員のシフト休残数を ${v}日 に上書きします` : `全員のシフト休残数に ${v}日 を加算します`;
+    if (!confirm(action + "。よろしいですか？")) return;
+    try {
+      const batch = db.batch();
+      Object.keys(allUsers).forEach(uid => {
+        const ref = db.collection("users").doc(uid);
+        if (target === "set") batch.update(ref, { shiftLeaveBalance: v });
+        else batch.update(ref, { shiftLeaveBalance: firebase.firestore.FieldValue.increment(v) });
+      });
+      await batch.commit();
+      await audit("update", "users", "(bulk)",
+        target === "set" ? `全員のシフト休残数を ${v} 日に上書き` : `全員のシフト休残数に ${v} 日加算`,
+        null, { target, amount: v, count: Object.keys(allUsers).length, field: "shiftLeaveBalance" });
+      toast("一括更新しました", "success");
+      await loadStaffList();
+      renderShiftBalanceList();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  });
+
+  // タブ切替時に有給/シフト休リスト再描画＋監査ログを最新化
   document.querySelector('[data-tab="tab-settings"]').addEventListener("click", () => {
     renderLeaveBalanceList();
+    renderShiftBalanceList();
     loadAuditLogs();
   });
 
@@ -2703,6 +2848,13 @@
     if (!el) return;
     const evt = (id === "leaveSearch") ? "input" : "change";
     el.addEventListener(evt, renderLeaveBalanceList);
+  });
+  // シフト休残数の検索・フィルタ・並び替え
+  ["shiftSearch", "shiftFilterDept", "shiftSort"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = (id === "shiftSearch") ? "input" : "change";
+    el.addEventListener(evt, renderShiftBalanceList);
   });
 
   // ============================================================
