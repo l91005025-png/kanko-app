@@ -123,7 +123,7 @@
     <li>【スタッフ】打刻する</li>
     <li>【スタッフ】勤怠を確認する</li>
     <li>【スタッフ】申請を出す</li>
-    <li>【スタッフ】有給残数を確認する</li>
+    <li>【スタッフ】休暇残数を確認する（有給・シフト休）</li>
     <li>【スタッフ】通知を有効にする</li>
     <li>【スタッフ】カレンダーで休暇を確認する</li>
     <li>【部署上長】有給を一次承認する</li>
@@ -349,8 +349,12 @@
     <div class="step"><span class="num">1</span>「申請」タブを開く</div>
     <div class="step"><span class="num">2</span>申請種別を選ぶ（全10種）</div>
     <div class="step"><span class="num">3</span>1日 / 期間 を選び、日付を入力</div>
-    <div class="step"><span class="num">4</span>理由を入力</div>
+    <div class="step"><span class="num">4</span>理由を入力（<strong>シフト休のみ任意</strong>。空欄で申請可）</div>
     <div class="step"><span class="num">5</span>「申請する」をタップ</div>
+
+    <div class="tip">
+      <strong>シフト休は理由不要:</strong> 種別「シフト休」を選ぶと理由欄のラベルが「理由（任意）」に変わり、空欄でも申請できます。
+    </div>
 
     <h4>申請種別と承認ルート</h4>
     <table>
@@ -377,40 +381,47 @@
 </div>
 
 <!-- ============================================== -->
-<h2>7. 【スタッフ】有給残数を確認する</h2>
+<h2>7. 【スタッフ】休暇残数を確認する</h2>
 
 <div class="row-fig">
   <div>
     <div class="phone">
-      <div class="header"><div class="title">有給残数</div></div>
+      <div class="header"><div class="title">休暇 残数</div></div>
       <div class="card">
-        <h5>有給残数</h5>
-        <div style="display:flex; align-items:baseline; gap:8px; padding:8px 0;">
-          <div style="font-size:36px; font-weight:700; color:#2563EB;">12.5</div>
-          <div style="font-size:14px; color:#64748B;">日</div>
+        <h5>休暇 残数</h5>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div style="background:#FEF3C7; padding:8px; border-radius:6px;">
+            <div style="font-size:10px; color:#92400E; font-weight:600;">有給残</div>
+            <div style="font-size:24px; font-weight:700; color:#92400E;">12.5<span style="font-size:11px;">日</span></div>
+          </div>
+          <div style="background:#E9D5FF; padding:8px; border-radius:6px;">
+            <div style="font-size:10px; color:#6B21A8; font-weight:600;">シフト休残</div>
+            <div style="font-size:24px; font-weight:700; color:#6B21A8;">8<span style="font-size:11px;">日</span></div>
+          </div>
         </div>
-        <div style="font-size:10px; color:#64748B;">
-          ※ 残数は管理者が管理。半休は0.5日として計算されます。
+        <div style="font-size:10px; color:#64748B; margin-top:6px;">
+          ※ 残数は管理者が管理。半休は0.5日、シフト休は1日として計算。
         </div>
       </div>
     </div>
-    <div class="caption">▲ 有給残数表示（打刻タブ内）</div>
+    <div class="caption">▲ 休暇残数表示（打刻タブ内）</div>
   </div>
   <div>
     <h4>残数の確認方法</h4>
-    <p>「打刻」タブを開くと、有給残数カードが表示されます。</p>
+    <p>「打刻」タブを開くと「休暇 残数」カードに <strong>有給</strong> と <strong>シフト休</strong> の残数が並んで表示されます。</p>
 
     <h4>残数が増減するタイミング</h4>
     <table>
-      <tr><th>イベント</th><th>残数変化</th></tr>
-      <tr><td>有給申請が最終承認された</td><td>-1日</td></tr>
-      <tr><td>半休申請が承認された</td><td>-0.5日</td></tr>
-      <tr><td>承認後の有給を管理者が「取消」した</td><td>+1日（自動で戻る）</td></tr>
-      <tr><td>年初に管理者が一括付与した</td><td>+付与日数</td></tr>
+      <tr><th>イベント</th><th>有給残</th><th>シフト休残</th></tr>
+      <tr><td>有給申請が最終承認された</td><td>-1日</td><td>―</td></tr>
+      <tr><td>半休申請が承認された</td><td>-0.5日</td><td>―</td></tr>
+      <tr><td>シフト休申請が承認された</td><td>―</td><td>-1日</td></tr>
+      <tr><td>承認後の申請を管理者が「取消」した</td><td colspan="2">自動で残数が戻る</td></tr>
+      <tr><td>管理者が一括付与した</td><td colspan="2">それぞれ独立に +付与日数</td></tr>
     </table>
 
     <div class="warn">
-      残数不足のまま有給申請しようとすると警告が出ます。申請自体は可能ですが、原則として事前に管理者へ相談してください。
+      残数不足のまま有給・シフト休を申請しようとすると警告が出ます。申請自体は可能ですが、原則として事前に管理者へ相談してください。
     </div>
   </div>
 </div>
@@ -548,7 +559,7 @@
   <tr><td>▤ 勤怠</td><td>本日の出勤状況、月次サマリ、個別スタッフの勤怠詳細・モーダル編集、CSV出力</td></tr>
   <tr><td>✎ 申請</td><td>申請の承認・却下・取消・編集・削除、CSV出力</td></tr>
   <tr><td>📅 カレンダー</td><td>全社の休暇予定を月単位で俯瞰</td></tr>
-  <tr><td>⚙ 設定</td><td>有給残数管理 / 月締めロック / 部署管理（公休調整含む）/ 監査ログ / 会社共通設定 / 背景画像</td></tr>
+  <tr><td>⚙ 設定</td><td>有給残数管理 / シフト休残数管理 / 月締めロック / 部署管理（公休調整含む）/ 監査ログ / 会社共通設定 / 背景画像</td></tr>
 </table>
 
 <div class="note">
@@ -737,12 +748,13 @@
 
 <table>
   <tr><th>セクション</th><th>用途</th><th>頻度</th></tr>
-  <tr><td>1. 有給休暇 残数管理</td><td>残数の確認・編集・一括付与</td><td>月次〜年次</td></tr>
-  <tr><td>2. 月締めロック</td><td>確定した月の改ざん防止</td><td>月次</td></tr>
-  <tr><td>3. 部署一覧 / 部署追加・編集 / 月別公休の調整</td><td>部署の基本設定・公休パターン</td><td>導入時＋月次調整</td></tr>
-  <tr><td>4. 監査ログ</td><td>全変更履歴の閲覧・CSV出力</td><td>必要時</td></tr>
-  <tr><td>5. 会社共通のデフォルト設定</td><td>祝日・所定労働・36協定・有給最低取得義務</td><td>年次</td></tr>
-  <tr><td>6. 背景画像</td><td>管理者画面のカスタマイズ（ブラウザ単位）</td><td>初期のみ</td></tr>
+  <tr><td>1. 有給休暇 残数管理</td><td>有給残数の確認・編集・一括付与</td><td>月次〜年次</td></tr>
+  <tr><td>2. シフト休 残数管理</td><td>シフト休残数の確認・編集・一括付与（有給と別管理）</td><td>月次〜年次</td></tr>
+  <tr><td>3. 月締めロック</td><td>確定した月の改ざん防止</td><td>月次</td></tr>
+  <tr><td>4. 部署一覧 / 部署追加・編集 / 月別公休の調整</td><td>部署の基本設定・公休パターン</td><td>導入時＋月次調整</td></tr>
+  <tr><td>5. 監査ログ</td><td>全変更履歴の閲覧・CSV出力</td><td>必要時</td></tr>
+  <tr><td>6. 会社共通のデフォルト設定</td><td>祝日・所定労働・36協定・有給最低取得義務</td><td>年次</td></tr>
+  <tr><td>7. 背景画像</td><td>管理者画面のカスタマイズ（ブラウザ単位）</td><td>初期のみ</td></tr>
 </table>
 
 <h3>16.1 有給休暇 残数管理</h3>
@@ -766,7 +778,26 @@
   「5日未達のみ」のチェックボックスで、有給5日取得義務未達のスタッフだけを抽出可能（労基法対応）。
 </div>
 
-<h3>16.2 月締めロック</h3>
+<h3>16.2 シフト休 残数管理</h3>
+<div class="new-feature">
+  シフト休は <strong>有給とは別軸</strong> で残数管理されます。シフト休申請が承認されると -1日、取消されると +1日 自動で増減します。
+</div>
+
+<h4>全員に一括付与</h4>
+<div class="step"><span class="num">1</span>「シフト休 残数管理」セクションで付与日数を入力（例: 12）</div>
+<div class="step"><span class="num">2</span>動作（残数に加算 / 残数を上書き）を選ぶ</div>
+<div class="step"><span class="num">3</span>「全員に適用」→ 確認 → OK</div>
+
+<h4>個別に修正</h4>
+<div class="step"><span class="num">1</span>スタッフ一覧で対象者を探す</div>
+<div class="step"><span class="num">2</span>右の数値ボックスに新しい残数を入力</div>
+<div class="step"><span class="num">3</span>「更新」</div>
+
+<div class="note">
+  既存スタッフでまだ一度もシフト休残を付与していない場合、表示は <strong>0日</strong> です。初回付与時に過去取得分を考慮した日数で入れてください（過去の承認分は遡って自動差引されません）。
+</div>
+
+<h3>16.3 月締めロック</h3>
 <p>給与計算済みの月など、確定した月の変更を抑制したい時に使います。</p>
 <div class="step"><span class="num">1</span>「締済の月」テキストエリアに <code>2026-04</code> のように1行1月で入力</div>
 <div class="step"><span class="num">2</span>「月締めを保存」</div>
@@ -774,7 +805,7 @@
   ロックされた月を変更しようとすると警告ダイアログが出ます。強制編集は監査ログに記録されます。
 </div>
 
-<h3>16.3 部署管理</h3>
+<h3>16.4 部署管理</h3>
 
 <h4>部署を追加する</h4>
 <div class="step"><span class="num">1</span>「部署追加 / 編集」フォームに記入:
@@ -794,7 +825,7 @@
 <h4>部署を削除する</h4>
 <p>所属スタッフがいる場合は確認ダイアログが出て、削除すると全員「未所属」に戻ります。</p>
 
-<h3>16.4 公休パターンと月別調整</h3>
+<h3>16.5 公休パターンと月別調整</h3>
 
 <div class="new-feature">
   会社の公休が「毎週日曜・第1月曜・第3土曜」のように複雑な部署にも対応。「今月だけ」の例外も設定可。
@@ -829,7 +860,7 @@
   月別調整はその月に対してだけ有効。翌月は再び元の定休パターンが適用されます。
 </div>
 
-<h3>16.5 監査ログ</h3>
+<h3>16.6 監査ログ</h3>
 
 <div class="new-feature">
   <strong>勤怠・申請・有給残数・会社共通設定のすべての変更履歴</strong> を記録。労務監査や紛争対応時の証跡として活用できます。
@@ -848,7 +879,7 @@
   <li>「CSV出力」で全件を労務監査用にダウンロード可能</li>
 </ul>
 
-<h3>16.6 会社共通のデフォルト設定</h3>
+<h3>16.7 会社共通のデフォルト設定</h3>
 <p>未所属スタッフ・未設定の部署が使用する基準値、及び全社共通の数値を設定します。</p>
 <table>
   <tr><th>項目</th><th>用途</th></tr>
@@ -860,7 +891,7 @@
   <tr><td>残業 上限ライン（h/月）</td><td>36協定の上限（デフォルト45）</td></tr>
 </table>
 
-<h3>16.7 背景画像（このブラウザのみ）</h3>
+<h3>16.8 背景画像（このブラウザのみ）</h3>
 <p>管理者画面の背景に画像を設定できます。<strong>ブラウザに保存される個人設定</strong>で、他のスタッフには影響しません。</p>
 <div class="step"><span class="num">1</span>画像ファイル（JPG/PNG/WebP・2MB以下推奨）を選択 or 画像URLを入力</div>
 <div class="step"><span class="num">2</span>不透明度スライダーで透け具合を調整（90%前後推奨）</div>
@@ -990,6 +1021,18 @@
 
 <h3>Q14. 連続日申請（複数日の有給など）はできる？</h3>
 <p>申請画面で「期間」を選ぶと開始日〜終了日を指定して最大31日分を一括申請できます。自部署の公休は自動的に除外されます。</p>
+
+<h3>Q15. シフト休と有給の違いは？</h3>
+<p>
+シフト休は <strong>有給とは別の残数</strong> で管理されます（管理者が設定タブで個別に付与）。有給は法定の年次有給休暇、シフト休は会社独自のシフト調整用休暇という位置づけです。<br>
+シフト休申請は <strong>理由欄が任意</strong>（空欄でも申請可能）です。承認時に -1日、取消時に +1日 自動で増減します。
+</p>
+
+<h3>Q16. シフト休はどうやって付与する？（管理者向け）</h3>
+<p>
+「設定」タブの「シフト休 残数管理」セクションから、有給と同様に一括付与・個別編集が可能です。<br>
+既存スタッフでまだ一度も付与していない場合は表示が <strong>0日</strong> ですので、初回付与時に過去取得分を考慮した日数で入れてください。
+</p>
 
 <!-- ============================================== -->
 <h2>21. トラブルシューティング</h2>
