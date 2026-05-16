@@ -1,6 +1,6 @@
 // 勤怠管理アプリ用 Service Worker
 // HTMLとアイコンのキャッシュ + FCM プッシュ通知の受信
-const CACHE = 'kintai-v4';
+const CACHE = 'kintai-v5';
 const APP_SHELL = [
   './kintai.html',
   './kintai-staff.html',
