@@ -284,13 +284,25 @@
         </div>
 
         <div class="card" id="leaveBalanceCard">
-          <h2>有給残数</h2>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div style="font-size:36px; font-weight:700; color:#2563EB; font-variant-numeric:tabular-nums;" id="myLeaveBalance">--</div>
-            <div style="font-size:14px; color:#64748B;">日</div>
+          <h2>休暇 残数</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="padding:10px; background:#FEF3C7; border-radius:8px;">
+              <div style="font-size:12px; color:#92400E; font-weight:600;">有給残</div>
+              <div style="display:flex; align-items:baseline; gap:6px;">
+                <div style="font-size:30px; font-weight:700; color:#92400E; font-variant-numeric:tabular-nums;" id="myLeaveBalance">--</div>
+                <div style="font-size:13px; color:#92400E;">日</div>
+              </div>
+            </div>
+            <div style="padding:10px; background:#E9D5FF; border-radius:8px;">
+              <div style="font-size:12px; color:#6B21A8; font-weight:600;">シフト休残</div>
+              <div style="display:flex; align-items:baseline; gap:6px;">
+                <div style="font-size:30px; font-weight:700; color:#6B21A8; font-variant-numeric:tabular-nums;" id="myShiftBalance">--</div>
+                <div style="font-size:13px; color:#6B21A8;">日</div>
+              </div>
+            </div>
           </div>
-          <p style="font-size:12px; color:#64748B; margin:6px 0 0;">
-            ※ 残数は管理者が管理しています。半休は0.5日として計算されます。
+          <p style="font-size:12px; color:#64748B; margin:8px 0 0;">
+            ※ 残数は管理者が管理しています。有給の半休は0.5日、シフト休の承認は1日として計算されます。
           </p>
         </div>
 
@@ -1117,16 +1129,18 @@
   // ============================================================
   // 申請
   // ============================================================
-  // 自分の最新ユーザーデータから有給残数を表示
+  // 自分の最新ユーザーデータから有給残数・シフト休残数を表示
   async function updateLeaveBalance() {
     try {
       const snap = await db.collection("users").doc(currentUser.uid).get();
       if (!snap.exists) return;
       const data = snap.data();
       userData = data;
-      const bal = data.paidLeaveBalance != null ? data.paidLeaveBalance : 0;
-      $("myLeaveBalance").textContent = bal;
-    } catch (e) { console.warn("有給残数取得失敗:", e); }
+      const paid = data.paidLeaveBalance != null ? data.paidLeaveBalance : 0;
+      const shift = data.shiftLeaveBalance != null ? data.shiftLeaveBalance : 0;
+      $("myLeaveBalance").textContent = paid;
+      $("myShiftBalance").textContent = shift;
+    } catch (e) { console.warn("残数取得失敗:", e); }
   }
 
   // 個人ダッシュボード（今月のサマリー + 有給取得進捗）
@@ -1296,13 +1310,16 @@
       if (!confirm(`${dates.length}件の申請を作成します。よろしいですか？`)) return;
     }
 
-    // 有給/半休の残数チェック（合計）
-    const perDayCost = type === "有給" ? 1 : (type === "半休" ? 0.5 : 0);
+    // 残数チェック（合計）— 有給/半休 は paidLeaveBalance、シフト休 は shiftLeaveBalance
+    const perDayCost = type === "有給" ? 1 : (type === "半休" ? 0.5 : (type === "シフト休" ? 1 : 0));
+    const balanceField = (type === "有給" || type === "半休") ? "paidLeaveBalance"
+                        : (type === "シフト休" ? "shiftLeaveBalance" : null);
     const totalNeed = perDayCost * dates.length;
-    if (totalNeed > 0) {
-      const bal = userData.paidLeaveBalance != null ? userData.paidLeaveBalance : 0;
+    if (totalNeed > 0 && balanceField) {
+      const bal = userData[balanceField] != null ? userData[balanceField] : 0;
       if (bal < totalNeed) {
-        if (!confirm(`有給残数が不足しています（残${bal}日 / 必要${totalNeed}日）。それでも申請しますか？`)) {
+        const label = type === "シフト休" ? "シフト休残数" : "有給残数";
+        if (!confirm(`${label}が不足しています（残${bal}日 / 必要${totalNeed}日）。それでも申請しますか？`)) {
           return;
         }
       }
