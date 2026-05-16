@@ -2386,7 +2386,8 @@
         const date = editForm.querySelector(".ef-date").value;
         const reason = editForm.querySelector(".ef-reason").value.trim();
         const status = editForm.querySelector(".ef-status").value;
-        if (!date || !reason) { toast("対象日と理由を入力してください", "error"); return; }
+        if (!date) { toast("対象日を入力してください", "error"); return; }
+        if (type !== "シフト休" && !reason) { toast("理由を入力してください", "error"); return; }
         try {
           const update = { type, date, reason };
           if (TWO_STAGE_TYPES.includes(type)) {
