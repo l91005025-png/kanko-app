@@ -2,7 +2,7 @@
   "name": "勤怠管理（管理者）",
   "short_name": "勤怠管理者",
   "description": "全スタッフの勤怠・申請を管理するアプリ",
-  "start_url": "./kintai.html",
+  "start_url": "./admin.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
