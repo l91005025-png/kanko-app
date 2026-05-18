@@ -1,9 +1,10 @@
 // 勤怠管理アプリ用 Service Worker
 // HTMLとアイコンのキャッシュ + FCM プッシュ通知の受信
-const CACHE = 'kintai-v5';
+const CACHE = 'kintai-v6';
 const APP_SHELL = [
-  './kintai.html',
-  './kintai-staff.html',
+  './',
+  './index.html',
+  './admin.html',
   './icon.png',
   './manifest.json',
   './manifest-staff.json'
@@ -73,7 +74,7 @@ messaging.onBackgroundMessage((payload) => {
 // 通知クリック時にアプリの該当ページを開く
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || './kintai-staff.html';
+  const targetUrl = (event.notification.data && event.notification.data.url) || './';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
       for (const client of wins) {
