@@ -1,0 +1,3067 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  勤怠管理Webアプリ（管理者用） - admin.html
+  既存Firebaseプロジェクト「kanko-app-96378」を流用
+  ============================================================
+
+  ■ 役割分担
+  - スタッフ用（index.html）
+      打刻 / 自分の勤怠一覧 / 申請提出
+  - 管理者用（この admin.html）
+      全スタッフ勤怠閲覧 / 申請の承認・却下・取消・編集・削除 / スタッフ管理 / 設定
+      ※ adminロール以外のユーザーがログインすると管理者用機能は使えません
+
+  ■ Firebaseコンソールでの事前設定（必須）
+  1. Firebase Console > kanko-app-96378 > Authentication > 「始める」
+  2. Sign-in method > メール/パスワード を有効化
+  3. Firestore ルールに以下を追記（既存ルールはそのまま残す）：
+
+     match /users/{userId}       { allow read, write: if request.auth != null; }
+     match /attendance/{docId}   { allow read, write: if request.auth != null; }
+     match /requests/{docId}     { allow read, write: if request.auth != null; }
+     match /kintai_settings/{docId} {
+       allow read: if request.auth != null;
+       allow write: if request.auth != null
+         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+     }
+
+  ■ 既存コレクションとの分離
+  既存の records / schedule / settings には一切触れません。
+  勤怠アプリは users / attendance / requests / kintai_settings のみ使用。
+  ============================================================
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#2563EB" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="勤怠管理者" />
+  <title>勤怠（管理者）</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg-image: none;
+      --card-alpha: 0.96;
+      --card-bg: rgba(255, 255, 255, var(--card-alpha));
+      --topbar-bg: rgba(37, 99, 235, 0.94);
+    }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+      background: #F8FAFC; color: #0F172A;
+      font-size: 16px; line-height: 1.5;
+    }
+    body.has-bg {
+      background-color: #F8FAFC;
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+    }
+    body.has-bg .topbar { background: var(--topbar-bg); backdrop-filter: blur(4px); }
+    body.has-bg .card { background: var(--card-bg); backdrop-filter: blur(4px); }
+    body.has-bg .tabbar { background: rgba(255,255,255,0.94); backdrop-filter: blur(4px); }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea { font-family: inherit; font-size: 16px; }
+
+    #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { background: #fff; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
+    .login-card h1 { margin: 0 0 4px; font-size: 24px; color: #2563EB; }
+    .login-card p.sub { margin: 0 0 20px; color: #64748B; font-size: 14px; }
+    .login-tabs { display: flex; background: #F1F5F9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+    .login-tabs button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; color: #64748B; font-weight: 600; }
+    .login-tabs button.active { background: #fff; color: #2563EB; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #fff; transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 56px; padding: 0 20px; border: none; border-radius: 12px;
+      background: #2563EB; color: #fff; font-size: 16px; font-weight: 700;
+      transition: background 0.15s, transform 0.05s; width: 100%;
+    }
+    .btn:hover { background: #1D4ED8; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #94A3B8; cursor: not-allowed; }
+    .btn.secondary { background: #fff; color: #2563EB; border: 1px solid #CBD5E1; }
+    .btn.secondary:hover { background: #F1F5F9; }
+    .btn.danger { background: #DC2626; }
+    .btn.danger:hover { background: #B91C1C; }
+    .btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; width: auto; border-radius: 8px; }
+
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .btn.secondary .spinner { border-color: rgba(37,99,235,0.3); border-top-color: #2563EB; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #app { display: none; min-height: 100vh; padding-bottom: 80px; }
+    #blockedScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 16px; text-align: center; }
+    #blockedScreen .card { max-width: 420px; }
+    #blockedScreen h2 { margin-top: 0; color: #DC2626; }
+    #blockedScreen a { color: #2563EB; }
+
+    .topbar { background: #2563EB; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .topbar h1 { margin: 0; font-size: 18px; }
+    .topbar .user-info { font-size: 13px; opacity: 0.95; }
+    .topbar button { background: rgba(255,255,255,0.18); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+
+    .container { padding: 16px; max-width: 900px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); margin-bottom: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 16px; color: #1E293B; }
+
+    .tabbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 10; box-shadow: 0 -2px 10px rgba(15,23,42,0.04); }
+    .tabbar button { padding: 10px 4px 14px; border: none; background: transparent; color: #64748B; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; }
+    .tabbar button.active { color: #2563EB; }
+    .tabbar button .ico { font-size: 20px; line-height: 1; position: relative; }
+    .tabbar button .pending-badge {
+      position: absolute; top: -4px; right: -10px;
+      background: #DC2626; color: #fff;
+      font-size: 10px; font-weight: 700;
+      min-width: 16px; height: 16px; line-height: 16px;
+      border-radius: 10px; padding: 0 4px;
+      border: 2px solid #fff;
+    }
+
+    .month-selector { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .month-selector input { flex: 1; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 10px; }
+
+    .staff-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #E2E8F0; gap: 8px; }
+    .staff-row:last-child { border-bottom: none; }
+    .staff-row .info .name { font-weight: 600; }
+    .staff-row .info .email { font-size: 12px; color: #64748B; }
+    .staff-row .controls { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .staff-row select { padding: 6px 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; }
+
+    .role-badge { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+    .role-admin { background: #FEF3C7; color: #B45309; }
+    .role-staff { background: #E0E7FF; color: #3730A3; }
+
+    .req-item { padding: 12px; border-radius: 10px; background: #F8FAFC; margin-bottom: 8px; border-left: 4px solid #94A3B8; }
+    .req-item.status-申請中 { border-left-color: #F59E0B; }
+    .req-item.status-承認 { border-left-color: #10B981; }
+    .req-item.status-却下 { border-left-color: #DC2626; }
+    .req-item .head { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 600; }
+    .req-item .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #E2E8F0; color: #475569; }
+    .req-item.status-申請中 .status-badge { background: #FEF3C7; color: #B45309; }
+    .req-item.status-承認 .status-badge { background: #D1FAE5; color: #047857; }
+    .req-item.status-却下 .status-badge { background: #FEE2E2; color: #B91C1C; }
+    .req-item .meta { font-size: 12px; color: #64748B; }
+    .req-item .reason { font-size: 13px; margin-top: 6px; color: #334155; }
+    .req-item .actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+    .edit-form { display: none; margin-top: 10px; padding: 12px; background: #fff; border: 1px solid #CBD5E1; border-radius: 10px; }
+    .edit-form.open { display: block; }
+    .edit-form .form-group { margin-bottom: 10px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .filter-row select, .filter-row input { padding: 8px 10px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 14px; }
+
+    #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0F172A; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.25s, transform 0.25s; z-index: 100; max-width: calc(100% - 32px); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: #DC2626; }
+    #toast.success { background: #10B981; }
+    .empty { text-align: center; color: #94A3B8; padding: 30px 10px; font-size: 14px; }
+    hr.sep { border: none; border-top: 1px solid #E2E8F0; margin: 14px 0; }
+
+    /* 勤怠詳細テーブル */
+    .table-wrap { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+    table.attendance { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.attendance th, table.attendance td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+    table.attendance th { background: #F8FAFC; color: #475569; font-weight: 600; }
+    table.attendance td { font-variant-numeric: tabular-nums; }
+    table.attendance tr.saturday td:first-child, table.attendance tr.saturday td:nth-child(2) { color: #2563EB; }
+    table.attendance tr.sunday td:first-child, table.attendance tr.sunday td:nth-child(2),
+    table.attendance tr.holiday td:first-child, table.attendance tr.holiday td:nth-child(2) { color: #DC2626; }
+
+    .staff-link { color: #2563EB; cursor: pointer; text-decoration: underline; }
+
+    /* ===== スマホ最適化 ===== */
+    @media (max-width: 600px) {
+      .container { padding: 12px; }
+      .card { padding: 14px; }
+      .topbar h1 { font-size: 16px; }
+      .filter-row { gap: 6px; }
+      .filter-row select, .filter-row input { font-size: 13px; padding: 8px; }
+      .staff-row {
+        flex-wrap: wrap; gap: 6px;
+      }
+      .staff-row .info { flex: 1 1 100%; min-width: 0; }
+      .staff-row .info .name { font-size: 14px; word-break: break-word; }
+      .staff-row .info .email { font-size: 11px; }
+      .staff-row .controls {
+        flex: 1 1 100%; justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .staff-row .controls select { font-size: 12px; padding: 4px 6px; }
+      .staff-row .controls .btn.small { font-size: 12px; min-height: 32px; padding: 0 8px; }
+      .req-item .actions { flex-wrap: wrap; }
+      .req-item .actions .btn.small { font-size: 12px; min-height: 36px; padding: 0 10px; }
+      .month-selector { flex-wrap: wrap; }
+      .dept-row { flex-direction: column; align-items: stretch; }
+      .dept-row .controls { justify-content: flex-end; }
+      .table-wrap { margin: 0 -14px; padding: 0 14px; }
+      table.attendance { font-size: 12px; }
+      table.attendance th, table.attendance td { padding: 6px 4px; }
+      .tabbar.tabs-5 button { font-size: 10px; padding: 6px 1px 10px; }
+      .tabbar.tabs-5 button .ico { font-size: 16px; }
+      .dept-badge, .role-badge, .pl-pill, .ot-pill { font-size: 10px; }
+      .login-card { padding: 20px; }
+      h2 { font-size: 14px; }
+    }
+
+    /* 部署バッジ */
+    .dept-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; background: #DBEAFE; color: #1E40AF; }
+    .dept-head-badge { background: #F0ABFC; color: #86198F; }
+    .ga-badge { background: #FECACA; color: #991B1B; }
+
+    /* 二段階承認バッジ */
+    .stage-row { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; font-size: 11px; }
+    .stage-row .stage { padding: 2px 8px; border-radius: 999px; background: #F1F5F9; color: #475569; }
+    .stage-row .stage.ok { background: #D1FAE5; color: #047857; }
+    .stage-row .stage.ng { background: #FEE2E2; color: #B91C1C; }
+    .stage-row .stage.pending { background: #FEF3C7; color: #B45309; }
+
+    /* タブバー: 5タブ用に調整 */
+    .tabbar.tabs-5 { grid-template-columns: repeat(5, 1fr); }
+    .tabbar.tabs-5 button { font-size: 11px; padding: 8px 2px 12px; }
+    .tabbar.tabs-5 button .ico { font-size: 18px; }
+
+    /* カレンダー */
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 12px; }
+    .calendar .cal-head { background: #F1F5F9; color: #475569; text-align: center; font-size: 12px; padding: 6px 2px; font-weight: 600; }
+    .calendar .cal-head.sun { color: #DC2626; }
+    .calendar .cal-head.sat { color: #2563EB; }
+    .calendar .cal-cell {
+      background: #fff; min-height: 76px; padding: 4px;
+      border: 1px solid #E2E8F0; font-size: 11px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .calendar .cal-cell.empty { background: #F8FAFC; }
+    .calendar .cal-cell.today { background: #EFF6FF; border-color: #2563EB; }
+    .calendar .cal-cell.holiday { background: #FEF2F2; }
+    .calendar .cal-cell .day { font-weight: 600; font-size: 13px; }
+    .calendar .cal-cell .day.sun { color: #DC2626; }
+    .calendar .cal-cell .day.sat { color: #2563EB; }
+    .calendar .cal-cell .leave { font-size: 10px; padding: 1px 4px; border-radius: 3px; line-height: 1.3; word-break: break-all; }
+    .leave-yukyu  { background: #FEF3C7; color: #92400E; }
+    .leave-han    { background: #FED7AA; color: #9A3412; }
+    .leave-shift  { background: #E9D5FF; color: #6B21A8; }
+    .leave-late   { background: #FECACA; color: #991B1B; }
+    .leave-early  { background: #FECACA; color: #991B1B; }
+    .leave-over   { background: #BFDBFE; color: #1E40AF; }
+    .leave-out    { background: #C7D2FE; color: #3730A3; }
+    .leave-fix    { background: #E2E8F0; color: #475569; }
+    .leave-direct { background: #D1FAE5; color: #065F46; }
+
+    /* モバイルでカレンダーを読みやすく */
+    @media (max-width: 600px) {
+      .calendar .cal-cell { min-height: 60px; padding: 2px; }
+      .calendar .cal-cell .day { font-size: 12px; }
+      .calendar .cal-cell .leave { font-size: 9px; padding: 1px 3px; }
+    }
+
+    /* 公休パターン */
+    .pattern-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+    .pattern-row select { padding: 6px 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 14px; }
+    .pattern-row .del-pat { color: #DC2626; background: #FEE2E2; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+
+    /* 月別公休調整カレンダー */
+    .month-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 8px; }
+    .month-cal .mc-head { background: #F1F5F9; color: #475569; text-align: center; font-size: 12px; padding: 6px 2px; font-weight: 600; }
+    .month-cal .mc-head.sun { color: #DC2626; }
+    .month-cal .mc-head.sat { color: #2563EB; }
+    .month-cal .mc-cell {
+      background: #fff; min-height: 44px; padding: 4px;
+      border: 1px solid #E2E8F0; font-size: 12px;
+      cursor: pointer; user-select: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: transform 0.05s;
+    }
+    .month-cal .mc-cell:active { transform: scale(0.95); }
+    .month-cal .mc-cell.empty { background: #F8FAFC; cursor: default; }
+    .month-cal .mc-cell.dft-holiday { background: #FEF2F2; color: #B91C1C; }
+    .month-cal .mc-cell.add-holiday { background: #FCA5A5; color: #fff; border: 2px solid #DC2626; }
+    .month-cal .mc-cell.cancel-holiday { background: #FEF3C7; color: #92400E; border: 2px solid #F59E0B; text-decoration: line-through; }
+    .month-cal .mc-cell .mc-mark { font-size: 10px; line-height: 1; }
+
+    /* 背景画像プレビュー */
+    .bg-preview {
+      width: 100%; height: 120px; border-radius: 10px;
+      border: 1px dashed #CBD5E1; background-size: cover; background-position: center;
+      display: flex; align-items: center; justify-content: center;
+      color: #94A3B8; font-size: 13px;
+    }
+
+    /* 36協定 警告色 */
+    .ot-warn { color: #B45309; font-weight: 700; }
+    .ot-danger { color: #B91C1C; font-weight: 700; }
+    .ot-pill {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      font-size: 11px; font-weight: 600; margin-left: 4px;
+    }
+    .ot-pill.warn { background: #FEF3C7; color: #B45309; }
+    .ot-pill.danger { background: #FEE2E2; color: #B91C1C; }
+    .pl-pill {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      font-size: 11px; font-weight: 600; margin-left: 4px;
+      background: #F1F5F9; color: #475569;
+    }
+    .pl-pill.warn { background: #FEF3C7; color: #B45309; }
+    .pl-pill.ok { background: #D1FAE5; color: #047857; }
+
+    /* 監査ログ */
+    .audit-row {
+      padding: 8px 10px; border: 1px solid #E2E8F0; border-radius: 6px;
+      margin-bottom: 6px; font-size: 13px; background: #F8FAFC;
+    }
+    .audit-row .head { display: flex; justify-content: space-between; font-weight: 600; color: #1E3A8A; }
+    .audit-row .meta { font-size: 11px; color: #64748B; }
+    .audit-row .desc { margin-top: 4px; }
+    .audit-row .diff { margin-top: 4px; font-size: 11px; color: #475569; font-family: monospace; white-space: pre-wrap; word-break: break-all; }
+    .audit-row details > summary { cursor: pointer; font-size: 11px; color: #2563EB; margin-top: 4px; user-select: none; }
+    .audit-row details[open] > summary { margin-bottom: 2px; }
+
+    /* 部署リストカード */
+    .dept-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+    .dept-row .info .name { font-weight: 700; font-size: 15px; }
+    .dept-row .info .meta { font-size: 12px; color: #64748B; margin-top: 2px; }
+    .dept-row .controls { display: flex; gap: 6px; }
+
+    /* モーダル */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-card { background: #fff; border-radius: 12px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #E2E8F0; }
+    .modal-head h3 { margin: 0; font-size: 16px; }
+    .modal-x { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748B; padding: 0 6px; line-height: 1; }
+    .modal-body { padding: 16px; }
+    .modal-body input[type="time"] { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #CBD5E1; border-radius: 8px; }
+    .modal-body input[type="text"] { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #CBD5E1; border-radius: 8px; }
+    .modal-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; justify-content: flex-end; }
+    .modal-actions .btn.danger { margin-right: auto; }
+  </style>
+</head>
+<body>
+
+  <!-- ログイン画面 -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <h1>勤怠管理（管理者）</h1>
+      <p class="sub">管理者権限のあるアカウントでログインしてください</p>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="authEmail" placeholder="example@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="authPassword" autocomplete="current-password" />
+      </div>
+      <button id="authSubmit" class="btn" type="button">ログイン</button>
+      <p class="sub" style="margin-top:16px; text-align:center;">
+        新規登録は <a href="index.html" style="color:#2563EB;">スタッフ用アプリ</a> からお願いします。
+      </p>
+    </div>
+  </div>
+
+  <!-- 権限なし画面 -->
+  <div id="blockedScreen">
+    <div class="card">
+      <h2>管理者権限がありません</h2>
+      <p>このページは管理者専用です。<br>スタッフは <a href="index.html">スタッフ用アプリ</a> をご利用ください。</p>
+      <hr class="sep" />
+      <button id="blockedLogoutBtn" class="btn secondary" type="button">ログアウト</button>
+    </div>
+  </div>
+
+  <!-- 管理者メイン -->
+  <div id="app">
+    <div class="topbar">
+      <div>
+        <h1>勤怠管理（管理者）</h1>
+        <div class="user-info" id="topbarUser"></div>
+      </div>
+      <button id="logoutBtn" type="button">ログアウト</button>
+    </div>
+
+    <div class="container">
+
+      <!-- スタッフ管理 -->
+      <div id="tab-staff" class="tab-content active">
+        <div class="card">
+          <h2>スタッフ一覧</h2>
+          <div class="filter-row">
+            <select id="staffFilterDept"><option value="all">全部署</option></select>
+          </div>
+          <div id="staffList"></div>
+        </div>
+        <div class="card">
+          <h2>スタッフ追加</h2>
+          <div class="form-group"><label>氏名</label><input type="text" id="newStaffName" /></div>
+          <div class="form-group"><label>メールアドレス</label><input type="email" id="newStaffEmail" /></div>
+          <div class="form-group"><label>初期パスワード（6文字以上）</label><input type="password" id="newStaffPassword" /></div>
+          <div class="form-group">
+            <label>所属部署</label>
+            <select id="newStaffDept"><option value="">未所属</option></select>
+          </div>
+          <div class="form-group">
+            <label>権限</label>
+            <select id="newStaffRole">
+              <option value="staff">スタッフ</option>
+              <option value="admin">管理者</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="newStaffDeptHead" /> 部署上長にする</label>
+          </div>
+          <button id="newStaffBtn" class="btn" type="button">スタッフを追加</button>
+        </div>
+      </div>
+
+      <!-- 勤怠管理 -->
+      <div id="tab-attendance" class="tab-content">
+        <div class="card">
+          <h2>本日の出勤状況</h2>
+          <div id="todayStatusList"></div>
+          <button id="todayStatusReloadBtn" class="btn small secondary" type="button" style="margin-top:10px;">更新</button>
+        </div>
+
+        <div class="card">
+          <h2>部署別サマリ</h2>
+          <div id="deptSummary"></div>
+        </div>
+
+        <div class="card">
+          <h2>全スタッフの月次勤怠サマリ</h2>
+          <div class="month-selector">
+            <input type="month" id="adminMonth" />
+            <button id="adminReloadBtn" class="btn small secondary" type="button">更新</button>
+            <select id="csvFormat" style="padding:8px; border:1px solid #CBD5E1; border-radius:8px;">
+              <option value="standard">標準（日別）</option>
+              <option value="summary">月度集計（給与ソフト用）</option>
+              <option value="mf">マネーフォワード給与</option>
+              <option value="yayoi">弥生給与</option>
+              <option value="freee">freee人事労務</option>
+            </select>
+            <button id="csvExportAttendanceBtn" class="btn small secondary" type="button">CSV出力</button>
+          </div>
+          <div id="adminAttendance"></div>
+        </div>
+
+        <div class="card" id="detailCard" style="display:none;">
+          <h2 id="detailTitle">個別勤怠</h2>
+          <div class="table-wrap">
+            <table class="attendance">
+              <thead><tr><th>日</th><th>曜</th><th>出勤</th><th>退勤</th><th>労働</th><th>残業</th><th>編集</th></tr></thead>
+              <tbody id="detailBody"></tbody>
+            </table>
+          </div>
+          <button id="detailCloseBtn" class="btn small secondary" style="margin-top:12px;" type="button">閉じる</button>
+        </div>
+      </div>
+
+      <!-- 申請管理 -->
+      <div id="tab-requests" class="tab-content">
+        <div class="card">
+          <h2>申請管理</h2>
+          <div class="filter-row">
+            <select id="reqFilterStatus">
+              <option value="all">全ステータス</option>
+              <option value="申請中">申請中</option>
+              <option value="部署上長承認待ち">部署上長承認待ち</option>
+              <option value="総務承認待ち">総務承認待ち</option>
+              <option value="承認">承認</option>
+              <option value="却下">却下</option>
+            </select>
+            <select id="reqFilterType"><option value="all">全種別</option></select>
+            <select id="reqFilterDept"><option value="all">全部署</option></select>
+            <select id="reqFilterUser"><option value="all">全スタッフ</option></select>
+            <input type="date" id="reqFilterFrom" title="開始日" />
+            <input type="date" id="reqFilterTo" title="終了日" />
+            <button id="reqFilterClearBtn" class="btn small secondary" type="button">条件クリア</button>
+            <button id="reqReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="csvExportRequestsBtn" class="btn small secondary" type="button">CSV出力</button>
+          </div>
+          <div id="reqFilterSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
+          <div id="adminRequests"></div>
+        </div>
+      </div>
+
+      <!-- カレンダー -->
+      <div id="tab-calendar" class="tab-content">
+        <div class="card">
+          <h2>休暇カレンダー</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">承認済みの休暇・申請中の休暇が一覧できます。</p>
+          <div class="filter-row">
+            <input type="month" id="calMonth" />
+            <select id="calFilterDept"><option value="all">全部署</option></select>
+            <select id="calIncludePending">
+              <option value="approved">承認済のみ</option>
+              <option value="all">承認＋申請中</option>
+            </select>
+            <button id="calReloadBtn" class="btn small secondary" type="button">更新</button>
+          </div>
+          <div id="calLegend" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; font-size:11px;"></div>
+          <div id="calendar" class="calendar"></div>
+        </div>
+      </div>
+
+      <!-- 設定 -->
+      <div id="tab-settings" class="tab-content">
+        <div class="card">
+          <h2>有給休暇 残数管理</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各スタッフの有給残数を編集できます。<br>
+            有給承認時は -1日、半休承認時は -0.5日 が自動的に差し引かれます。<br>
+            年初の付与など一括変更は <strong>「全員に付与」</strong> ボタンで行えます。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="number" id="grantAmount" placeholder="付与日数" step="0.5" style="flex:1; padding:8px; border:1px solid #CBD5E1; border-radius:6px; min-width:100px;" />
+            <select id="grantTarget" style="padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="add">残数に加算</option>
+              <option value="set">残数を上書き</option>
+            </select>
+            <button id="grantAllBtn" class="btn small" type="button">全員に適用</button>
+          </div>
+
+          <!-- 絞り込みコントロール -->
+          <div style="display:flex; gap:8px; margin: 14px 0 6px; flex-wrap: wrap; align-items: center; padding: 10px; background:#F8FAFC; border-radius:8px;">
+            <input type="search" id="leaveSearch" placeholder="🔍 氏名で検索" style="flex:2; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <select id="leaveFilterDept" style="flex:1; min-width:120px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全部署</option>
+            </select>
+            <select id="leaveSort" style="flex:1; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="name">並び: 氏名順</option>
+              <option value="bal_asc">並び: 残数少ない順</option>
+              <option value="taken_asc">並び: 取得日数少ない順</option>
+              <option value="dept">並び: 部署順</option>
+            </select>
+            <label style="display:flex; align-items:center; gap:4px; font-size:13px; white-space:nowrap;">
+              <input type="checkbox" id="leaveRiskOnly" />
+              5日未達のみ
+            </label>
+          </div>
+          <div id="leaveBalanceSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
+          <div id="leaveBalanceList"></div>
+        </div>
+
+        <div class="card">
+          <h2>シフト休 残数管理</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各スタッフのシフト休残数を編集できます。<br>
+            シフト休申請が承認されると -1日 が自動的に差し引かれます（取消で +1日 戻り）。<br>
+            一括変更は <strong>「全員に付与」</strong> ボタンで行えます（有給とは別管理）。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <input type="number" id="grantShiftAmount" placeholder="付与日数" step="1" style="flex:1; padding:8px; border:1px solid #CBD5E1; border-radius:6px; min-width:100px;" />
+            <select id="grantShiftTarget" style="padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="add">残数に加算</option>
+              <option value="set">残数を上書き</option>
+            </select>
+            <button id="grantShiftAllBtn" class="btn small" type="button">全員に適用</button>
+          </div>
+
+          <!-- 絞り込みコントロール -->
+          <div style="display:flex; gap:8px; margin: 14px 0 6px; flex-wrap: wrap; align-items: center; padding: 10px; background:#F8FAFC; border-radius:8px;">
+            <input type="search" id="shiftSearch" placeholder="🔍 氏名で検索" style="flex:2; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <select id="shiftFilterDept" style="flex:1; min-width:120px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全部署</option>
+            </select>
+            <select id="shiftSort" style="flex:1; min-width:140px; padding:8px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="name">並び: 氏名順</option>
+              <option value="bal_asc">並び: 残数少ない順</option>
+              <option value="dept">並び: 部署順</option>
+            </select>
+          </div>
+          <div id="shiftBalanceSummary" style="font-size:12px; color:#64748B; margin-bottom:8px;"></div>
+          <div id="shiftBalanceList"></div>
+        </div>
+
+        <div class="card">
+          <h2>月締めロック</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            締めた月の勤怠・申請を編集しようとすると警告が出ます（強制編集は監査ログに記録）。
+          </p>
+          <div class="form-group">
+            <label>締済の月（1行1月：YYYY-MM）</label>
+            <textarea id="settingClosedMonths" placeholder="2026-03&#10;2026-04"></textarea>
+          </div>
+          <button id="settingClosedSaveBtn" class="btn small secondary" type="button">月締めを保存</button>
+        </div>
+
+        <div class="card">
+          <h2>部署一覧</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            各部署の勤務時間・定休日を設定できます。所属スタッフはここで設定された値を優先して使用します。
+          </p>
+          <div id="deptList"></div>
+        </div>
+        <div class="card">
+          <h2>部署追加 / 編集</h2>
+          <div class="form-group"><label>部署名</label><input type="text" id="deptName" placeholder="例: 営業部" /></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>始業</label><input type="time" id="deptWorkStart" value="09:00" /></div>
+            <div class="form-group"><label>終業</label><input type="time" id="deptWorkEnd" value="18:00" /></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>休憩(分)</label><input type="number" id="deptBreak" value="60" min="0" /></div>
+            <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptWorkMin" value="480" min="0" /></div>
+          </div>
+          <div class="form-group">
+            <label>定休パターン（毎月自動適用）</label>
+            <p style="font-size:12px; color:#64748B; margin:0 0 8px;">例: 「毎週 日曜」「第1 月曜」「第3 土曜」など。複数追加可能。</p>
+            <div id="deptPatternList"></div>
+            <button id="addPatternBtn" class="btn small secondary" type="button" style="margin-top:6px;">＋ パターンを追加</button>
+          </div>
+          <div class="form-group">
+            <label>固定休日（毎年同じ日：YYYY-MM-DD、1行1日付）</label>
+            <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
+          </div>
+          <input type="hidden" id="deptEditId" value="" />
+          <div style="display:flex; gap:8px;">
+            <button id="deptSaveBtn" class="btn" type="button">保存</button>
+            <button id="deptResetBtn" class="btn secondary" type="button">クリア</button>
+          </div>
+        </div>
+
+        <!-- 月別公休の調整（編集中の部署に対して） -->
+        <div class="card" id="monthOvrCard" style="display:none;">
+          <h2>月別の公休調整</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 8px;">
+            編集中の部署「<strong id="monthOvrDeptName"></strong>」の月別の例外を設定します。<br>
+            セルをクリック: 平日↔休日 を切替（クリックで自動保存）。再度クリックで例外解除。
+          </p>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <input type="month" id="monthOvrPicker" />
+            <button id="monthOvrLoadBtn" class="btn small secondary" type="button">表示</button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:6px;">
+            <span style="background:#FEF2F2; color:#B91C1C; padding:2px 8px; border-radius:4px;">既定で休</span>
+            <span style="background:#FCA5A5; color:#fff; padding:2px 8px; border-radius:4px;">追加で休にした</span>
+            <span style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; text-decoration:line-through;">休→平日に取消</span>
+          </div>
+          <div id="monthOvrCalendar" class="month-cal"></div>
+        </div>
+
+        <div class="card">
+          <h2>監査ログ</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            勤怠・申請・有給残数等の変更履歴（最新50件）。労務監査や紛争対応用。
+          </p>
+          <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <select id="auditFilterCollection" style="padding:6px; border:1px solid #CBD5E1; border-radius:6px;">
+              <option value="all">全コレクション</option>
+              <option value="attendance">勤怠</option>
+              <option value="requests">申請</option>
+              <option value="users">スタッフ/有給</option>
+            </select>
+            <button id="auditReloadBtn" class="btn small secondary" type="button">更新</button>
+            <button id="auditCsvBtn" class="btn small secondary" type="button">CSV出力</button>
+          </div>
+          <div id="auditList"></div>
+        </div>
+
+        <div class="card">
+          <h2>会社共通のデフォルト設定</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">未所属スタッフ・未設定の部署はこの値を使用します。</p>
+          <div class="form-group"><label>所定労働時間（分）</label><input type="number" id="settingWorkMin" min="0" step="1" /></div>
+          <div class="form-group">
+            <label>会社全体の祝日リスト（1行1日付：YYYY-MM-DD）</label>
+            <textarea id="settingHolidays" placeholder="2025-01-01&#10;2025-01-13"></textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>会計年度開始月（1-12）</label><input type="number" id="settingFiscalStart" min="1" max="12" /></div>
+            <div class="form-group"><label>有給最低取得義務（日）</label><input type="number" id="settingPaidLeaveMin" min="0" step="0.5" /></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="form-group"><label>残業 注意ライン（h/月）</label><input type="number" id="settingOTWarn" min="0" /></div>
+            <div class="form-group"><label>残業 上限ライン（h/月）</label><input type="number" id="settingOTMax" min="0" /></div>
+          </div>
+          <button id="settingSaveBtn" class="btn" type="button">設定を保存</button>
+        </div>
+
+        <div class="card">
+          <h2>背景画像（このブラウザのみ）</h2>
+          <p style="font-size:13px; color:#64748B; margin:0 0 12px;">
+            管理者アプリの背景に好きな画像を表示できます。設定はこのブラウザにのみ保存され、他のスタッフには影響しません。
+          </p>
+          <div class="form-group">
+            <label>画像ファイル（JPG/PNG/WebP、推奨 2MB以下）</label>
+            <input type="file" id="bgFileInput" accept="image/*" />
+          </div>
+          <div class="form-group">
+            <label>または画像URL</label>
+            <input type="url" id="bgUrlInput" placeholder="https://example.com/image.jpg" />
+            <button id="bgUrlApplyBtn" class="btn small secondary" type="button" style="margin-top:6px;">URLを適用</button>
+          </div>
+          <div class="form-group">
+            <label>カードの不透明度: <span id="bgAlphaVal">96</span>%（低いと背景が透けます）</label>
+            <input type="range" id="bgAlphaInput" min="50" max="100" step="2" value="96" style="width:100%;" />
+          </div>
+          <div class="bg-preview" id="bgPreview">プレビュー（未設定）</div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button id="bgClearBtn" class="btn small danger" type="button">背景を解除</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <nav class="tabbar tabs-5">
+      <button data-tab="tab-staff" class="active" type="button"><span class="ico">👥</span>スタッフ</button>
+      <button data-tab="tab-attendance" type="button"><span class="ico">▤</span>勤怠</button>
+      <button data-tab="tab-requests" type="button"><span class="ico">✎<span class="pending-badge" id="reqPendingBadge" style="display:none;">0</span></span>申請</button>
+      <button data-tab="tab-calendar" type="button"><span class="ico">📅</span>カレンダー</button>
+      <button data-tab="tab-settings" type="button"><span class="ico">⚙</span>設定</button>
+    </nav>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- 勤怠編集モーダル -->
+  <div id="attEditModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="attEditTitle">勤怠を編集</h3>
+        <button id="attEditClose" class="modal-x" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="attEditMeta" style="font-size:13px; color:#64748B; margin-bottom:12px;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>出勤時刻</label>
+            <input type="time" id="attEditIn" />
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>退勤時刻</label>
+            <input type="time" id="attEditOut" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>備考</label>
+          <input type="text" id="attEditNote" placeholder="任意" />
+        </div>
+        <div id="attEditCalc" style="font-size:12px; color:#475569; padding:8px 10px; background:#F8FAFC; border-radius:6px;"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="attEditClear" class="btn small danger" type="button">記録を削除</button>
+        <button id="attEditCancel" class="btn small secondary" type="button">キャンセル</button>
+        <button id="attEditSave" class="btn small" type="button">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+
+  <script>
+  // ============================================================
+  // Firebase初期化（kintai-app-95b49）
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyCNP-jkL5WRx4IeC6IqkLWsyVo_83RXDEM",
+    authDomain: "kintai-app-95b49.firebaseapp.com",
+    projectId: "kintai-app-95b49",
+    storageBucket: "kintai-app-95b49.firebasestorage.app",
+    messagingSenderId: "276856206619",
+    appId: "1:276856206619:web:0dab1ee8b413265af64fbe"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const functions = firebase.app().functions("asia-northeast1");
+  const callDeleteUser = functions.httpsCallable("deleteUser");
+
+  // Service Worker登録（PWA用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW登録失敗', err));
+    });
+  }
+
+  // ============================================================
+  // 共通ユーティリティ
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  let toastTimer = null;
+  function toast(msg, type = "") {
+    const el = $("toast");
+    el.textContent = msg;
+    el.className = "show " + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = type; }, 2800);
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function currentMonthStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+  function formatHM(date) {
+    if (!date) return "--:--";
+    const d = date instanceof Date ? date : date.toDate();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function minutesToHM(min) { if (!min || min < 0) return "0:00"; return `${Math.floor(min/60)}:${pad(min%60)}`; }
+  const weekdayJp = ["日","月","火","水","木","金","土"];
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span>';
+      btn.disabled = true;
+    } else {
+      if (btn.dataset.originalText) btn.innerHTML = btn.dataset.originalText;
+      btn.disabled = false;
+    }
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+  // CSVダウンロード（Excel互換のためBOM付与）
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(r => r.map(c => {
+      const s = c == null ? "" : String(c);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function translateAuthError(e) {
+    const code = e && e.code ? e.code : "";
+    const map = {
+      "auth/invalid-email": "メールアドレスの形式が正しくありません",
+      "auth/user-not-found": "ユーザーが見つかりません",
+      "auth/wrong-password": "パスワードが違います",
+      "auth/invalid-credential": "メールまたはパスワードが違います",
+      "auth/email-already-in-use": "このメールアドレスは既に使用されています",
+      "auth/weak-password": "パスワードは6文字以上で入力してください",
+      "auth/network-request-failed": "ネットワークエラーが発生しました"
+    };
+    return map[code] || (e.message || "エラーが発生しました");
+  }
+
+  // ============================================================
+  // グローバル状態
+  // ============================================================
+  let currentUser = null;
+  let userData = null;
+  let settings = {
+    workMinutesPerDay: 480,
+    holidays: [],
+    closedMonths: [],
+    overtimeWarnHours: 36,
+    overtimeMaxHours: 45,
+    fiscalYearStart: 4,
+    paidLeaveMinDays: 5
+  };
+  let allUsers = {}; // uid -> userData キャッシュ
+  let allRequests = []; // 申請管理の全データ
+  let allDepartments = {}; // id -> dept data
+
+  // 監査ログヘルパー（誰が・いつ・何をしたかを audit_logs に記録）
+  async function audit(action, collection, docId, description, before, after) {
+    if (!currentUser) return;
+    try {
+      const myName = (allUsers[currentUser.uid] && allUsers[currentUser.uid].name)
+        || (userData && userData.name) || "";
+      await db.collection("audit_logs").add({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: currentUser.uid,
+        byName: myName,
+        action: action,
+        collection: collection,
+        docId: docId || "",
+        description: description || "",
+        before: before == null ? null : JSON.parse(JSON.stringify(before)),
+        after: after == null ? null : JSON.parse(JSON.stringify(after))
+      });
+    } catch (e) { console.warn("監査ログ記録失敗:", e); }
+  }
+
+  // 月締めロック判定
+  function isMonthClosed(dateStr) {
+    if (!dateStr || dateStr.length < 7) return false;
+    const ym = dateStr.slice(0, 7);
+    return (settings.closedMonths || []).includes(ym);
+  }
+
+  // 残業時間警告レベル: 0=safe, 1=warn(36-45h), 2=danger(45h超)
+  function overtimeAlertLevel(minutes) {
+    const hours = (minutes || 0) / 60;
+    if (hours > (settings.overtimeMaxHours || 45)) return 2;
+    if (hours >= (settings.overtimeWarnHours || 36)) return 1;
+    return 0;
+  }
+
+  // 会計年度の開始日（YYYY-MM-DD）と終了日を取得
+  function fiscalYearRange(refDate) {
+    const ref = refDate || new Date();
+    const startMonth = settings.fiscalYearStart || 4;
+    let startYear = ref.getFullYear();
+    if (ref.getMonth() + 1 < startMonth) startYear -= 1;
+    const start = `${startYear}-${pad(startMonth)}-01`;
+    const endMonth = startMonth === 1 ? 12 : startMonth - 1;
+    const endYear = startMonth === 1 ? startYear : startYear + 1;
+    const lastDay = new Date(endYear, endMonth, 0).getDate();
+    const end = `${endYear}-${pad(endMonth)}-${pad(lastDay)}`;
+    return { start, end, startYear };
+  }
+
+  // 指定ユーザーの今年度有給取得日数を計算
+  function countPaidLeaveTakenThisFY(uid) {
+    const { start, end } = fiscalYearRange();
+    let count = 0;
+    allRequests.forEach(r => {
+      if (r.uid !== uid) return;
+      const ds = displayStatus(r);
+      if (ds !== "承認") return;
+      if (!r.date || r.date < start || r.date > end) return;
+      if (r.type === "有給") count += 1;
+      else if (r.type === "半休") count += 0.5;
+    });
+    return count;
+  }
+  // 申請種別マスタ
+  const REQ_TYPES = ["有給", "シフト休", "半休", "直行", "直帰", "遅刻", "早退", "残業", "休日出勤", "打刻修正"];
+  // 二段階承認が必要な種別（部署上長 → 管理者）
+  const TWO_STAGE_TYPES = ["有給"];
+
+  // 種別→CSSクラス名（カレンダー用）
+  function leaveClass(type) {
+    return ({
+      "有給": "leave-yukyu", "シフト休": "leave-shift", "半休": "leave-han",
+      "遅刻": "leave-late", "早退": "leave-early", "残業": "leave-over",
+      "休日出勤": "leave-out", "打刻修正": "leave-fix",
+      "直行": "leave-direct", "直帰": "leave-direct"
+    })[type] || "leave-fix";
+  }
+
+  // 旧データの defaultPatterns 互換変換（regularHolidays→ defaultPatterns）
+  function ensureDeptCompat(d) {
+    if (!d) return d;
+    if (!d.defaultPatterns) {
+      d.defaultPatterns = (d.regularHolidays || [0, 6]).map(dow => ({ kind: "weekly", dow }));
+    }
+    if (!d.monthOverrides) d.monthOverrides = {};
+    return d;
+  }
+
+  // 部署設定を取得（フォールバックは会社デフォルト）
+  function getDeptConfig(deptId) {
+    const d = allDepartments[deptId];
+    if (!d) return {
+      workStart: "09:00", workEnd: "18:00",
+      breakMinutes: 60,
+      workMinutesPerDay: settings.workMinutesPerDay || 480,
+      defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
+      extraHolidays: [],
+      monthOverrides: {}
+    };
+    return {
+      workStart: d.workStart || "09:00",
+      workEnd: d.workEnd || "18:00",
+      breakMinutes: d.breakMinutes != null ? d.breakMinutes : 60,
+      workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
+      defaultPatterns: d.defaultPatterns || [],
+      extraHolidays: d.extraHolidays || [],
+      monthOverrides: d.monthOverrides || {}
+    };
+  }
+
+  // パターンが指定日にマッチするか
+  function patternMatchesDate(pat, year, month, day) {
+    const dateObj = new Date(year, month - 1, day);
+    if (pat.dow !== dateObj.getDay()) return false;
+    if (pat.kind === "weekly") return true;
+    if (pat.kind === "nth") {
+      const occurrence = Math.ceil(day / 7);
+      if (pat.nth === -1) {
+        // 最終: 同じ曜日が次週に存在しない
+        const daysInMonth = new Date(year, month, 0).getDate();
+        return day + 7 > daysInMonth;
+      }
+      return occurrence === pat.nth;
+    }
+    return false;
+  }
+
+  // 指定月の部署公休日付セットを計算（パターン＋固定休日＋月別調整）
+  function computeHolidaysForMonth(deptId, year, month) {
+    const cfg = getDeptConfig(deptId);
+    const set = new Set();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    // パターン適用
+    for (let d = 1; d <= daysInMonth; d++) {
+      for (const p of (cfg.defaultPatterns || [])) {
+        if (patternMatchesDate(p, year, month, d)) {
+          set.add(`${year}-${pad(month)}-${pad(d)}`);
+          break;
+        }
+      }
+    }
+    // 固定休日（毎年同じ日）
+    (cfg.extraHolidays || []).forEach(s => {
+      // YYYY-MM-DD と MM-DD 両対応
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        if (s.startsWith(`${year}-${pad(month)}-`)) set.add(s);
+      } else if (/^\d{2}-\d{2}$/.test(s)) {
+        if (s.startsWith(`${pad(month)}-`)) set.add(`${year}-${s}`);
+      }
+    });
+    // 月別調整
+    const ymKey = `${year}-${pad(month)}`;
+    const ov = cfg.monthOverrides[ymKey] || {};
+    (ov.add || []).forEach(d => set.add(d));
+    (ov.remove || []).forEach(d => set.delete(d));
+    return set;
+  }
+
+  // 指定日が休日かどうか（ユーザーの所属部署 + 会社祝日 を合算）
+  function isHolidayForUser(uid, dateStr) {
+    if ((settings.holidays || []).includes(dateStr)) return true;
+    const u = allUsers[uid] || {};
+    const [y, m] = dateStr.split("-").map(Number);
+    return computeHolidaysForMonth(u.department, y, m).has(dateStr);
+  }
+
+  // ============================================================
+  // 認証UI
+  // ============================================================
+  $("authSubmit").addEventListener("click", async () => {
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    if (!email || !password) { toast("メールとパスワードを入力してください", "error"); return; }
+    const btn = $("authSubmit");
+    setLoading(btn, true);
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (e) {
+      console.error(e);
+      toast(translateAuthError(e), "error");
+    } finally { setLoading(btn, false); }
+  });
+
+  $("logoutBtn").addEventListener("click", async () => { await auth.signOut(); });
+  $("blockedLogoutBtn").addEventListener("click", async () => { await auth.signOut(); });
+
+  // ============================================================
+  // 認証状態の監視 + 管理者チェック
+  // ============================================================
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
+      try {
+        const ref = db.collection("users").doc(user.uid);
+        const snap = await ref.get();
+        if (!snap.exists) {
+          // usersドキュメントが無い = スタッフ用アプリから先に登録が必要
+          showBlocked();
+          return;
+        }
+        userData = snap.data();
+        if (userData.role !== "admin") {
+          showBlocked();
+          return;
+        }
+
+        await loadSettings();
+        await loadDepartments();
+        $("loginScreen").style.display = "none";
+        $("blockedScreen").style.display = "none";
+        $("app").style.display = "block";
+        $("topbarUser").textContent = `${userData.name}（管理者）`;
+
+        $("adminMonth").value = currentMonthStr();
+        $("calMonth").value = currentMonthStr();
+        $("settingWorkMin").value = settings.workMinutesPerDay;
+        $("settingHolidays").value = (settings.holidays || []).join("\n");
+        $("settingFiscalStart").value = settings.fiscalYearStart || 4;
+        $("settingPaidLeaveMin").value = settings.paidLeaveMinDays || 5;
+        $("settingOTWarn").value = settings.overtimeWarnHours || 36;
+        $("settingOTMax").value = settings.overtimeMaxHours || 45;
+        $("settingClosedMonths").value = (settings.closedMonths || []).join("\n");
+
+        await loadStaffList();
+        await loadTodayStatus();
+        await loadAdminAttendance();
+        await loadAdminRequests();
+        renderCalLegend();
+        clearDeptForm(); // パターン初期表示
+        loadBackgroundFromStorage();
+        loadBgUI();
+      } catch (e) {
+        console.error(e);
+        toast("データの取得に失敗しました: " + e.message, "error");
+      }
+    } else {
+      currentUser = null; userData = null;
+      $("loginScreen").style.display = "flex";
+      $("blockedScreen").style.display = "none";
+      $("app").style.display = "none";
+    }
+  });
+
+  function showBlocked() {
+    $("loginScreen").style.display = "none";
+    $("app").style.display = "none";
+    $("blockedScreen").style.display = "flex";
+  }
+
+  async function loadSettings() {
+    try {
+      const snap = await db.collection("kintai_settings").doc("config").get();
+      const defaults = {
+        workMinutesPerDay: 480,
+        holidays: [],
+        closedMonths: [],
+        overtimeWarnHours: 36,
+        overtimeMaxHours: 45,
+        fiscalYearStart: 4,
+        paidLeaveMinDays: 5
+      };
+      if (snap.exists) settings = Object.assign(defaults, snap.data());
+      else settings = defaults;
+    } catch (e) { console.warn("設定読み込み失敗:", e); }
+  }
+
+  // ============================================================
+  // 部署管理
+  // ============================================================
+  async function loadDepartments() {
+    try {
+      const snap = await db.collection("departments").get();
+      allDepartments = {};
+      snap.forEach(d => { allDepartments[d.id] = ensureDeptCompat({ id: d.id, ...d.data() }); });
+      renderDeptList();
+      // 部署セレクトを更新
+      const opts = '<option value="">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      $("newStaffDept").innerHTML = opts;
+      $("staffFilterDept").innerHTML = '<option value="all">全部署</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      $("calFilterDept").innerHTML = $("staffFilterDept").innerHTML;
+    } catch (e) { console.warn("部署読み込み失敗:", e); }
+  }
+
+  function patternsToText(patterns) {
+    const nthLabel = { "1":"第1","2":"第2","3":"第3","4":"第4","5":"第5","-1":"最終" };
+    return (patterns || []).map(p => {
+      const dow = weekdayJp[p.dow] + "曜";
+      if (p.kind === "weekly") return `毎週${dow}`;
+      if (p.kind === "nth") return `${nthLabel[String(p.nth)] || "第"+p.nth}${dow}`;
+      return "";
+    }).filter(Boolean).join(" / ") || "なし";
+  }
+
+  function renderDeptList() {
+    const list = Object.values(allDepartments).sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+    const c = $("deptList");
+    if (list.length === 0) { c.innerHTML = '<div class="empty">部署が登録されていません</div>'; return; }
+    c.innerHTML = list.map(d => {
+      const headUid = Object.keys(allUsers).find(uid => allUsers[uid].department === d.id && allUsers[uid].isDeptHead);
+      const headName = headUid ? (allUsers[headUid].name || "") : "未設定";
+      return `
+        <div class="dept-row" data-id="${d.id}">
+          <div class="info">
+            <div class="name">${escapeHtml(d.name || "")}</div>
+            <div class="meta">
+              ${d.workStart || "09:00"}〜${d.workEnd || "18:00"} / 休憩${d.breakMinutes != null ? d.breakMinutes : 60}分 / 所定${d.workMinutesPerDay || 480}分<br>
+              定休: ${escapeHtml(patternsToText(d.defaultPatterns))} / 上長: ${escapeHtml(headName)}
+            </div>
+          </div>
+          <div class="controls">
+            <button class="btn small secondary edit-btn" type="button">編集</button>
+            <button class="btn small danger del-btn" type="button">削除</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    c.querySelectorAll(".dept-row").forEach(row => {
+      const id = row.dataset.id;
+      row.querySelector(".edit-btn").addEventListener("click", () => loadDeptForEdit(id));
+      row.querySelector(".del-btn").addEventListener("click", async () => {
+        const used = Object.values(allUsers).some(u => u.department === id);
+        if (used && !confirm("この部署に所属しているスタッフがいます。削除すると全員「未所属」になります。よろしいですか？")) return;
+        if (!used && !confirm("この部署を削除します。よろしいですか？")) return;
+        try {
+          await db.collection("departments").doc(id).delete();
+          // 所属スタッフをクリア
+          const batch = db.batch();
+          Object.keys(allUsers).forEach(uid => {
+            if (allUsers[uid].department === id) {
+              batch.update(db.collection("users").doc(uid), { department: null, isDeptHead: false });
+            }
+          });
+          await batch.commit();
+          toast("部署を削除しました", "success");
+          await loadDepartments();
+          await loadStaffList();
+        } catch (e) { toast("削除失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  // パターンエディタ
+  function renderPatternList(patterns) {
+    const c = $("deptPatternList");
+    c.innerHTML = (patterns || []).map((p, i) => `
+      <div class="pattern-row" data-i="${i}">
+        <select class="pat-kind">
+          <option value="weekly" ${p.kind==="weekly"?"selected":""}>毎週</option>
+          <option value="nth-1"  ${p.kind==="nth"&&p.nth===1?"selected":""}>第1</option>
+          <option value="nth-2"  ${p.kind==="nth"&&p.nth===2?"selected":""}>第2</option>
+          <option value="nth-3"  ${p.kind==="nth"&&p.nth===3?"selected":""}>第3</option>
+          <option value="nth-4"  ${p.kind==="nth"&&p.nth===4?"selected":""}>第4</option>
+          <option value="nth-5"  ${p.kind==="nth"&&p.nth===5?"selected":""}>第5</option>
+          <option value="nth--1" ${p.kind==="nth"&&p.nth===-1?"selected":""}>最終</option>
+        </select>
+        <select class="pat-dow">
+          ${weekdayJp.map((w, j) => `<option value="${j}" ${p.dow===j?"selected":""}>${w}曜</option>`).join("")}
+        </select>
+        <button class="del-pat" type="button">削除</button>
+      </div>
+    `).join("");
+    c.querySelectorAll(".del-pat").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.target.closest(".pattern-row").remove();
+      });
+    });
+  }
+
+  function readPatternList() {
+    return Array.from(document.querySelectorAll("#deptPatternList .pattern-row")).map(row => {
+      const k = row.querySelector(".pat-kind").value;
+      const dow = parseInt(row.querySelector(".pat-dow").value, 10);
+      if (k === "weekly") return { kind: "weekly", dow };
+      const nth = parseInt(k.replace("nth-", ""), 10);
+      return { kind: "nth", dow, nth };
+    });
+  }
+
+  $("addPatternBtn").addEventListener("click", () => {
+    const cur = readPatternList();
+    cur.push({ kind: "weekly", dow: 0 });
+    renderPatternList(cur);
+  });
+
+  function loadDeptForEdit(id) {
+    const d = allDepartments[id];
+    if (!d) return;
+    $("deptEditId").value = id;
+    $("deptName").value = d.name || "";
+    $("deptWorkStart").value = d.workStart || "09:00";
+    $("deptWorkEnd").value = d.workEnd || "18:00";
+    $("deptBreak").value = d.breakMinutes != null ? d.breakMinutes : 60;
+    $("deptWorkMin").value = d.workMinutesPerDay || 480;
+    renderPatternList(d.defaultPatterns || []);
+    $("deptExtraHolidays").value = (d.extraHolidays || []).join("\n");
+    // 月別調整カードを表示
+    $("monthOvrCard").style.display = "block";
+    $("monthOvrDeptName").textContent = d.name || "";
+    $("monthOvrPicker").value = currentMonthStr();
+    renderMonthOverrideCalendar(id, currentMonthStr());
+    $("deptName").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function clearDeptForm() {
+    $("deptEditId").value = "";
+    $("deptName").value = "";
+    $("deptWorkStart").value = "09:00";
+    $("deptWorkEnd").value = "18:00";
+    $("deptBreak").value = 60;
+    $("deptWorkMin").value = 480;
+    renderPatternList([{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }]);
+    $("deptExtraHolidays").value = "";
+    $("monthOvrCard").style.display = "none";
+  }
+
+  $("deptResetBtn").addEventListener("click", clearDeptForm);
+  $("deptSaveBtn").addEventListener("click", async () => {
+    const btn = $("deptSaveBtn");
+    const name = $("deptName").value.trim();
+    if (!name) { toast("部署名を入力してください", "error"); return; }
+    const id = $("deptEditId").value;
+    const defaultPatterns = readPatternList();
+    const extraHolidays = $("deptExtraHolidays").value.split("\n")
+      .map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{2}-\d{2}$/.test(s));
+    const data = {
+      name,
+      workStart: $("deptWorkStart").value || "09:00",
+      workEnd: $("deptWorkEnd").value || "18:00",
+      breakMinutes: parseInt($("deptBreak").value, 10) || 0,
+      workMinutesPerDay: parseInt($("deptWorkMin").value, 10) || 480,
+      defaultPatterns,
+      extraHolidays
+    };
+    setLoading(btn, true);
+    try {
+      if (id) await db.collection("departments").doc(id).update(data);
+      else {
+        data.monthOverrides = {};
+        await db.collection("departments").add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      }
+      toast("部署を保存しました", "success");
+      clearDeptForm();
+      await loadDepartments();
+      await loadStaffList();
+    } catch (e) { toast("保存失敗: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  // 月別公休調整カレンダー
+  $("monthOvrLoadBtn").addEventListener("click", () => {
+    const id = $("deptEditId").value;
+    const ym = $("monthOvrPicker").value;
+    if (!id || !ym) return;
+    renderMonthOverrideCalendar(id, ym);
+  });
+
+  function renderMonthOverrideCalendar(deptId, ymStr) {
+    const dept = allDepartments[deptId];
+    if (!dept) return;
+    const [y, m] = ymStr.split("-").map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const firstDow = new Date(y, m - 1, 1).getDay();
+    const ymKey = ymStr;
+    const ov = (dept.monthOverrides || {})[ymKey] || { add: [], remove: [] };
+    const addSet = new Set(ov.add || []);
+    const removeSet = new Set(ov.remove || []);
+
+    const c = $("monthOvrCalendar");
+    const headers = ["日","月","火","水","木","金","土"];
+    let html = headers.map((h, i) =>
+      `<div class="mc-head ${i===0?"sun":i===6?"sat":""}">${h}</div>`
+    ).join("");
+    for (let i = 0; i < firstDow; i++) html += `<div class="mc-cell empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+      // パターン上での既定状態
+      let isDefaultHoliday = false;
+      for (const p of (dept.defaultPatterns || [])) {
+        if (patternMatchesDate(p, y, m, d)) { isDefaultHoliday = true; break; }
+      }
+      // 固定休日
+      if (!isDefaultHoliday && (dept.extraHolidays || []).some(s => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s === dateStr;
+        if (/^\d{2}-\d{2}$/.test(s)) return s === `${pad(m)}-${pad(d)}`;
+        return false;
+      })) isDefaultHoliday = true;
+
+      const isAdded = addSet.has(dateStr);
+      const isRemoved = removeSet.has(dateStr);
+      let cls = "mc-cell";
+      let mark = "";
+      if (isAdded) { cls += " add-holiday"; mark = "追加休"; }
+      else if (isRemoved) { cls += " cancel-holiday"; mark = "→平日"; }
+      else if (isDefaultHoliday) { cls += " dft-holiday"; mark = "休"; }
+      html += `<div class="${cls}" data-date="${dateStr}" data-default="${isDefaultHoliday?1:0}">
+        <div>${d}</div>
+        <div class="mc-mark">${mark}</div>
+      </div>`;
+    }
+    c.innerHTML = html;
+    c.querySelectorAll(".mc-cell:not(.empty)").forEach(cell => {
+      cell.addEventListener("click", () => onMonthOvrCellClick(deptId, ymKey, cell));
+    });
+  }
+
+  async function onMonthOvrCellClick(deptId, ymKey, cell) {
+    const dateStr = cell.dataset.date;
+    const isDefault = cell.dataset.default === "1";
+    const dept = allDepartments[deptId];
+    if (!dept) return;
+    const ov = (dept.monthOverrides || {})[ymKey] || { add: [], remove: [] };
+    let add = new Set(ov.add || []);
+    let remove = new Set(ov.remove || []);
+
+    // 状態遷移ロジック
+    // 既定: 平日 → 追加休 → 既定（クリア）
+    // 既定: 休  → 平日に取消 → 既定（クリア）
+    if (isDefault) {
+      if (remove.has(dateStr)) remove.delete(dateStr);
+      else remove.add(dateStr);
+    } else {
+      if (add.has(dateStr)) add.delete(dateStr);
+      else add.add(dateStr);
+    }
+    const newOv = { add: Array.from(add), remove: Array.from(remove) };
+    try {
+      // 該当月のオーバーライドが空ならフィールド削除
+      const path = `monthOverrides.${ymKey}`;
+      if (newOv.add.length === 0 && newOv.remove.length === 0) {
+        await db.collection("departments").doc(deptId).update({
+          [path]: firebase.firestore.FieldValue.delete()
+        });
+        delete dept.monthOverrides[ymKey];
+      } else {
+        await db.collection("departments").doc(deptId).update({ [path]: newOv });
+        dept.monthOverrides = dept.monthOverrides || {};
+        dept.monthOverrides[ymKey] = newOv;
+      }
+      renderMonthOverrideCalendar(deptId, ymKey);
+    } catch (e) { toast("保存失敗: " + e.message, "error"); }
+  }
+
+  // ============================================================
+  // タブ切替
+  // ============================================================
+  document.querySelectorAll(".tabbar button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.dataset.tab;
+      document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      $(tabId).classList.add("active");
+    });
+  });
+
+  // ============================================================
+  // スタッフ管理
+  // ============================================================
+  async function loadStaffList() {
+    try {
+      const snap = await db.collection("users").get();
+      const list = [];
+      allUsers = {};
+      snap.forEach(d => {
+        const data = d.data();
+        list.push({ uid: d.id, ...data });
+        allUsers[d.id] = data;
+      });
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+
+      // 申請フィルタ用のユーザーセレクト更新
+      const userSel = $("reqFilterUser");
+      userSel.innerHTML = '<option value="all">全スタッフ</option>' + list.map(u =>
+        `<option value="${u.uid}">${escapeHtml(u.name || u.email)}</option>`
+      ).join("");
+
+      const container = $("staffList");
+      // 部署フィルタ
+      const filter = $("staffFilterDept").value || "all";
+      const filtered = filter === "all" ? list : list.filter(u =>
+        filter === "_none" ? !u.department : u.department === filter
+      );
+      if (filtered.length === 0) { container.innerHTML = '<div class="empty">スタッフがいません</div>'; return; }
+      const deptOptions = '<option value="">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      container.innerHTML = filtered.map(u => {
+        const deptName = u.department && allDepartments[u.department]
+          ? allDepartments[u.department].name : "未所属";
+        const balance = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
+        const taken = countPaidLeaveTakenThisFY(u.uid);
+        const minDays = settings.paidLeaveMinDays || 5;
+        const plClass = taken >= minDays ? "ok" : "warn";
+        const plLabel = `今年度取得 ${taken}/${minDays}日`;
+        return `
+        <div class="staff-row" data-uid="${u.uid}">
+          <div class="info">
+            <div class="name">
+              ${escapeHtml(u.name || "")}
+              <span class="role-badge role-${u.role || "staff"}">${u.role === "admin" ? "管理者" : "スタッフ"}</span>
+              <span class="dept-badge">${escapeHtml(deptName)}</span>
+              ${u.isDeptHead ? '<span class="dept-badge dept-head-badge">部署上長</span>' : ''}
+              <span class="dept-badge" style="background:#FEF3C7; color:#92400E;">有給残 ${balance}日</span>
+              <span class="dept-badge" style="background:#E9D5FF; color:#6B21A8;">シフト休残 ${u.shiftLeaveBalance != null ? u.shiftLeaveBalance : 0}日</span>
+              <span class="pl-pill ${plClass}">${plLabel}</span>
+            </div>
+            <div class="email">${escapeHtml(u.email || "")}</div>
+          </div>
+          <div class="controls">
+            <select class="dept-select" title="所属部署">
+              ${deptOptions.replace(`value="${u.department || ''}"`, `value="${u.department || ''}" selected`)}
+            </select>
+            <select class="role-select">
+              <option value="staff" ${u.role==="staff"?"selected":""}>スタッフ</option>
+              <option value="admin" ${u.role==="admin"?"selected":""}>管理者</option>
+            </select>
+            <label style="font-size:11px; display:flex; align-items:center; gap:2px;">
+              <input type="checkbox" class="head-check" ${u.isDeptHead?"checked":""} ${u.department?"":"disabled"} />上長
+            </label>
+            <button class="btn small secondary view-btn" type="button">勤怠</button>
+            <button class="btn small danger del-btn" type="button">削除</button>
+          </div>
+        </div>
+      `;
+      }).join("");
+
+      container.querySelectorAll(".staff-row").forEach(row => {
+        const uid = row.dataset.uid;
+        row.querySelector(".dept-select").addEventListener("change", async (e) => {
+          const newDept = e.target.value || null;
+          try {
+            const update = { department: newDept };
+            if (!newDept) update.isDeptHead = false;
+            await db.collection("users").doc(uid).update(update);
+            toast("所属部署を更新しました", "success");
+            await loadStaffList();
+          } catch (err) { toast("更新失敗: " + err.message, "error"); }
+        });
+        row.querySelector(".head-check").addEventListener("change", async (e) => {
+          const checked = e.target.checked;
+          const u = allUsers[uid];
+          if (!u || !u.department) { toast("部署を設定してください", "error"); e.target.checked = false; return; }
+          if (checked) {
+            // 同じ部署の既存上長を一旦解除（上長は1人のみ）
+            const dupSnap = await db.collection("users")
+              .where("department", "==", u.department)
+              .where("isDeptHead", "==", true).get();
+            const batch = db.batch();
+            dupSnap.forEach(doc => { if (doc.id !== uid) batch.update(doc.ref, { isDeptHead: false }); });
+            batch.update(db.collection("users").doc(uid), { isDeptHead: true });
+            await batch.commit();
+          } else {
+            await db.collection("users").doc(uid).update({ isDeptHead: false });
+          }
+          toast("上長フラグを更新しました", "success");
+          await loadStaffList();
+        });
+        row.querySelector(".role-select").addEventListener("change", async (e) => {
+          const newRole = e.target.value;
+          if (newRole === "staff") {
+            const adminSnap = await db.collection("users").where("role", "==", "admin").get();
+            if (adminSnap.size <= 1) {
+              toast("管理者が0人になるため変更できません。先に別の管理者を設定してください。", "error");
+              e.target.value = "admin";
+              return;
+            }
+          }
+          try {
+            await db.collection("users").doc(uid).update({ role: newRole });
+            toast("権限を更新しました", "success");
+            await loadStaffList();
+          } catch (err) { toast("権限の更新に失敗: " + err.message, "error"); }
+        });
+        row.querySelector(".view-btn").addEventListener("click", () => showStaffDetail(uid));
+        row.querySelector(".del-btn").addEventListener("click", async () => {
+          if (uid === currentUser.uid) { toast("自分自身は削除できません", "error"); return; }
+          if (!confirm("このスタッフを完全に削除します。\n（Authアカウント・社内データの両方を削除）\n\nよろしいですか？")) return;
+          const btn = row.querySelector(".del-btn");
+          setLoading(btn, true);
+          try {
+            await callDeleteUser({ uid });
+            toast("削除しました（Authアカウント含む）", "success");
+            await loadStaffList();
+          } catch (err) {
+            console.error(err);
+            const msg = err.message || (err.details && err.details.message) || "不明なエラー";
+            toast("削除失敗: " + msg, "error");
+          } finally { setLoading(btn, false); }
+        });
+      });
+    } catch (e) { console.error(e); }
+  }
+
+  // 部署フィルタ
+  $("staffFilterDept").addEventListener("change", loadStaffList);
+
+  // スタッフ追加（セカンダリAuthインスタンスで管理者を保持したまま作成）
+  $("newStaffBtn").addEventListener("click", async () => {
+    const btn = $("newStaffBtn");
+    const name = $("newStaffName").value.trim();
+    const email = $("newStaffEmail").value.trim();
+    const password = $("newStaffPassword").value;
+    const role = $("newStaffRole").value;
+    const department = $("newStaffDept").value || null;
+    const isDeptHead = $("newStaffDeptHead").checked && !!department;
+    if (!name || !email || !password) { toast("氏名・メール・パスワードを入力してください", "error"); return; }
+
+    setLoading(btn, true);
+    let secondary = null;
+    try {
+      // 部署上長は1人のみ
+      if (isDeptHead && department) {
+        const dupSnap = await db.collection("users")
+          .where("department", "==", department)
+          .where("isDeptHead", "==", true).get();
+        if (!dupSnap.empty) {
+          const ok = confirm("この部署には既に上長がいます。新しい上長に変更しますか？\n（既存の上長は通常スタッフに戻ります）");
+          if (!ok) { setLoading(btn, false); return; }
+        }
+      }
+      const secondaryName = "secondary-" + Date.now();
+      secondary = firebase.initializeApp(firebaseConfig, secondaryName);
+      const secAuth = secondary.auth();
+      const cred = await secAuth.createUserWithEmailAndPassword(email, password);
+      // 既存上長を解除
+      if (isDeptHead && department) {
+        const dupSnap = await db.collection("users")
+          .where("department", "==", department)
+          .where("isDeptHead", "==", true).get();
+        const batch = db.batch();
+        dupSnap.forEach(doc => batch.update(doc.ref, { isDeptHead: false }));
+        await batch.commit();
+      }
+      await db.collection("users").doc(cred.user.uid).set({
+        name, email, role,
+        department,
+        isDeptHead,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await secAuth.signOut();
+      $("newStaffName").value = ""; $("newStaffEmail").value = ""; $("newStaffPassword").value = "";
+      $("newStaffDept").value = ""; $("newStaffDeptHead").checked = false;
+      toast("スタッフを追加しました", "success");
+      await loadStaffList();
+    } catch (e) {
+      console.error(e);
+      toast("追加失敗: " + translateAuthError(e), "error");
+    } finally {
+      if (secondary) { try { await secondary.delete(); } catch (_) {} }
+      setLoading(btn, false);
+    }
+  });
+
+  // ============================================================
+  // 勤怠管理（全スタッフ集計 + 個別詳細）
+  // ============================================================
+  $("adminReloadBtn").addEventListener("click", loadAdminAttendance);
+  $("adminMonth").addEventListener("change", loadAdminAttendance);
+  $("detailCloseBtn").addEventListener("click", () => {
+    $("detailCard").style.display = "none";
+  });
+  $("todayStatusReloadBtn").addEventListener("click", loadTodayStatus);
+  $("csvExportAttendanceBtn").addEventListener("click", exportAttendanceCSV);
+
+  // 本日の出勤状況（全スタッフ）
+  async function loadTodayStatus() {
+    try {
+      const today = todayStr();
+      const [attSnap, reqSnap] = await Promise.all([
+        db.collection("attendance").where("date", "==", today).get(),
+        db.collection("requests").where("date", "==", today).where("status", "==", "承認").get()
+      ]);
+      const byUid = {};
+      attSnap.forEach(d => { byUid[d.data().uid] = d.data(); });
+      const reqByUid = {};
+      reqSnap.forEach(d => { const r = d.data(); reqByUid[r.uid] = r.type; });
+
+      const users = Object.keys(allUsers).map(uid => ({ uid, ...allUsers[uid] }));
+      users.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+
+      if (users.length === 0) {
+        $("todayStatusList").innerHTML = '<div class="empty">スタッフがいません</div>';
+        return;
+      }
+
+      $("todayStatusList").innerHTML = users.map(u => {
+        const rec = byUid[u.uid];
+        const reqType = reqByUid[u.uid];
+        let badge, color, time = "";
+        if (reqType) {
+          badge = reqType; color = "#F59E0B";
+        } else if (rec && rec.clockOut) {
+          badge = "退勤済"; color = "#3B82F6";
+          time = `出 ${formatHM(rec.clockIn)} / 退 ${formatHM(rec.clockOut)}`;
+        } else if (rec && rec.clockIn) {
+          badge = "出勤中"; color = "#10B981";
+          time = `出 ${formatHM(rec.clockIn)}`;
+        } else {
+          badge = "未出勤"; color = "#94A3B8";
+        }
+        return `
+          <div class="staff-row">
+            <div class="info">
+              <div class="name">${escapeHtml(u.name || "")}
+                <span class="role-badge" style="background:${color}22; color:${color};">${badge}</span>
+              </div>
+              <div class="email">${time || "&nbsp;"}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    } catch (e) {
+      console.error(e);
+      toast("本日状況の取得失敗: " + e.message, "error");
+    }
+  }
+
+  // 全スタッフの月次勤怠CSV出力（給与ソフト形式対応）
+  async function exportAttendanceCSV() {
+    const btn = $("csvExportAttendanceBtn");
+    const format = $("csvFormat").value;
+    setLoading(btn, true);
+    try {
+      const month = $("adminMonth").value || `${new Date().getFullYear()}-${pad(new Date().getMonth()+1)}`;
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+      const snap = await db.collection("attendance")
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+
+      const records = [];
+      snap.forEach(d => records.push(d.data()));
+
+      // 承認済み有給/シフト休/半休の集計用
+      const leaveByUidDate = {};
+      allRequests.forEach(r => {
+        if (displayStatus(r) !== "承認") return;
+        if (!r.date || r.date < startStr || r.date > endStr) return;
+        if (!leaveByUidDate[r.uid]) leaveByUidDate[r.uid] = {};
+        leaveByUidDate[r.uid][r.date] = r.type;
+      });
+
+      if (format === "standard") {
+        // 日別の詳細
+        const rows = [["氏名", "メール", "部署", "日付", "曜日", "出勤", "退勤", "労働時間(分)", "残業時間(分)", "備考"]];
+        records.sort((a, b) => (a.date || "").localeCompare(b.date || "") || ((allUsers[a.uid]?.name||"").localeCompare(allUsers[b.uid]?.name||"", "ja")));
+        records.forEach(r => {
+          const u = allUsers[r.uid] || {};
+          const deptName = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "";
+          const [yy, mm, dd] = r.date.split("-").map(Number);
+          const dow = weekdayJp[new Date(yy, mm-1, dd).getDay()];
+          rows.push([
+            u.name || "", u.email || "", deptName, r.date || "", dow,
+            r.clockIn ? formatHM(r.clockIn) : "",
+            r.clockOut ? formatHM(r.clockOut) : "",
+            r.workMinutes || 0, r.overtimeMinutes || 0, r.note || ""
+          ]);
+        });
+        downloadCSV(`勤怠_${month}.csv`, rows);
+      } else {
+        // 月度集計（スタッフ単位）
+        const perUser = {};
+        Object.keys(allUsers).forEach(uid => {
+          perUser[uid] = {
+            user: allUsers[uid],
+            days: 0, workMinutes: 0, overtimeMinutes: 0,
+            yukyu: 0, han: 0, shift: 0, late: 0, early: 0, holidayWork: 0
+          };
+        });
+        records.forEach(r => {
+          if (!perUser[r.uid]) return;
+          if (r.clockIn) perUser[r.uid].days += 1;
+          perUser[r.uid].workMinutes += r.workMinutes || 0;
+          perUser[r.uid].overtimeMinutes += r.overtimeMinutes || 0;
+        });
+        allRequests.forEach(r => {
+          if (displayStatus(r) !== "承認") return;
+          if (!r.date || r.date < startStr || r.date > endStr) return;
+          if (!perUser[r.uid]) return;
+          if (r.type === "有給") perUser[r.uid].yukyu += 1;
+          else if (r.type === "半休") perUser[r.uid].han += 1;
+          else if (r.type === "シフト休") perUser[r.uid].shift += 1;
+          else if (r.type === "遅刻") perUser[r.uid].late += 1;
+          else if (r.type === "早退") perUser[r.uid].early += 1;
+          else if (r.type === "休日出勤") perUser[r.uid].holidayWork += 1;
+        });
+
+        const minutesToHour = (min) => (Math.round((min || 0) / 6) / 10).toFixed(1);
+        let rows;
+        let fname = `勤怠集計_${month}.csv`;
+
+        if (format === "mf") {
+          // マネーフォワード給与: 社員番号, 氏名, 出勤日数, 労働時間, 残業時間, 深夜残業, 休日労働, 有給日数
+          rows = [["社員番号", "氏名", "出勤日数", "労働時間", "残業時間", "深夜残業", "休日労働", "有給日数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              "0.0", p.holidayWork, p.yukyu + p.han * 0.5]);
+          });
+          fname = `MF給与_勤怠_${month}.csv`;
+        } else if (format === "yayoi") {
+          // 弥生給与: 社員コード, 氏名, 出勤日数, 普通残業時間, 休日労働日数, 有給日数, 欠勤日数
+          rows = [["社員コード", "氏名", "出勤日数", "労働時間", "普通残業時間", "休日労働日数", "有給日数", "遅刻早退回数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              p.holidayWork, p.yukyu + p.han * 0.5, p.late + p.early]);
+          });
+          fname = `弥生給与_勤怠_${month}.csv`;
+        } else if (format === "freee") {
+          // freee人事労務: 従業員番号, 氏名, 勤務日数, 労働時間(時), 残業時間(時), 有給休暇(日), 特別休暇(日)
+          rows = [["従業員番号", "氏名", "勤務日数", "労働時間", "残業時間", "有給休暇", "特別休暇", "遅刻早退回数"]];
+          Object.values(perUser).forEach(p => {
+            rows.push([p.user.uid || "", p.user.name || "", p.days,
+              minutesToHour(p.workMinutes), minutesToHour(p.overtimeMinutes),
+              p.yukyu + p.han * 0.5, p.shift, p.late + p.early]);
+          });
+          fname = `freee_勤怠_${month}.csv`;
+        } else {
+          // summary: 汎用月度集計
+          rows = [["氏名", "メール", "部署", "出勤日数", "労働時間(分)", "残業時間(分)", "有給(日)", "半休(回)", "シフト休(日)", "遅刻(回)", "早退(回)", "休日出勤(日)"]];
+          Object.values(perUser).forEach(p => {
+            const deptName = p.user.department && allDepartments[p.user.department] ? allDepartments[p.user.department].name : "";
+            rows.push([p.user.name || "", p.user.email || "", deptName,
+              p.days, p.workMinutes, p.overtimeMinutes,
+              p.yukyu, p.han, p.shift, p.late, p.early, p.holidayWork]);
+          });
+        }
+        downloadCSV(fname, rows);
+      }
+      await audit("create", "csv_export", "", `${format}形式で勤怠CSVを出力（${month}）`, null, null);
+      toast("CSVを出力しました", "success");
+    } catch (e) {
+      console.error(e);
+      toast("CSV出力失敗: " + e.message, "error");
+    } finally { setLoading(btn, false); }
+  }
+
+  async function loadAdminAttendance() {
+    try {
+      const month = $("adminMonth").value || currentMonthStr();
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+
+      const [attSnap, userSnap] = await Promise.all([
+        db.collection("attendance").where("date", ">=", startStr).where("date", "<=", endStr).get(),
+        db.collection("users").get()
+      ]);
+
+      const users = [];
+      userSnap.forEach(d => users.push({ uid: d.id, ...d.data() }));
+      users.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"));
+      const perUser = {};
+      users.forEach(u => { perUser[u.uid] = { user: u, work: 0, over: 0, days: 0 }; });
+      attSnap.forEach(d => {
+        const data = d.data();
+        if (perUser[data.uid]) {
+          perUser[data.uid].work += data.workMinutes || 0;
+          perUser[data.uid].over += data.overtimeMinutes || 0;
+          if (data.clockIn) perUser[data.uid].days += 1;
+        }
+      });
+
+      // 部署別集計
+      const perDept = {};
+      users.forEach(u => {
+        const did = u.department || "_none";
+        if (!perDept[did]) perDept[did] = {
+          id: did,
+          name: did === "_none" ? "未所属" : (allDepartments[did]?.name || did),
+          count: 0, work: 0, over: 0, days: 0,
+          warnCount: 0, dangerCount: 0
+        };
+        const p = perUser[u.uid];
+        perDept[did].count += 1;
+        perDept[did].work += p.work;
+        perDept[did].over += p.over;
+        perDept[did].days += p.days;
+        const lvl = overtimeAlertLevel(p.over);
+        if (lvl === 1) perDept[did].warnCount += 1;
+        if (lvl === 2) perDept[did].dangerCount += 1;
+      });
+      const deptList = Object.values(perDept)
+        .filter(d => d.count > 0)
+        .sort((a, b) => b.over - a.over);  // 残業多い部署順
+      $("deptSummary").innerHTML = deptList.length === 0
+        ? '<div class="empty">データがありません</div>'
+        : deptList.map(d => {
+            const avgWork = d.count > 0 ? Math.round(d.work / d.count) : 0;
+            const avgOver = d.count > 0 ? Math.round(d.over / d.count) : 0;
+            const warn = d.warnCount > 0 ? `<span class="ot-pill warn">⚠ 警告${d.warnCount}名</span>` : "";
+            const danger = d.dangerCount > 0 ? `<span class="ot-pill danger">⚠ 上限超${d.dangerCount}名</span>` : "";
+            return `
+              <div class="staff-row">
+                <div class="info">
+                  <div class="name">${escapeHtml(d.name)} <span class="dept-badge">${d.count}名</span></div>
+                  <div class="email">
+                    総労働 ${minutesToHM(d.work)} / 平均 ${minutesToHM(avgWork)}/人 ／
+                    総残業 <span class="${overtimeAlertLevel(avgOver)===2?'ot-danger':overtimeAlertLevel(avgOver)===1?'ot-warn':''}">${minutesToHM(d.over)}</span>
+                    （平均 ${minutesToHM(avgOver)}/人）${warn}${danger}
+                  </div>
+                </div>
+              </div>`;
+          }).join("");
+
+      const rows = users.map(u => {
+        const p = perUser[u.uid];
+        const lvl = overtimeAlertLevel(p.over);
+        const overClass = lvl === 2 ? "ot-danger" : lvl === 1 ? "ot-warn" : "";
+        const overPill = lvl === 2
+          ? `<span class="ot-pill danger">⚠ ${settings.overtimeMaxHours || 45}h超</span>`
+          : lvl === 1
+          ? `<span class="ot-pill warn">⚠ ${settings.overtimeWarnHours || 36}h超</span>` : "";
+        return `
+          <div class="staff-row">
+            <div class="info">
+              <div class="name"><span class="staff-link" data-uid="${u.uid}">${escapeHtml(u.name || "")}</span>
+                <span class="role-badge role-${u.role}">${u.role === "admin" ? "管理者" : "スタッフ"}</span>
+              </div>
+              <div class="email">出勤 ${p.days}日 / 労働 ${minutesToHM(p.work)} / 残業 <span class="${overClass}">${minutesToHM(p.over)}</span>${overPill}</div>
+            </div>
+            <div class="controls">
+              <button class="btn small secondary detail-btn" data-uid="${u.uid}" type="button">詳細</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      $("adminAttendance").innerHTML = rows || '<div class="empty">データがありません</div>';
+
+      $("adminAttendance").querySelectorAll(".detail-btn, .staff-link").forEach(el => {
+        el.addEventListener("click", () => showStaffDetail(el.dataset.uid));
+      });
+    } catch (e) {
+      console.error(e);
+      toast("勤怠データ取得失敗: " + e.message, "error");
+    }
+  }
+
+  // 個別スタッフの月次詳細
+  async function showStaffDetail(uid) {
+    try {
+      // タブを勤怠管理に切替
+      document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+      document.querySelector('[data-tab="tab-attendance"]').classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      $("tab-attendance").classList.add("active");
+
+      const user = allUsers[uid];
+      const userName = user ? user.name : uid;
+      const month = $("adminMonth").value || currentMonthStr();
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+
+      // 複合インデックス回避のため uid のみで取得し、月範囲はクライアント側でフィルタ
+      const snap = await db.collection("attendance").where("uid", "==", uid).get();
+      const byDate = {};
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.date >= startStr && data.date <= endStr) {
+          byDate[data.date] = { id: d.id, ...data };
+        }
+      });
+
+      $("detailTitle").textContent = `${userName} の ${month} の勤怠`;
+      const tbody = $("detailBody");
+      tbody.innerHTML = "";
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+        const dateObj = new Date(y, m-1, d);
+        const dow = dateObj.getDay();
+        const isHoliday = isHolidayForUser(uid, dateStr);
+        const rec = byDate[dateStr];
+        const tr = document.createElement("tr");
+        if (isHoliday) tr.classList.add("holiday");
+        else if (dow === 0) tr.classList.add("sunday");
+        else if (dow === 6) tr.classList.add("saturday");
+        const inStr = rec && rec.clockIn ? formatHM(rec.clockIn) : "-";
+        const outStr = rec && rec.clockOut ? formatHM(rec.clockOut) : "-";
+        const workStr = rec && rec.workMinutes ? minutesToHM(rec.workMinutes) : "-";
+        const overStr = rec && rec.overtimeMinutes ? minutesToHM(rec.overtimeMinutes) : "-";
+        tr.innerHTML = `
+          <td>${d}</td><td>${weekdayJp[dow]}</td>
+          <td>${inStr}</td><td>${outStr}</td><td>${workStr}</td><td>${overStr}</td>
+          <td><button class="btn small secondary" data-uid="${uid}" data-date="${dateStr}" data-recid="${rec ? rec.id : ''}" type="button">編集</button></td>
+        `;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll("button").forEach(b => {
+        b.addEventListener("click", () => editAttendance(b.dataset.uid, b.dataset.date, b.dataset.recid));
+      });
+      $("detailCard").style.display = "block";
+      $("detailCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      console.error(e);
+      toast("詳細取得失敗: " + e.message, "error");
+    }
+  }
+
+  // 勤怠レコードの編集（モーダル）
+  function updateAttEditCalc(uid) {
+    const inStr = $("attEditIn").value;
+    const outStr = $("attEditOut").value;
+    const box = $("attEditCalc");
+    if (!inStr || !outStr) {
+      box.textContent = "出勤と退勤を入力すると労働時間を自動計算します";
+      return;
+    }
+    const [ih, im] = inStr.split(":").map(Number);
+    const [oh, om] = outStr.split(":").map(Number);
+    let mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins < 0) mins += 24 * 60;
+    const cfg = getDeptConfig((allUsers[uid] || {}).department);
+    const work = Math.max(0, mins - (cfg.breakMinutes || 0));
+    const over = Math.max(0, work - (cfg.workMinutesPerDay || 480));
+    box.innerHTML = `労働 <strong>${minutesToHM(work)}</strong> / 残業 <strong>${minutesToHM(over)}</strong>（休憩 ${cfg.breakMinutes}分 控除後）`;
+  }
+
+  async function editAttendance(uid, dateStr, recId) {
+    if (isMonthClosed(dateStr)) {
+      if (!confirm(`${dateStr.slice(0,7)} は月締めロック済みです。\nそれでも編集しますか？（強制編集は監査ログに記録されます）`)) return;
+    }
+    const userName = (allUsers[uid] && allUsers[uid].name) || uid;
+
+    // 既存レコード取得
+    let existing = null;
+    if (recId) {
+      try {
+        const s = await db.collection("attendance").doc(recId).get();
+        if (s.exists) existing = s.data();
+      } catch (_) {}
+    }
+
+    $("attEditTitle").textContent = `勤怠を編集`;
+    $("attEditMeta").innerHTML = `<strong>${escapeHtml(userName)}</strong> / ${dateStr}`;
+    $("attEditIn").value = existing && existing.clockIn ? formatHM(existing.clockIn) : "";
+    $("attEditOut").value = existing && existing.clockOut ? formatHM(existing.clockOut) : "";
+    $("attEditNote").value = existing && existing.note ? existing.note : "";
+    $("attEditClear").style.display = recId ? "" : "none";
+    updateAttEditCalc(uid);
+    $("attEditModal").style.display = "flex";
+
+    const close = () => {
+      $("attEditModal").style.display = "none";
+      $("attEditSave").onclick = null;
+      $("attEditCancel").onclick = null;
+      $("attEditClose").onclick = null;
+      $("attEditClear").onclick = null;
+      $("attEditIn").oninput = null;
+      $("attEditOut").oninput = null;
+    };
+
+    $("attEditIn").oninput = () => updateAttEditCalc(uid);
+    $("attEditOut").oninput = () => updateAttEditCalc(uid);
+    $("attEditCancel").onclick = close;
+    $("attEditClose").onclick = close;
+
+    $("attEditClear").onclick = async () => {
+      if (!recId) return;
+      if (!confirm(`${dateStr} の勤怠記録を削除します。よろしいですか？`)) return;
+      try {
+        const beforeRec = existing ? {
+          clockIn: existing.clockIn ? formatHM(existing.clockIn) : "",
+          clockOut: existing.clockOut ? formatHM(existing.clockOut) : "",
+          workMinutes: existing.workMinutes || 0,
+          overtimeMinutes: existing.overtimeMinutes || 0,
+          note: existing.note || ""
+        } : null;
+        await db.collection("attendance").doc(recId).delete();
+        await audit("delete", "attendance", recId,
+          `${userName}の${dateStr}の勤怠を削除`, beforeRec, null);
+        toast("勤怠記録を削除しました", "success");
+        close();
+        await showStaffDetail(uid);
+        await loadAdminAttendance();
+      } catch (e) { toast("削除失敗: " + e.message, "error"); }
+    };
+
+    $("attEditSave").onclick = async () => {
+      const inStr = $("attEditIn").value;
+      const outStr = $("attEditOut").value;
+      const note = $("attEditNote").value || "";
+      try {
+        const makeDate = (hhmm) => {
+          if (!hhmm) return null;
+          const [h, m] = hhmm.split(":").map(Number);
+          if (isNaN(h) || isNaN(m)) return null;
+          const [y, mo, dd] = dateStr.split("-").map(Number);
+          return new Date(y, mo-1, dd, h, m, 0, 0);
+        };
+        const clockIn = makeDate(inStr);
+        const clockOut = makeDate(outStr);
+        let workMinutes = 0, overtimeMinutes = 0;
+        if (clockIn && clockOut) {
+          const cfg = getDeptConfig((allUsers[uid] || {}).department);
+          workMinutes = Math.max(0, Math.round((clockOut.getTime() - clockIn.getTime()) / 60000));
+          workMinutes = Math.max(0, workMinutes - (cfg.breakMinutes || 0));
+          overtimeMinutes = Math.max(0, workMinutes - (cfg.workMinutesPerDay || 480));
+        }
+        const payload = { uid, date: dateStr, clockIn, clockOut, workMinutes, overtimeMinutes, note };
+        const beforeRec = existing ? {
+          clockIn: existing.clockIn ? formatHM(existing.clockIn) : "",
+          clockOut: existing.clockOut ? formatHM(existing.clockOut) : "",
+          workMinutes: existing.workMinutes || 0,
+          overtimeMinutes: existing.overtimeMinutes || 0,
+          note: existing.note || ""
+        } : null;
+        if (recId) await db.collection("attendance").doc(recId).update(payload);
+        else await db.collection("attendance").add(payload);
+        await audit(recId ? "update" : "create", "attendance", recId || dateStr,
+          `${userName}の${dateStr}の勤怠を${recId ? "編集" : "追加"}`,
+          beforeRec,
+          { clockIn: inStr, clockOut: outStr, workMinutes, overtimeMinutes, note });
+        toast("勤怠を更新しました", "success");
+        close();
+        await showStaffDetail(uid);
+        await loadAdminAttendance();
+      } catch (e) {
+        console.error(e);
+        toast("更新失敗: " + e.message, "error");
+      }
+    };
+  }
+
+  // ============================================================
+  // 申請管理（承認・却下・取消・編集・削除）
+  // ============================================================
+  $("reqReloadBtn").addEventListener("click", loadAdminRequests);
+  $("reqFilterStatus").addEventListener("change", renderAdminRequests);
+  $("reqFilterUser").addEventListener("change", renderAdminRequests);
+  $("reqFilterType").addEventListener("change", renderAdminRequests);
+  $("reqFilterDept").addEventListener("change", (e) => {
+    e.target.dataset.cur = e.target.value;
+    renderAdminRequests();
+  });
+  $("reqFilterFrom").addEventListener("change", renderAdminRequests);
+  $("reqFilterTo").addEventListener("change", renderAdminRequests);
+  $("reqFilterClearBtn").addEventListener("click", () => {
+    $("reqFilterStatus").value = "all";
+    $("reqFilterUser").value = "all";
+    $("reqFilterType").value = "all";
+    $("reqFilterDept").value = "all";
+    $("reqFilterDept").dataset.cur = "all";
+    $("reqFilterFrom").value = "";
+    $("reqFilterTo").value = "";
+    renderAdminRequests();
+  });
+  $("csvExportRequestsBtn").addEventListener("click", exportRequestsCSV);
+
+  // 申請の表示用ステータス（二段階承認の途中段階を表現）
+  function displayStatus(r) {
+    if (!TWO_STAGE_TYPES.includes(r.type)) return r.status || "申請中";
+    // 旧データ互換: deptApproval/adminApproval が無い場合は status を使う
+    if (!r.deptApproval && !r.adminApproval) return r.status || "申請中";
+    if ((r.deptApproval && r.deptApproval.status === "却下") ||
+        (r.adminApproval && r.adminApproval.status === "却下")) return "却下";
+    if (r.adminApproval && r.adminApproval.status === "承認") return "承認";
+    if (r.deptApproval && r.deptApproval.status === "承認") return "総務承認待ち";
+    return "部署上長承認待ち";
+  }
+
+  // 申請CSV出力（現在のフィルタ適用後）
+  function exportRequestsCSV() {
+    const statusFilter = $("reqFilterStatus").value;
+    const userFilter = $("reqFilterUser").value;
+    const list = allRequests.filter(r => {
+      if (statusFilter !== "all" && displayStatus(r) !== statusFilter) return false;
+      if (userFilter !== "all" && r.uid !== userFilter) return false;
+      return true;
+    });
+    const rows = [["氏名", "メール", "部署", "申請種別", "対象日", "ステータス", "理由", "部署上長", "管理者", "作成日時"]];
+    list.forEach(r => {
+      const u = allUsers[r.uid] || {};
+      const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "";
+      const deptApprover = r.deptApproval && r.deptApproval.by ? (allUsers[r.deptApproval.by]?.name || "") : "";
+      const adminApprover = r.adminApproval && r.adminApproval.by ? (allUsers[r.adminApproval.by]?.name || "") :
+                            (r.approvedBy ? (allUsers[r.approvedBy]?.name || "") : "");
+      const created = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toISOString().slice(0,16).replace("T"," ") : "";
+      rows.push([u.name || "", u.email || "", dept, r.type, r.date, displayStatus(r), r.reason || "", deptApprover, adminApprover, created]);
+    });
+    const stamp = new Date().toISOString().slice(0,10);
+    downloadCSV(`申請_${stamp}.csv`, rows);
+    toast("CSVを出力しました", "success");
+  }
+
+  async function loadAdminRequests() {
+    try {
+      const snap = await db.collection("requests").get();
+      allRequests = [];
+      snap.forEach(d => allRequests.push({ id: d.id, ...d.data() }));
+      allRequests.sort((a, b) => {
+        // 未処理を先頭、その後日付降順
+        const sa = displayStatus(a), sb = displayStatus(b);
+        const aPending = sa !== "承認" && sa !== "却下";
+        const bPending = sb !== "承認" && sb !== "却下";
+        if (aPending !== bPending) return aPending ? -1 : 1;
+        return (b.date || "").localeCompare(a.date || "");
+      });
+      renderAdminRequests();
+      updatePendingBadge();
+    } catch (e) { console.error(e); toast("申請取得失敗: " + e.message, "error"); }
+  }
+
+  // 管理者が処理すべき申請件数バッジ更新
+  function updatePendingBadge() {
+    const badge = $("reqPendingBadge");
+    if (!badge) return;
+    let count = 0;
+    allRequests.forEach(r => {
+      const ds = displayStatus(r);
+      if (ds === "承認" || ds === "却下") return;
+      if (TWO_STAGE_TYPES.includes(r.type)) {
+        // 管理者は最終承認段階を処理
+        if (!r.adminApproval || r.adminApproval.status === "申請中") count++;
+      } else {
+        count++;
+      }
+    });
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  function renderAdminRequests() {
+    // 種別フィルタのオプションを最新化
+    const typeSel = $("reqFilterType");
+    if (typeSel.options.length <= 1) {
+      typeSel.innerHTML = '<option value="all">全種別</option>' +
+        REQ_TYPES.map(t => `<option value="${t}">${t}</option>`).join("");
+    }
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("reqFilterDept");
+    deptSel.innerHTML = '<option value="all">全部署</option>' +
+      '<option value="_none">未所属</option>' +
+      Object.values(allDepartments)
+        .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+        .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+    // 直前の選択を維持
+    if (deptSel.dataset.cur) deptSel.value = deptSel.dataset.cur;
+    deptSel.dataset.cur = deptSel.value;
+
+    const statusFilter = $("reqFilterStatus").value;
+    const userFilter = $("reqFilterUser").value;
+    const typeFilter = $("reqFilterType").value;
+    const deptFilter = $("reqFilterDept").value;
+    const fromFilter = $("reqFilterFrom").value;
+    const toFilter = $("reqFilterTo").value;
+    const list = allRequests.filter(r => {
+      if (statusFilter !== "all" && displayStatus(r) !== statusFilter) return false;
+      if (userFilter !== "all" && r.uid !== userFilter) return false;
+      if (typeFilter !== "all" && r.type !== typeFilter) return false;
+      if (deptFilter !== "all") {
+        const u = allUsers[r.uid] || {};
+        const userDept = u.department || "";
+        if (deptFilter === "_none") { if (userDept) return false; }
+        else if (userDept !== deptFilter) return false;
+      }
+      if (fromFilter && r.date && r.date < fromFilter) return false;
+      if (toFilter && r.date && r.date > toFilter) return false;
+      return true;
+    });
+
+    // サマリ
+    $("reqFilterSummary").textContent = `表示 ${list.length}件 / 全 ${allRequests.length}件`;
+
+    const container = $("adminRequests");
+    if (list.length === 0) { container.innerHTML = '<div class="empty">申請はありません</div>'; return; }
+
+    container.innerHTML = list.map(r => {
+      const u = allUsers[r.uid] || {};
+      const userName = u.name || r.uid;
+      const deptName = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      const ds = displayStatus(r);
+      const isTwoStage = TWO_STAGE_TYPES.includes(r.type);
+      const dept = r.deptApproval || {};
+      const adm = r.adminApproval || {};
+      const deptStageName = dept.by ? (allUsers[dept.by]?.name || "") : "";
+      const admStageName = adm.by ? (allUsers[adm.by]?.name || "") : (r.approvedBy ? (allUsers[r.approvedBy]?.name || "") : "");
+      const isFinal = ds === "承認" || ds === "却下";
+
+      // 二段階承認のステージ表示
+      let stageHtml = "";
+      if (isTwoStage) {
+        const dCls = dept.status === "承認" ? "ok" : dept.status === "却下" ? "ng" : "pending";
+        const aCls = adm.status === "承認" ? "ok" : adm.status === "却下" ? "ng" : "pending";
+        const dTxt = dept.status === "承認" ? `部署上長 ✓${deptStageName}` : dept.status === "却下" ? `部署上長 ✗${deptStageName}` : "部署上長 待ち";
+        const aTxt = adm.status === "承認" ? `総務 ✓${admStageName}` : adm.status === "却下" ? `総務 ✗${admStageName}` : "総務 待ち";
+        stageHtml = `<div class="stage-row">
+          <span class="stage ${dCls}">${escapeHtml(dTxt)}</span>
+          <span class="stage ${aCls}">${escapeHtml(aTxt)}</span>
+        </div>`;
+      }
+
+      // 管理者として実行可能なアクション
+      let actionHtml;
+      if (isTwoStage) {
+        // 有給: 管理者が最終承認/却下、または取消・編集・削除
+        const adminActed = adm.status === "承認" || adm.status === "却下";
+        if (!adminActed) {
+          actionHtml = `
+            <button class="btn small approve-btn" type="button">総務として承認</button>
+            <button class="btn small secondary reject-btn" type="button">却下</button>`;
+        } else {
+          actionHtml = `<button class="btn small secondary revert-btn" type="button">総務承認を取消</button>`;
+        }
+      } else {
+        // 単一承認
+        const isPending = ds !== "承認" && ds !== "却下";
+        actionHtml = isPending
+          ? `<button class="btn small approve-btn" type="button">承認</button>
+             <button class="btn small secondary reject-btn" type="button">却下</button>`
+          : `<button class="btn small secondary revert-btn" type="button">取消（申請中に戻す）</button>`;
+      }
+
+      const editStatusOptions = isTwoStage
+        ? `<option value="部署上長承認待ち">部署上長承認待ち</option>
+           <option value="総務承認待ち">総務承認待ち</option>
+           <option value="承認">承認</option>
+           <option value="却下">却下</option>`
+        : `<option value="申請中">申請中</option>
+           <option value="承認">承認</option>
+           <option value="却下">却下</option>`;
+
+      return `
+        <div class="req-item status-${isFinal ? ds : '申請中'}" data-id="${r.id}">
+          <div class="head">
+            <span>${escapeHtml(userName)} <span class="dept-badge">${escapeHtml(deptName)}</span> / ${r.type}</span>
+            <span class="status-badge">${ds}</span>
+          </div>
+          <div class="meta">対象日：${r.date}</div>
+          <div class="reason">${escapeHtml(r.reason || "")}</div>
+          ${stageHtml}
+          <div class="actions">
+            ${actionHtml}
+            <button class="btn small secondary edit-btn" type="button">編集</button>
+            <button class="btn small danger delete-btn" type="button">削除</button>
+          </div>
+          <div class="edit-form" data-id="${r.id}">
+            <div class="form-group">
+              <label>申請種別</label>
+              <select class="ef-type">
+                ${REQ_TYPES.map(t => `<option value="${t}" ${t===r.type?"selected":""}>${t}</option>`).join("")}
+              </select>
+            </div>
+            <div class="form-group"><label>対象日</label><input type="date" class="ef-date" value="${r.date || ''}" /></div>
+            <div class="form-group"><label>理由</label><textarea class="ef-reason">${escapeHtml(r.reason || "")}</textarea></div>
+            <div class="form-group">
+              <label>ステータス</label>
+              <select class="ef-status" data-current="${ds}">
+                ${editStatusOptions.replace(`value="${ds}"`, `value="${ds}" selected`)}
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn small ef-save" type="button">保存</button>
+              <button class="btn small secondary ef-cancel" type="button">キャンセル</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".req-item").forEach(item => {
+      const id = item.dataset.id;
+      const editForm = item.querySelector(".edit-form");
+      const approve = item.querySelector(".approve-btn");
+      const reject = item.querySelector(".reject-btn");
+      const revert = item.querySelector(".revert-btn");
+      const editBtn = item.querySelector(".edit-btn");
+      const delBtn = item.querySelector(".delete-btn");
+      const saveBtn = item.querySelector(".ef-save");
+      const cancelBtn = item.querySelector(".ef-cancel");
+
+      if (approve) approve.addEventListener("click", () => reviewRequest(id, "承認"));
+      if (reject) reject.addEventListener("click", () => {
+        const comment = prompt("却下理由をスタッフに伝えてください（任意）:", "");
+        if (comment === null) return; // キャンセル
+        reviewRequest(id, "却下", false, comment);
+      });
+      if (revert) revert.addEventListener("click", () => {
+        if (!confirm("この申請を「申請中」に戻します。よろしいですか？")) return;
+        reviewRequest(id, "申請中", true);
+      });
+      if (editBtn) editBtn.addEventListener("click", () => {
+        editForm.classList.toggle("open");
+      });
+      if (cancelBtn) cancelBtn.addEventListener("click", () => {
+        editForm.classList.remove("open");
+      });
+      if (saveBtn) saveBtn.addEventListener("click", async () => {
+        const type = editForm.querySelector(".ef-type").value;
+        const date = editForm.querySelector(".ef-date").value;
+        const reason = editForm.querySelector(".ef-reason").value.trim();
+        const status = editForm.querySelector(".ef-status").value;
+        if (!date) { toast("対象日を入力してください", "error"); return; }
+        if (type !== "シフト休" && !reason) { toast("理由を入力してください", "error"); return; }
+        try {
+          const update = { type, date, reason };
+          if (TWO_STAGE_TYPES.includes(type)) {
+            // 二段階承認の状態を編集ステータスから推定
+            if (status === "部署上長承認待ち") {
+              update.deptApproval = { status: "申請中", by: null, at: null };
+              update.adminApproval = { status: "申請中", by: null, at: null };
+              update.status = "申請中";
+              update.approvedBy = null;
+            } else if (status === "総務承認待ち") {
+              update.deptApproval = { status: "承認", by: currentUser.uid, at: firebase.firestore.FieldValue.serverTimestamp() };
+              update.adminApproval = { status: "申請中", by: null, at: null };
+              update.status = "申請中";
+              update.approvedBy = null;
+            } else if (status === "承認") {
+              update.deptApproval = { status: "承認", by: currentUser.uid, at: firebase.firestore.FieldValue.serverTimestamp() };
+              update.adminApproval = { status: "承認", by: currentUser.uid, at: firebase.firestore.FieldValue.serverTimestamp() };
+              update.status = "承認";
+              update.approvedBy = currentUser.uid;
+            } else if (status === "却下") {
+              update.adminApproval = { status: "却下", by: currentUser.uid, at: firebase.firestore.FieldValue.serverTimestamp() };
+              update.status = "却下";
+              update.approvedBy = currentUser.uid;
+            }
+          } else {
+            update.status = status;
+            update.approvedBy = status === "申請中" ? null : currentUser.uid;
+          }
+          await db.collection("requests").doc(id).update(update);
+          toast("申請を更新しました", "success");
+          await loadAdminRequests();
+          await loadCalendar();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+      if (delBtn) delBtn.addEventListener("click", async () => {
+        if (!confirm("この申請を完全に削除します。よろしいですか？")) return;
+        try {
+          await db.collection("requests").doc(id).delete();
+          toast("削除しました", "success");
+          await loadAdminRequests();
+          await loadCalendar();
+        } catch (e) { toast("削除失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  // 申請種別ごとの差し引き量と残数フィールド
+  function leaveDeduct(type) {
+    if (type === "有給") return { amount: 1, field: "paidLeaveBalance" };
+    if (type === "半休") return { amount: 0.5, field: "paidLeaveBalance" };
+    if (type === "シフト休") return { amount: 1, field: "shiftLeaveBalance" };
+    return { amount: 0, field: null };
+  }
+
+  async function adjustBalance(uid, field, delta) {
+    if (!field || delta === 0) return;
+    try {
+      await db.collection("users").doc(uid).update({
+        [field]: firebase.firestore.FieldValue.increment(delta)
+      });
+    } catch (e) { console.warn(`${field} 更新失敗:`, e); }
+  }
+
+  async function reviewRequest(id, status, isRevert = false, comment = "") {
+    try {
+      const r = allRequests.find(x => x.id === id);
+      const update = {};
+      const ts = firebase.firestore.FieldValue.serverTimestamp();
+      const wasApproved = r && (displayStatus(r) === "承認");
+      let willBeApproved = false;
+      if (r && TWO_STAGE_TYPES.includes(r.type)) {
+        // 管理者は最終承認段階を操作
+        if (isRevert) {
+          update.adminApproval = { status: "申請中", by: null, at: null };
+          update.status = "申請中";
+          update.approvedBy = null;
+          update.rejectionComment = null;
+        } else if (status === "承認") {
+          // 部署上長未承認の場合も管理者が最終承認可能（本人が部署上長と兼任など）
+          if (!r.deptApproval || r.deptApproval.status !== "承認") {
+            update.deptApproval = { status: "承認", by: currentUser.uid, at: ts };
+          }
+          update.adminApproval = { status: "承認", by: currentUser.uid, at: ts };
+          update.status = "承認";
+          update.approvedBy = currentUser.uid;
+          willBeApproved = true;
+        } else if (status === "却下") {
+          update.adminApproval = { status: "却下", by: currentUser.uid, at: ts };
+          update.status = "却下";
+          update.approvedBy = currentUser.uid;
+          if (comment) update.rejectionComment = comment;
+        }
+      } else {
+        update.status = status;
+        update.approvedBy = status === "申請中" ? null : currentUser.uid;
+        willBeApproved = (status === "承認");
+        if (status === "却下" && comment) update.rejectionComment = comment;
+        if (status === "申請中") update.rejectionComment = null;
+      }
+      await db.collection("requests").doc(id).update(update);
+      // 有給/半休/シフト休の残数調整
+      if (r) {
+        const d = leaveDeduct(r.type);
+        if (d.amount > 0) {
+          if (wasApproved && !willBeApproved) await adjustBalance(r.uid, d.field, d.amount);
+          else if (!wasApproved && willBeApproved) await adjustBalance(r.uid, d.field, -d.amount);
+        }
+        // 監査ログ
+        const targetName = (allUsers[r.uid] && allUsers[r.uid].name) || r.uid;
+        const actionLabel = isRevert ? "取消（申請中へ戻し）" : status;
+        await audit("update", "requests", id,
+          `${targetName}の${r.type}申請(${r.date})を${actionLabel}`,
+          { status: r.status, deptApproval: r.deptApproval, adminApproval: r.adminApproval },
+          update);
+      }
+      toast(isRevert ? "申請中に戻しました" : `${status}しました`, "success");
+      await loadAdminRequests();
+      await loadStaffList();
+      await loadCalendar();
+      renderLeaveBalanceList();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  }
+
+  // ============================================================
+  // 休暇カレンダー
+  // ============================================================
+  $("calReloadBtn").addEventListener("click", loadCalendar);
+  $("calMonth").addEventListener("change", loadCalendar);
+  $("calFilterDept").addEventListener("change", loadCalendar);
+  $("calIncludePending").addEventListener("change", loadCalendar);
+
+  function renderCalLegend() {
+    const items = [
+      { label: "有給", cls: "leave-yukyu" },
+      { label: "シフト休", cls: "leave-shift" },
+      { label: "半休", cls: "leave-han" },
+      { label: "残業", cls: "leave-over" },
+      { label: "休日出勤", cls: "leave-out" },
+      { label: "遅刻/早退", cls: "leave-late" },
+      { label: "直行/直帰", cls: "leave-direct" }
+    ];
+    $("calLegend").innerHTML = items.map(i =>
+      `<span class="leave ${i.cls}">${i.label}</span>`
+    ).join("");
+  }
+
+  async function loadCalendar() {
+    try {
+      const month = $("calMonth").value || currentMonthStr();
+      const deptFilter = $("calFilterDept").value;
+      const includePending = $("calIncludePending").value === "all";
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startStr = `${y}-${pad(m)}-01`;
+      const endStr = `${y}-${pad(m)}-${pad(daysInMonth)}`;
+
+      const snap = await db.collection("requests")
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      const byDate = {};
+      snap.forEach(doc => {
+        const r = { id: doc.id, ...doc.data() };
+        const ds = displayStatus(r);
+        if (ds === "却下") return;
+        const isPending = ds !== "承認";
+        if (isPending && !includePending) return;
+        const u = allUsers[r.uid] || {};
+        if (deptFilter !== "all") {
+          if (deptFilter === "_none" && u.department) return;
+          if (deptFilter !== "_none" && u.department !== deptFilter) return;
+        }
+        if (!byDate[r.date]) byDate[r.date] = [];
+        byDate[r.date].push({ ...r, _user: u, _status: ds });
+      });
+
+      // カレンダー描画（1日が何曜日か算出して空セルを埋める）
+      const firstDow = new Date(y, m - 1, 1).getDay();
+      const cal = $("calendar");
+      const today = todayStr();
+      const headers = ["日","月","火","水","木","金","土"];
+      let html = headers.map((h, i) =>
+        `<div class="cal-head ${i===0?"sun":i===6?"sat":""}">${h}</div>`
+      ).join("");
+      // 前月の空セル
+      for (let i = 0; i < firstDow; i++) html += `<div class="cal-cell empty"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+        const dow = new Date(y, m - 1, d).getDay();
+        const isHol = (settings.holidays || []).includes(dateStr);
+        const cls = (dateStr === today ? "today " : "") + (isHol ? "holiday " : "");
+        const dayCls = dow === 0 ? "sun" : dow === 6 ? "sat" : "";
+        const items = (byDate[dateStr] || []).map(r => {
+          const pending = r._status !== "承認";
+          const name = r._user.name || "";
+          return `<span class="leave ${leaveClass(r.type)}" title="${escapeHtml(name)} / ${r.type} / ${r._status}">${escapeHtml(name)}${pending ? "▲" : ""}</span>`;
+        }).join("");
+        html += `<div class="cal-cell ${cls}">
+          <div class="day ${dayCls}">${d}</div>
+          ${items}
+        </div>`;
+      }
+      cal.innerHTML = html;
+    } catch (e) {
+      console.error(e);
+      toast("カレンダー取得失敗: " + e.message, "error");
+    }
+  }
+
+  // タブ切替時にカレンダーを自動ロード
+  document.querySelector('[data-tab="tab-calendar"]').addEventListener("click", () => {
+    if (!$("calMonth").value) $("calMonth").value = currentMonthStr();
+    loadCalendar();
+  });
+
+  // ============================================================
+  // 有給残数 一覧管理（検索・フィルタ・並び替え対応）
+  // ============================================================
+  function renderLeaveBalanceList() {
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("leaveFilterDept");
+    if (deptSel) {
+      const cur = deptSel.value || "all";
+      deptSel.innerHTML = '<option value="all">全部署</option>' +
+        '<option value="_none">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      deptSel.value = cur;
+    }
+
+    const minDays = settings.paidLeaveMinDays || 5;
+    const search = ($("leaveSearch") && $("leaveSearch").value || "").toLowerCase();
+    const deptFilter = $("leaveFilterDept") ? $("leaveFilterDept").value : "all";
+    const sortKey = $("leaveSort") ? $("leaveSort").value : "name";
+    const riskOnly = $("leaveRiskOnly") ? $("leaveRiskOnly").checked : false;
+
+    let list = Object.keys(allUsers).map(uid => {
+      const u = allUsers[uid];
+      const bal = u.paidLeaveBalance != null ? u.paidLeaveBalance : 0;
+      const taken = countPaidLeaveTakenThisFY(uid);
+      const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      return { uid, ...u, _bal: bal, _taken: taken, _deptName: dept };
+    });
+
+    // 検索フィルタ
+    if (search) list = list.filter(u => (u.name || "").toLowerCase().includes(search));
+    // 部署フィルタ
+    if (deptFilter !== "all") {
+      list = list.filter(u => deptFilter === "_none" ? !u.department : u.department === deptFilter);
+    }
+    // リスクのみ
+    if (riskOnly) list = list.filter(u => u._taken < minDays);
+
+    // 並び替え
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case "bal_asc": return a._bal - b._bal || (a.name || "").localeCompare(b.name || "", "ja");
+        case "taken_asc": return a._taken - b._taken || (a.name || "").localeCompare(b.name || "", "ja");
+        case "dept": return (a._deptName || "").localeCompare(b._deptName || "", "ja") || (a.name || "").localeCompare(b.name || "", "ja");
+        default: return (a.name || "").localeCompare(b.name || "", "ja");
+      }
+    });
+
+    // サマリ
+    const total = Object.keys(allUsers).length;
+    const riskCount = Object.keys(allUsers).filter(uid => countPaidLeaveTakenThisFY(uid) < minDays).length;
+    $("leaveBalanceSummary").innerHTML =
+      `表示 <strong>${list.length}</strong> / 全 ${total}名 / ` +
+      `<span style="color:${riskCount>0?'#B45309':'#047857'}; font-weight:600;">${minDays}日未達 ${riskCount}名</span>`;
+
+    const c = $("leaveBalanceList");
+    if (list.length === 0) {
+      c.innerHTML = '<div class="empty">該当するスタッフがいません</div>';
+      return;
+    }
+    c.innerHTML = list.map(u => {
+      const bal = u._bal;
+      const plClass = u._taken >= minDays ? "ok" : "warn";
+      return `
+        <div class="staff-row" data-uid="${u.uid}">
+          <div class="info">
+            <div class="name">
+              ${escapeHtml(u.name || "")}
+              <span class="dept-badge">${escapeHtml(u._deptName)}</span>
+              <span class="pl-pill ${plClass}">取得 ${u._taken}/${minDays}日</span>
+            </div>
+            <div class="email">残数: <strong>${bal}日</strong></div>
+          </div>
+          <div class="controls">
+            <input type="number" step="0.5" class="bal-input" value="${bal}" style="width:70px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
+            <button class="btn small bal-save" type="button">更新</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    c.querySelectorAll(".staff-row").forEach(row => {
+      const uid = row.dataset.uid;
+      row.querySelector(".bal-save").addEventListener("click", async () => {
+        const v = parseFloat(row.querySelector(".bal-input").value);
+        if (isNaN(v)) { toast("数値を入力してください", "error"); return; }
+        const user = allUsers[uid] || {};
+        const oldBal = user.paidLeaveBalance != null ? user.paidLeaveBalance : 0;
+        try {
+          await db.collection("users").doc(uid).update({ paidLeaveBalance: v });
+          await audit("update", "users", uid,
+            `${user.name || uid} の有給残数を ${oldBal} → ${v} 日に変更`,
+            { paidLeaveBalance: oldBal },
+            { paidLeaveBalance: v });
+          toast("残数を更新しました", "success");
+          await loadStaffList();
+          renderLeaveBalanceList();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  $("grantAllBtn").addEventListener("click", async () => {
+    const v = parseFloat($("grantAmount").value);
+    const target = $("grantTarget").value;
+    if (isNaN(v)) { toast("付与日数を入力してください", "error"); return; }
+    const action = target === "set" ? `全員の残数を ${v}日 に上書きします` : `全員の残数に ${v}日 を加算します`;
+    if (!confirm(action + "。よろしいですか？")) return;
+    try {
+      const batch = db.batch();
+      Object.keys(allUsers).forEach(uid => {
+        const ref = db.collection("users").doc(uid);
+        if (target === "set") batch.update(ref, { paidLeaveBalance: v });
+        else batch.update(ref, { paidLeaveBalance: firebase.firestore.FieldValue.increment(v) });
+      });
+      await batch.commit();
+      await audit("update", "users", "(bulk)",
+        target === "set" ? `全員の有給残数を ${v} 日に上書き` : `全員の有給残数に ${v} 日加算`,
+        null, { target, amount: v, count: Object.keys(allUsers).length });
+      toast("一括更新しました", "success");
+      await loadStaffList();
+      renderLeaveBalanceList();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  });
+
+  // ============================================================
+  // シフト休 残数 一覧管理（有給と並行・別フィールド）
+  // ============================================================
+  function renderShiftBalanceList() {
+    // 部署フィルタのオプションを最新化
+    const deptSel = $("shiftFilterDept");
+    if (deptSel) {
+      const cur = deptSel.value || "all";
+      deptSel.innerHTML = '<option value="all">全部署</option>' +
+        '<option value="_none">未所属</option>' +
+        Object.values(allDepartments)
+          .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ja"))
+          .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join("");
+      deptSel.value = cur;
+    }
+
+    const search = ($("shiftSearch") && $("shiftSearch").value || "").toLowerCase();
+    const deptFilter = $("shiftFilterDept") ? $("shiftFilterDept").value : "all";
+    const sortKey = $("shiftSort") ? $("shiftSort").value : "name";
+
+    let list = Object.keys(allUsers).map(uid => {
+      const u = allUsers[uid];
+      const bal = u.shiftLeaveBalance != null ? u.shiftLeaveBalance : 0;
+      const dept = u.department && allDepartments[u.department] ? allDepartments[u.department].name : "未所属";
+      return { uid, ...u, _bal: bal, _deptName: dept };
+    });
+
+    if (search) list = list.filter(u => (u.name || "").toLowerCase().includes(search));
+    if (deptFilter !== "all") {
+      list = list.filter(u => deptFilter === "_none" ? !u.department : u.department === deptFilter);
+    }
+
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case "bal_asc": return a._bal - b._bal || (a.name || "").localeCompare(b.name || "", "ja");
+        case "dept": return (a._deptName || "").localeCompare(b._deptName || "", "ja") || (a.name || "").localeCompare(b.name || "", "ja");
+        default: return (a.name || "").localeCompare(b.name || "", "ja");
+      }
+    });
+
+    const total = Object.keys(allUsers).length;
+    const zeroCount = list.filter(u => u._bal <= 0).length;
+    $("shiftBalanceSummary").innerHTML =
+      `表示 <strong>${list.length}</strong> / 全 ${total}名 / ` +
+      `<span style="color:${zeroCount>0?'#B45309':'#047857'}; font-weight:600;">残0日 ${zeroCount}名</span>`;
+
+    const c = $("shiftBalanceList");
+    if (list.length === 0) {
+      c.innerHTML = '<div class="empty">該当するスタッフがいません</div>';
+      return;
+    }
+    c.innerHTML = list.map(u => `
+      <div class="staff-row" data-uid="${u.uid}">
+        <div class="info">
+          <div class="name">
+            ${escapeHtml(u.name || "")}
+            <span class="dept-badge">${escapeHtml(u._deptName)}</span>
+          </div>
+          <div class="email">シフト休残: <strong>${u._bal}日</strong></div>
+        </div>
+        <div class="controls">
+          <input type="number" step="1" class="shift-bal-input" value="${u._bal}" style="width:70px; padding:6px; border:1px solid #CBD5E1; border-radius:6px;" />
+          <button class="btn small shift-bal-save" type="button">更新</button>
+        </div>
+      </div>
+    `).join("");
+    c.querySelectorAll(".staff-row").forEach(row => {
+      const uid = row.dataset.uid;
+      row.querySelector(".shift-bal-save").addEventListener("click", async () => {
+        const v = parseFloat(row.querySelector(".shift-bal-input").value);
+        if (isNaN(v)) { toast("数値を入力してください", "error"); return; }
+        const user = allUsers[uid] || {};
+        const oldBal = user.shiftLeaveBalance != null ? user.shiftLeaveBalance : 0;
+        try {
+          await db.collection("users").doc(uid).update({ shiftLeaveBalance: v });
+          await audit("update", "users", uid,
+            `${user.name || uid} のシフト休残数を ${oldBal} → ${v} 日に変更`,
+            { shiftLeaveBalance: oldBal },
+            { shiftLeaveBalance: v });
+          toast("残数を更新しました", "success");
+          await loadStaffList();
+          renderShiftBalanceList();
+        } catch (e) { toast("更新失敗: " + e.message, "error"); }
+      });
+    });
+  }
+
+  $("grantShiftAllBtn").addEventListener("click", async () => {
+    const v = parseFloat($("grantShiftAmount").value);
+    const target = $("grantShiftTarget").value;
+    if (isNaN(v)) { toast("付与日数を入力してください", "error"); return; }
+    const action = target === "set" ? `全員のシフト休残数を ${v}日 に上書きします` : `全員のシフト休残数に ${v}日 を加算します`;
+    if (!confirm(action + "。よろしいですか？")) return;
+    try {
+      const batch = db.batch();
+      Object.keys(allUsers).forEach(uid => {
+        const ref = db.collection("users").doc(uid);
+        if (target === "set") batch.update(ref, { shiftLeaveBalance: v });
+        else batch.update(ref, { shiftLeaveBalance: firebase.firestore.FieldValue.increment(v) });
+      });
+      await batch.commit();
+      await audit("update", "users", "(bulk)",
+        target === "set" ? `全員のシフト休残数を ${v} 日に上書き` : `全員のシフト休残数に ${v} 日加算`,
+        null, { target, amount: v, count: Object.keys(allUsers).length, field: "shiftLeaveBalance" });
+      toast("一括更新しました", "success");
+      await loadStaffList();
+      renderShiftBalanceList();
+    } catch (e) { toast("更新失敗: " + e.message, "error"); }
+  });
+
+  // タブ切替時に有給/シフト休リスト再描画＋監査ログを最新化
+  document.querySelector('[data-tab="tab-settings"]').addEventListener("click", () => {
+    renderLeaveBalanceList();
+    renderShiftBalanceList();
+    loadAuditLogs();
+  });
+
+  // 有給残数の検索・フィルタ・並び替え（入力でリアルタイム反映）
+  ["leaveSearch", "leaveFilterDept", "leaveSort", "leaveRiskOnly"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = (id === "leaveSearch") ? "input" : "change";
+    el.addEventListener(evt, renderLeaveBalanceList);
+  });
+  // シフト休残数の検索・フィルタ・並び替え
+  ["shiftSearch", "shiftFilterDept", "shiftSort"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = (id === "shiftSearch") ? "input" : "change";
+    el.addEventListener(evt, renderShiftBalanceList);
+  });
+
+  // ============================================================
+  // 背景画像（このブラウザのみ）
+  // ============================================================
+  const BG_KEY = "kintaiAdminBg";
+  const BG_ALPHA_KEY = "kintaiAdminBgAlpha";
+
+  function applyBackground(url, alphaPct) {
+    if (url) {
+      document.documentElement.style.setProperty("--bg-image", `url("${url}")`);
+      const a = (alphaPct == null ? 96 : alphaPct) / 100;
+      document.documentElement.style.setProperty("--card-alpha", a);
+      document.documentElement.style.setProperty("--card-bg", `rgba(255,255,255, ${a})`);
+      document.body.classList.add("has-bg");
+    } else {
+      document.documentElement.style.setProperty("--bg-image", "none");
+      document.body.classList.remove("has-bg");
+    }
+  }
+
+  function loadBackgroundFromStorage() {
+    const url = localStorage.getItem(BG_KEY) || "";
+    const alpha = parseInt(localStorage.getItem(BG_ALPHA_KEY) || "96", 10);
+    applyBackground(url, alpha);
+  }
+  // ログイン前にも適用（onAuthStateChanged 前）
+  loadBackgroundFromStorage();
+
+  function loadBgUI() {
+    const url = localStorage.getItem(BG_KEY) || "";
+    const alpha = parseInt(localStorage.getItem(BG_ALPHA_KEY) || "96", 10);
+    $("bgAlphaInput").value = alpha;
+    $("bgAlphaVal").textContent = alpha;
+    if (url) {
+      $("bgPreview").style.backgroundImage = `url("${url}")`;
+      $("bgPreview").textContent = "";
+    } else {
+      $("bgPreview").style.backgroundImage = "none";
+      $("bgPreview").textContent = "プレビュー（未設定）";
+    }
+  }
+
+  $("bgFileInput").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      if (!confirm("画像サイズが5MBを超えています。動作が重くなる可能性があります。続行しますか？")) return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      try {
+        localStorage.setItem(BG_KEY, dataUrl);
+        applyBackground(dataUrl, parseInt($("bgAlphaInput").value, 10));
+        loadBgUI();
+        toast("背景を設定しました", "success");
+      } catch (err) {
+        toast("画像が大きすぎて保存できません: " + err.message, "error");
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $("bgUrlApplyBtn").addEventListener("click", () => {
+    const url = $("bgUrlInput").value.trim();
+    if (!url) return;
+    localStorage.setItem(BG_KEY, url);
+    applyBackground(url, parseInt($("bgAlphaInput").value, 10));
+    loadBgUI();
+    toast("背景URLを設定しました", "success");
+  });
+
+  $("bgClearBtn").addEventListener("click", () => {
+    localStorage.removeItem(BG_KEY);
+    applyBackground("", 96);
+    loadBgUI();
+    toast("背景を解除しました", "success");
+  });
+
+  $("bgAlphaInput").addEventListener("input", (e) => {
+    const v = parseInt(e.target.value, 10);
+    $("bgAlphaVal").textContent = v;
+    localStorage.setItem(BG_ALPHA_KEY, v);
+    const url = localStorage.getItem(BG_KEY) || "";
+    if (url) applyBackground(url, v);
+  });
+
+  // ============================================================
+  // 設定
+  // ============================================================
+  $("settingSaveBtn").addEventListener("click", async () => {
+    const btn = $("settingSaveBtn");
+    const workMin = parseInt($("settingWorkMin").value, 10);
+    const holidayText = $("settingHolidays").value || "";
+    const holidays = holidayText.split("\n").map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
+    const fiscalStart = parseInt($("settingFiscalStart").value, 10) || 4;
+    const paidLeaveMin = parseFloat($("settingPaidLeaveMin").value) || 5;
+    const otWarn = parseInt($("settingOTWarn").value, 10) || 36;
+    const otMax = parseInt($("settingOTMax").value, 10) || 45;
+    if (!workMin || workMin < 0) { toast("所定労働時間を正しく入力してください", "error"); return; }
+
+    setLoading(btn, true);
+    try {
+      const newSettings = {
+        workMinutesPerDay: workMin,
+        holidays,
+        fiscalYearStart: fiscalStart,
+        paidLeaveMinDays: paidLeaveMin,
+        overtimeWarnHours: otWarn,
+        overtimeMaxHours: otMax
+      };
+      await db.collection("kintai_settings").doc("config").set(newSettings, { merge: true });
+      Object.assign(settings, newSettings);
+      await audit("update", "kintai_settings", "config", "会社共通設定を更新", null, newSettings);
+      toast("設定を保存しました", "success");
+    } catch (e) {
+      console.error(e);
+      toast("設定保存失敗: " + e.message, "error");
+    } finally { setLoading(btn, false); }
+  });
+
+  $("settingClosedSaveBtn").addEventListener("click", async () => {
+    const btn = $("settingClosedSaveBtn");
+    const text = $("settingClosedMonths").value || "";
+    const closedMonths = text.split("\n").map(s => s.trim()).filter(s => /^\d{4}-\d{2}$/.test(s));
+    setLoading(btn, true);
+    try {
+      await db.collection("kintai_settings").doc("config").set({ closedMonths }, { merge: true });
+      settings.closedMonths = closedMonths;
+      await audit("update", "kintai_settings", "config",
+        `月締めロックを更新（${closedMonths.length}月）`, null, { closedMonths });
+      toast("月締めを保存しました", "success");
+    } catch (e) { toast("保存失敗: " + e.message, "error"); }
+    finally { setLoading(btn, false); }
+  });
+
+  // ============================================================
+  // 監査ログビューア
+  // ============================================================
+  $("auditReloadBtn").addEventListener("click", loadAuditLogs);
+  $("auditFilterCollection").addEventListener("change", loadAuditLogs);
+  $("auditCsvBtn").addEventListener("click", exportAuditCSV);
+
+  let _auditCache = [];
+
+  // 監査ログの JSON に含まれる UID を名前に置換
+  function humanizeAuditJson(value) {
+    if (value === null || value === undefined) return "(なし)";
+    let s = JSON.stringify(value);
+    Object.keys(allUsers).forEach(uid => {
+      const name = allUsers[uid] && allUsers[uid].name;
+      if (!name) return;
+      const escapedUid = uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      s = s.replace(new RegExp(`"${escapedUid}"`, 'g'), `"${name}"`);
+    });
+    return s;
+  }
+
+  async function loadAuditLogs() {
+    try {
+      const filter = $("auditFilterCollection").value;
+      const snap = await db.collection("audit_logs")
+        .orderBy("at", "desc").limit(50).get();
+      _auditCache = [];
+      snap.forEach(d => _auditCache.push({ id: d.id, ...d.data() }));
+      const list = filter === "all"
+        ? _auditCache
+        : _auditCache.filter(x => x.collection === filter);
+      const c = $("auditList");
+      if (list.length === 0) { c.innerHTML = '<div class="empty">監査ログはまだありません</div>'; return; }
+      c.innerHTML = list.map(a => {
+        const dt = a.at && a.at.toDate ? a.at.toDate() : null;
+        const dtStr = dt ? `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}` : "";
+        const diff = (a.before || a.after)
+          ? `<details><summary>▼ 詳細</summary><div class="diff">前: ${escapeHtml(humanizeAuditJson(a.before))}\n後: ${escapeHtml(humanizeAuditJson(a.after))}</div></details>` : "";
+        return `
+          <div class="audit-row">
+            <div class="head">
+              <span>${escapeHtml(a.description || "")}</span>
+              <span class="role-badge role-staff">${a.collection}/${a.action}</span>
+            </div>
+            <div class="meta">${dtStr} / ${escapeHtml(a.byName || a.by || "")}</div>
+            ${diff}
+          </div>
+        `;
+      }).join("");
+    } catch (e) { console.error(e); toast("監査ログ取得失敗: " + e.message, "error"); }
+  }
+
+  function exportAuditCSV() {
+    const filter = $("auditFilterCollection").value;
+    const list = filter === "all"
+      ? _auditCache
+      : _auditCache.filter(x => x.collection === filter);
+    const rows = [["日時", "操作者", "操作", "対象", "ドキュメントID", "説明", "変更前", "変更後"]];
+    list.forEach(a => {
+      const dt = a.at && a.at.toDate ? a.at.toDate().toISOString().slice(0,16).replace("T"," ") : "";
+      rows.push([dt, a.byName || "", a.action, a.collection, a.docId,
+        a.description || "", JSON.stringify(a.before || ""), JSON.stringify(a.after || "")]);
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCSV(`監査ログ_${stamp}.csv`, rows);
+    toast("CSVを出力しました", "success");
+  }
+
+  </script>
+</body>
+</html>
