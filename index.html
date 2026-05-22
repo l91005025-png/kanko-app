@@ -238,6 +238,9 @@
         <div class="card">
           <div class="clock-date" id="clockDate">----年--月--日（-）</div>
           <div class="clock-time" id="clockTime">--:--:--</div>
+          <div id="summerBanner" style="display:none; margin:8px 0; padding:8px 10px; background:#FEF3C7; color:#92400E; border-radius:6px; font-size:13px; text-align:center; font-weight:600;">
+            🌞 サマータイム適用中 <span id="summerHours"></span>
+          </div>
           <div class="clock-buttons">
             <button id="btnClockIn" class="btn btn-in" type="button">出勤</button>
             <button id="btnClockOut" class="btn btn-out" type="button">退勤</button>
@@ -555,29 +558,61 @@
     return "部署上長承認待ち";
   }
 
-  function getDeptConfig(deptId) {
-    const d = allDepartments[deptId];
-    if (!d) return {
-      breakMinutes: 0,
-      workMinutesPerDay: settings.workMinutesPerDay || 480,
-      defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
-      extraHolidays: [],
-      monthOverrides: {}
-    };
-    // 旧データ互換
-    let patterns = d.defaultPatterns;
-    if (!patterns) patterns = (d.regularHolidays || [0, 6]).map(dow => ({ kind: "weekly", dow }));
-    return {
-      breakMinutes: d.breakMinutes != null ? d.breakMinutes : 0,
-      workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
-      defaultPatterns: patterns,
-      extraHolidays: d.extraHolidays || [],
-      monthOverrides: d.monthOverrides || {}
-    };
+  // サマータイム判定
+  function isSummerTimeActive(deptData, dateStr) {
+    const s = deptData && deptData.summerTime;
+    if (!s || !s.enabled || !dateStr) return false;
+    const month = parseInt(String(dateStr).slice(5, 7), 10);
+    if (!month) return false;
+    if (s.startMonth <= s.endMonth) {
+      return month >= s.startMonth && month <= s.endMonth;
+    } else {
+      return month >= s.startMonth || month <= s.endMonth;
+    }
   }
 
-  function getMyDeptConfig() {
-    return getDeptConfig(userData && userData.department);
+  function getDeptConfig(deptId, dateStr) {
+    const d = allDepartments[deptId];
+    let base;
+    if (!d) {
+      base = {
+        workStart: "09:00", workEnd: "18:00",
+        breakMinutes: 0,
+        workMinutesPerDay: settings.workMinutesPerDay || 480,
+        defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
+        extraHolidays: [],
+        monthOverrides: {},
+        summerActive: false
+      };
+    } else {
+      // 旧データ互換
+      let patterns = d.defaultPatterns;
+      if (!patterns) patterns = (d.regularHolidays || [0, 6]).map(dow => ({ kind: "weekly", dow }));
+      base = {
+        workStart: d.workStart || "09:00",
+        workEnd: d.workEnd || "18:00",
+        breakMinutes: d.breakMinutes != null ? d.breakMinutes : 0,
+        workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
+        defaultPatterns: patterns,
+        extraHolidays: d.extraHolidays || [],
+        monthOverrides: d.monthOverrides || {},
+        summerActive: false
+      };
+    }
+    // サマータイム適用
+    if (d && isSummerTimeActive(d, dateStr)) {
+      const st = d.summerTime;
+      base.workStart = st.workStart || base.workStart;
+      base.workEnd = st.workEnd || base.workEnd;
+      base.breakMinutes = st.breakMinutes != null ? st.breakMinutes : base.breakMinutes;
+      base.workMinutesPerDay = st.workMinutesPerDay || base.workMinutesPerDay;
+      base.summerActive = true;
+    }
+    return base;
+  }
+
+  function getMyDeptConfig(dateStr) {
+    return getDeptConfig(userData && userData.department, dateStr);
   }
 
   function patternMatchesDate(pat, year, month, day) {
@@ -739,6 +774,7 @@
         renderCalLegend();
         updateLeaveBalance();
         updateMyDashboard();
+        refreshSummerBanner();
       } catch (e) {
         console.error(e);
         toast("データの取得に失敗しました: " + e.message, "error");
@@ -797,6 +833,19 @@
     $("clockDate").textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${weekdayJp[d.getDay()]}）`;
   }
 
+  // 今日のサマータイム状態をバナーで表示
+  function refreshSummerBanner() {
+    const banner = $("summerBanner");
+    if (!banner) return;
+    const cfg = getMyDeptConfig(todayStr());
+    if (cfg.summerActive) {
+      $("summerHours").textContent = `${cfg.workStart}〜${cfg.workEnd}（休憩${cfg.breakMinutes}分）`;
+      banner.style.display = "block";
+    } else {
+      banner.style.display = "none";
+    }
+  }
+
   async function getTodayAttendance() {
     const snap = await db.collection("attendance")
       .where("uid", "==", currentUser.uid)
@@ -826,10 +875,11 @@
 
   function calcMinutes(clockIn, clockOut) {
     if (!clockIn || !clockOut) return { workMinutes: 0, overtimeMinutes: 0 };
-    const inMs = clockIn instanceof Date ? clockIn.getTime() : clockIn.toDate().getTime();
-    const outMs = clockOut instanceof Date ? clockOut.getTime() : clockOut.toDate().getTime();
-    const cfg = getMyDeptConfig();
-    let workMinutes = Math.max(0, Math.round((outMs - inMs) / 60000));
+    const inDate = clockIn instanceof Date ? clockIn : clockIn.toDate();
+    const outDate = clockOut instanceof Date ? clockOut : clockOut.toDate();
+    const dateStr = `${inDate.getFullYear()}-${pad(inDate.getMonth()+1)}-${pad(inDate.getDate())}`;
+    const cfg = getMyDeptConfig(dateStr);
+    let workMinutes = Math.max(0, Math.round((outDate.getTime() - inDate.getTime()) / 60000));
     workMinutes = Math.max(0, workMinutes - (cfg.breakMinutes || 0));
     const overtimeMinutes = Math.max(0, workMinutes - (cfg.workMinutesPerDay || 480));
     return { workMinutes, overtimeMinutes };
@@ -1531,7 +1581,7 @@
   });
 
   // 打刻タブを開くたびに残数を再取得
-  document.querySelector('[data-tab="tab-clock"]').addEventListener("click", updateLeaveBalance);
+  document.querySelector('[data-tab="tab-clock"]').addEventListener("click", () => { updateLeaveBalance(); refreshSummerBanner(); });
 
   function renderCalLegend() {
     const items = [
