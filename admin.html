@@ -632,6 +632,31 @@
             <label>固定休日（毎年同じ日：YYYY-MM-DD、1行1日付）</label>
             <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
           </div>
+
+          <div class="form-group" style="background:#FEF3C7; padding:12px; border-radius:6px; margin-top:12px;">
+            <label style="display:flex; align-items:center; gap:6px; font-weight:600; color:#92400E;">
+              <input type="checkbox" id="deptSummerEnabled" />
+              🌞 サマータイムを設定する
+            </label>
+            <p style="font-size:12px; color:#92400E; margin:4px 0 8px;">
+              指定した月の範囲では下記の勤務時間に自動切替されます（例: 7月〜9月は 08:00〜17:00）。
+            </p>
+            <div id="deptSummerFields" style="display:none;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div class="form-group"><label>開始月（1-12）</label><input type="number" id="deptSummerStart" min="1" max="12" value="7" /></div>
+                <div class="form-group"><label>終了月（1-12）</label><input type="number" id="deptSummerEnd" min="1" max="12" value="9" /></div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div class="form-group"><label>始業</label><input type="time" id="deptSummerWorkStart" value="08:00" /></div>
+                <div class="form-group"><label>終業</label><input type="time" id="deptSummerWorkEnd" value="17:00" /></div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div class="form-group"><label>休憩(分)</label><input type="number" id="deptSummerBreak" value="60" min="0" /></div>
+                <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptSummerWorkMin" value="480" min="0" /></div>
+              </div>
+            </div>
+          </div>
+
           <input type="hidden" id="deptEditId" value="" />
           <div style="display:flex; gap:8px;">
             <button id="deptSaveBtn" class="btn" type="button">保存</button>
@@ -968,25 +993,50 @@
   }
 
   // 部署設定を取得（フォールバックは会社デフォルト）
-  function getDeptConfig(deptId) {
+  // サマータイム判定（dateStr の月が部署のサマータイム期間内か）
+  function isSummerTimeActive(deptData, dateStr) {
+    const s = deptData && deptData.summerTime;
+    if (!s || !s.enabled || !dateStr) return false;
+    const month = parseInt(String(dateStr).slice(5, 7), 10);
+    if (!month) return false;
+    if (s.startMonth <= s.endMonth) {
+      return month >= s.startMonth && month <= s.endMonth;
+    } else {
+      // 年跨ぎ（例: 11月〜2月）
+      return month >= s.startMonth || month <= s.endMonth;
+    }
+  }
+
+  function getDeptConfig(deptId, dateStr) {
     const d = allDepartments[deptId];
-    if (!d) return {
+    const base = !d ? {
       workStart: "09:00", workEnd: "18:00",
       breakMinutes: 60,
       workMinutesPerDay: settings.workMinutesPerDay || 480,
       defaultPatterns: [{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }],
       extraHolidays: [],
-      monthOverrides: {}
-    };
-    return {
+      monthOverrides: {},
+      summerActive: false
+    } : {
       workStart: d.workStart || "09:00",
       workEnd: d.workEnd || "18:00",
       breakMinutes: d.breakMinutes != null ? d.breakMinutes : 60,
       workMinutesPerDay: d.workMinutesPerDay || settings.workMinutesPerDay || 480,
       defaultPatterns: d.defaultPatterns || [],
       extraHolidays: d.extraHolidays || [],
-      monthOverrides: d.monthOverrides || {}
+      monthOverrides: d.monthOverrides || {},
+      summerActive: false
     };
+    // サマータイム適用
+    if (d && isSummerTimeActive(d, dateStr)) {
+      const st = d.summerTime;
+      base.workStart = st.workStart || base.workStart;
+      base.workEnd = st.workEnd || base.workEnd;
+      base.breakMinutes = st.breakMinutes != null ? st.breakMinutes : base.breakMinutes;
+      base.workMinutesPerDay = st.workMinutesPerDay || base.workMinutesPerDay;
+      base.summerActive = true;
+    }
+    return base;
   }
 
   // パターンが指定日にマッチするか
@@ -1185,13 +1235,17 @@
     c.innerHTML = list.map(d => {
       const headUid = Object.keys(allUsers).find(uid => allUsers[uid].department === d.id && allUsers[uid].isDeptHead);
       const headName = headUid ? (allUsers[headUid].name || "") : "未設定";
+      const st = d.summerTime || {};
+      const summerLine = st.enabled
+        ? `<br><span style="color:#92400E;">🌞 サマータイム: ${st.startMonth || 7}月〜${st.endMonth || 9}月 ${st.workStart || "08:00"}〜${st.workEnd || "17:00"} / 休憩${st.breakMinutes != null ? st.breakMinutes : 60}分 / 所定${st.workMinutesPerDay || 480}分</span>`
+        : "";
       return `
         <div class="dept-row" data-id="${d.id}">
           <div class="info">
             <div class="name">${escapeHtml(d.name || "")}</div>
             <div class="meta">
               ${d.workStart || "09:00"}〜${d.workEnd || "18:00"} / 休憩${d.breakMinutes != null ? d.breakMinutes : 60}分 / 所定${d.workMinutesPerDay || 480}分<br>
-              定休: ${escapeHtml(patternsToText(d.defaultPatterns))} / 上長: ${escapeHtml(headName)}
+              定休: ${escapeHtml(patternsToText(d.defaultPatterns))} / 上長: ${escapeHtml(headName)}${summerLine}
             </div>
           </div>
           <div class="controls">
@@ -1280,6 +1334,16 @@
     $("deptWorkMin").value = d.workMinutesPerDay || 480;
     renderPatternList(d.defaultPatterns || []);
     $("deptExtraHolidays").value = (d.extraHolidays || []).join("\n");
+    // サマータイム
+    const st = d.summerTime || {};
+    $("deptSummerEnabled").checked = !!st.enabled;
+    $("deptSummerStart").value = st.startMonth || 7;
+    $("deptSummerEnd").value = st.endMonth || 9;
+    $("deptSummerWorkStart").value = st.workStart || "08:00";
+    $("deptSummerWorkEnd").value = st.workEnd || "17:00";
+    $("deptSummerBreak").value = st.breakMinutes != null ? st.breakMinutes : 60;
+    $("deptSummerWorkMin").value = st.workMinutesPerDay || 480;
+    $("deptSummerFields").style.display = st.enabled ? "block" : "none";
     // 月別調整カードを表示
     $("monthOvrCard").style.display = "block";
     $("monthOvrDeptName").textContent = d.name || "";
@@ -1297,8 +1361,21 @@
     $("deptWorkMin").value = 480;
     renderPatternList([{ kind: "weekly", dow: 0 }, { kind: "weekly", dow: 6 }]);
     $("deptExtraHolidays").value = "";
+    $("deptSummerEnabled").checked = false;
+    $("deptSummerStart").value = 7;
+    $("deptSummerEnd").value = 9;
+    $("deptSummerWorkStart").value = "08:00";
+    $("deptSummerWorkEnd").value = "17:00";
+    $("deptSummerBreak").value = 60;
+    $("deptSummerWorkMin").value = 480;
+    $("deptSummerFields").style.display = "none";
     $("monthOvrCard").style.display = "none";
   }
+
+  // サマータイムチェックボックスで詳細フィールドの表示切替
+  $("deptSummerEnabled").addEventListener("change", (e) => {
+    $("deptSummerFields").style.display = e.target.checked ? "block" : "none";
+  });
 
   $("deptResetBtn").addEventListener("click", clearDeptForm);
   $("deptSaveBtn").addEventListener("click", async () => {
@@ -1309,6 +1386,16 @@
     const defaultPatterns = readPatternList();
     const extraHolidays = $("deptExtraHolidays").value.split("\n")
       .map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{2}-\d{2}$/.test(s));
+    const summerEnabled = $("deptSummerEnabled").checked;
+    const summerTime = {
+      enabled: summerEnabled,
+      startMonth: Math.min(12, Math.max(1, parseInt($("deptSummerStart").value, 10) || 7)),
+      endMonth: Math.min(12, Math.max(1, parseInt($("deptSummerEnd").value, 10) || 9)),
+      workStart: $("deptSummerWorkStart").value || "08:00",
+      workEnd: $("deptSummerWorkEnd").value || "17:00",
+      breakMinutes: parseInt($("deptSummerBreak").value, 10) || 0,
+      workMinutesPerDay: parseInt($("deptSummerWorkMin").value, 10) || 480
+    };
     const data = {
       name,
       workStart: $("deptWorkStart").value || "09:00",
@@ -1316,7 +1403,8 @@
       breakMinutes: parseInt($("deptBreak").value, 10) || 0,
       workMinutesPerDay: parseInt($("deptWorkMin").value, 10) || 480,
       defaultPatterns,
-      extraHolidays
+      extraHolidays,
+      summerTime
     };
     setLoading(btn, true);
     try {
@@ -1990,7 +2078,7 @@
   }
 
   // 勤怠レコードの編集（モーダル）
-  function updateAttEditCalc(uid) {
+  function updateAttEditCalc(uid, dateStr) {
     const inStr = $("attEditIn").value;
     const outStr = $("attEditOut").value;
     const box = $("attEditCalc");
@@ -2002,10 +2090,11 @@
     const [oh, om] = outStr.split(":").map(Number);
     let mins = (oh * 60 + om) - (ih * 60 + im);
     if (mins < 0) mins += 24 * 60;
-    const cfg = getDeptConfig((allUsers[uid] || {}).department);
+    const cfg = getDeptConfig((allUsers[uid] || {}).department, dateStr);
     const work = Math.max(0, mins - (cfg.breakMinutes || 0));
     const over = Math.max(0, work - (cfg.workMinutesPerDay || 480));
-    box.innerHTML = `労働 <strong>${minutesToHM(work)}</strong> / 残業 <strong>${minutesToHM(over)}</strong>（休憩 ${cfg.breakMinutes}分 控除後）`;
+    const summerTag = cfg.summerActive ? ' <span style="color:#92400E; font-weight:600;">🌞サマータイム適用</span>' : '';
+    box.innerHTML = `労働 <strong>${minutesToHM(work)}</strong> / 残業 <strong>${minutesToHM(over)}</strong>（休憩 ${cfg.breakMinutes}分 控除後）${summerTag}`;
   }
 
   async function editAttendance(uid, dateStr, recId) {
@@ -2029,7 +2118,7 @@
     $("attEditOut").value = existing && existing.clockOut ? formatHM(existing.clockOut) : "";
     $("attEditNote").value = existing && existing.note ? existing.note : "";
     $("attEditClear").style.display = recId ? "" : "none";
-    updateAttEditCalc(uid);
+    updateAttEditCalc(uid, dateStr);
     $("attEditModal").style.display = "flex";
 
     const close = () => {
@@ -2042,8 +2131,8 @@
       $("attEditOut").oninput = null;
     };
 
-    $("attEditIn").oninput = () => updateAttEditCalc(uid);
-    $("attEditOut").oninput = () => updateAttEditCalc(uid);
+    $("attEditIn").oninput = () => updateAttEditCalc(uid, dateStr);
+    $("attEditOut").oninput = () => updateAttEditCalc(uid, dateStr);
     $("attEditCancel").onclick = close;
     $("attEditClose").onclick = close;
 
@@ -2084,7 +2173,7 @@
         const clockOut = makeDate(outStr);
         let workMinutes = 0, overtimeMinutes = 0;
         if (clockIn && clockOut) {
-          const cfg = getDeptConfig((allUsers[uid] || {}).department);
+          const cfg = getDeptConfig((allUsers[uid] || {}).department, dateStr);
           workMinutes = Math.max(0, Math.round((clockOut.getTime() - clockIn.getTime()) / 60000));
           workMinutes = Math.max(0, workMinutes - (cfg.breakMinutes || 0));
           overtimeMinutes = Math.max(0, workMinutes - (cfg.workMinutesPerDay || 480));
