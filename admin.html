@@ -633,15 +633,15 @@
             <textarea id="deptExtraHolidays" placeholder="2026-05-01"></textarea>
           </div>
 
-          <div class="form-group" style="background:#FEF3C7; padding:12px; border-radius:6px; margin-top:12px;">
-            <label style="display:flex; align-items:center; gap:6px; font-weight:600; color:#92400E;">
-              <input type="checkbox" id="deptSummerEnabled" />
-              🌞 サマータイムを設定する
+          <div style="background:#FEF3C7; padding:14px 14px 10px; border-radius:8px; margin-bottom:14px;">
+            <label for="deptSummerEnabled" style="display:flex; align-items:center; gap:10px; font-weight:700; color:#92400E; font-size:15px; cursor:pointer; margin:0;">
+              <input type="checkbox" id="deptSummerEnabled" style="width:18px; height:18px; padding:0; margin:0; flex-shrink:0; cursor:pointer;" />
+              <span>🌞 サマータイムを設定する</span>
             </label>
-            <p style="font-size:12px; color:#92400E; margin:4px 0 8px;">
+            <p style="font-size:12px; color:#92400E; margin:6px 0 0; padding-left:28px;">
               指定した月の範囲では下記の勤務時間に自動切替されます（例: 7月〜9月は 08:00〜17:00）。
             </p>
-            <div id="deptSummerFields" style="display:none;">
+            <div id="deptSummerFields" style="display:none; margin-top:12px;">
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <div class="form-group"><label>開始月（1-12）</label><input type="number" id="deptSummerStart" min="1" max="12" value="7" /></div>
                 <div class="form-group"><label>終了月（1-12）</label><input type="number" id="deptSummerEnd" min="1" max="12" value="9" /></div>
@@ -651,8 +651,8 @@
                 <div class="form-group"><label>終業</label><input type="time" id="deptSummerWorkEnd" value="17:00" /></div>
               </div>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <div class="form-group"><label>休憩(分)</label><input type="number" id="deptSummerBreak" value="60" min="0" /></div>
-                <div class="form-group"><label>所定労働(分)</label><input type="number" id="deptSummerWorkMin" value="480" min="0" /></div>
+                <div class="form-group" style="margin-bottom:0;"><label>休憩(分)</label><input type="number" id="deptSummerBreak" value="60" min="0" /></div>
+                <div class="form-group" style="margin-bottom:0;"><label>所定労働(分)</label><input type="number" id="deptSummerWorkMin" value="480" min="0" /></div>
               </div>
             </div>
           </div>
